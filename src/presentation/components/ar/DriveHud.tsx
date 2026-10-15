@@ -1,0 +1,161 @@
+// Heads-up information around the AR view: next maneuver, speed, ETA and the
+// state of each source. Deliberately sparse — glanceable, not readable.
+
+import type { ReactNode } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { instructionEs } from '@/domain/navigation/guidance';
+import type { Maneuver } from '@/domain/navigation/route';
+import { formatDistance, formatEta } from '@/presentation/format';
+import { COLORS } from '@/presentation/theme';
+import { useEgoStore } from '@/store/egoStore';
+import { useNavStore } from '@/store/navStore';
+import { useOBDStore } from '@/store/obdStore';
+import { useSettingsStore } from '@/store/settingsStore';
+
+type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
+export function maneuverIcon(m: Maneuver): IconName {
+  if (m.type === 'arrive') return 'flag-checkered';
+  if (m.type === 'roundabout') return 'rotate-right';
+  switch (m.modifier) {
+    case 'left':
+    case 'sharp-left':
+      return 'arrow-left-top';
+    case 'slight-left':
+      return 'arrow-top-left';
+    case 'right':
+    case 'sharp-right':
+      return 'arrow-right-top';
+    case 'slight-right':
+      return 'arrow-top-right';
+    case 'uturn':
+      return 'arrow-u-left-top';
+    default:
+      return 'arrow-up';
+  }
+}
+
+export function DriveHud({ onExit }: { onExit: () => void }) {
+  const progress = useNavStore((s) => s.progress);
+  const route = useNavStore((s) => s.route);
+  const status = useNavStore((s) => s.status);
+  const navError = useNavStore((s) => s.error);
+  const ego = useEgoStore((s) => s.ego);
+  const pose = useEgoStore((s) => s.pose);
+  const obdState = useOBDStore((s) => s.connectionState);
+  const obdHz = useOBDStore((s) => s.speedRateHz);
+  const debug = useSettingsStore((s) => s.debugOverlay);
+
+  const m = progress?.nextManeuver ?? null;
+  const remainingS =
+    route && progress ? (route.durationS * progress.remainingM) / Math.max(1, route.distanceM) : null;
+
+  return (
+    <View pointerEvents="box-none" className="absolute inset-0 p-3">
+      {/* Next maneuver */}
+      <View className="flex-row items-start justify-between">
+        {status === 'arrived' ? (
+          <Card>
+            <MaterialCommunityIcons name="flag-checkered" size={36} color={COLORS.mint} />
+            <Text className="text-brand-text font-mono-bold text-base ml-3">Llegaste a tu destino</Text>
+          </Card>
+        ) : m && progress?.distanceToManeuverM != null ? (
+          <Card>
+            <MaterialCommunityIcons name={maneuverIcon(m)} size={40} color={COLORS.mint} />
+            <View className="ml-3 max-w-[260px]">
+              <Text className="text-brand-text font-mono-bold text-2xl">
+                {formatDistance(progress.distanceToManeuverM)}
+              </Text>
+              <Text className="text-brand-muted font-mono text-xs" numberOfLines={2}>
+                {instructionEs(m)}
+              </Text>
+            </View>
+          </Card>
+        ) : (
+          <Card>
+            <Text className="text-brand-muted font-mono text-xs">
+              {ego ? 'Ubicando el vehículo en la ruta…' : 'Esperando GPS…'}
+            </Text>
+          </Card>
+        )}
+
+        <Pressable
+          onPress={onExit}
+          hitSlop={10}
+          className="w-11 h-11 rounded-full bg-brand-surface/90 border border-brand-border items-center justify-center active:opacity-60"
+        >
+          <MaterialCommunityIcons name="close" size={22} color={COLORS.text} />
+        </Pressable>
+      </View>
+
+      {progress?.offRoute && (
+        <View className="self-center mt-2 px-3 py-1.5 rounded-full bg-brand-surface/90 border border-brand-amber">
+          <Text className="text-brand-amber font-mono text-xs">Fuera de ruta — recalculando</Text>
+        </View>
+      )}
+      {navError && status === 'navigating' && (
+        <Text className="self-center mt-1 text-brand-red font-mono text-[10px]">{navError}</Text>
+      )}
+
+      <View className="flex-1" pointerEvents="none" />
+
+      {/* Bottom bar */}
+      <View pointerEvents="none" className="flex-row items-end justify-between">
+        <Card>
+          <View className="items-center">
+            <Text className="text-brand-text font-mono-bold text-3xl">
+              {ego ? Math.round(ego.speedMps * 3.6) : '--'}
+            </Text>
+            <Text className="text-brand-muted font-mono text-[10px]">
+              km/h · {ego?.speedSource === 'obd' ? 'OBD' : ego?.speedSource === 'gps' ? 'GPS' : '—'}
+            </Text>
+          </View>
+        </Card>
+
+        <View className="items-end gap-1">
+          <View className="flex-row gap-1.5">
+            <Chip label="GPS" ok={ego != null && ego.gpsAccuracyM <= 20} warn={ego != null} />
+            <Chip label="IMU" ok={pose != null} warn={false} />
+            <Chip label={obdState === 'connected' ? `OBD ${obdHz.toFixed(0)}Hz` : 'OBD'} ok={obdState === 'connected'} warn={obdState === 'connecting'} />
+          </View>
+          {route && progress && remainingS != null && (
+            <Card>
+              <Text className="text-brand-teal font-mono-bold text-lg">{formatEta(remainingS)}</Text>
+              <Text className="text-brand-muted font-mono text-xs ml-3">{formatDistance(progress.remainingM)}</Text>
+            </Card>
+          )}
+        </View>
+      </View>
+
+      {debug && ego && pose && (
+        <View pointerEvents="none" className="absolute left-3 top-24 bg-black/60 rounded-lg p-2">
+          <Text className="text-brand-text font-mono text-[10px]">
+            {`hdg ${ego.headingDeg.toFixed(1)}° ${ego.headingValid ? '' : '(?)'}\n` +
+              `pitch ${pose.pitchDeg.toFixed(1)}° roll ${pose.rollDeg.toFixed(1)}° ${pose.side}\n` +
+              `aLong ${ego.accelLongMps2.toFixed(2)} yaw ${ego.yawRateDegS.toFixed(1)}°/s\n` +
+              `gps ±${ego.gpsAccuracyM.toFixed(0)}m  xtrack ${progress?.crossTrackM.toFixed(1) ?? '-'}m`}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function Card({ children }: { children: ReactNode }) {
+  return (
+    <View className="flex-row items-center bg-brand-surface/90 border border-brand-border rounded-2xl px-4 py-3">
+      {children}
+    </View>
+  );
+}
+
+function Chip({ label, ok, warn }: { label: string; ok: boolean; warn: boolean }) {
+  const border = ok ? 'border-brand-teal' : warn ? 'border-brand-amber' : 'border-brand-border';
+  const text = ok ? 'text-brand-teal' : warn ? 'text-brand-amber' : 'text-brand-muted';
+  return (
+    <View className={`px-2 py-0.5 rounded-full bg-brand-surface/90 border ${border}`}>
+      <Text className={`font-mono text-[10px] ${text}`}>{label}</Text>
+    </View>
+  );
+}

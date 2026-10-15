@@ -1,0 +1,25 @@
+
+# ── Título (≤ 72 caracteres) ─────────────────────────────────────────
+# <Qué cambió> — <por qué importa / qué resuelve>
+#
+# Ejemplos buenos de este repo:
+#   Freeze frame (modo 02) y monitores de readiness (0101) — la evidencia que faltaba
+#   La lectura de VIN sí estaba rota — dos formatos devolvían null
+#   Modos 07 y 0A — los códigos pendientes y los que NO se pueden borrar
+#
+# Evitar títulos que no dicen nada: "BugFix", "Foryou", "prueba 1", "tool mcp".
+# Si no podés resumirlo en una línea, probablemente son dos commits.
+#
+# ── Cuerpo (opcional, dejar una línea en blanco arriba) ──────────────
+# - Qué estaba mal o qué faltaba (el síntoma, no solo el archivo).
+# - Qué decisión tomaste y por qué esa y no otra.
+# - Cómo lo verificaste: tests, banco, auto real, Android físico.
+# - Referencias: ADR-00xx, PLAN-00x, Hito N.
+#
+# ── Tipos de commit (opcional, como prefijo cuando ayuda) ────────────
+#   docs:  solo documentación / ADRs
+#   build: eas.json, versión, dependencias, bundles
+#   test:  solo tests
+# El resto (features, fixes, UX) va sin prefijo, con título descriptivo.
+#
+# Las líneas que empiezan con # se borran solas al commitear.
