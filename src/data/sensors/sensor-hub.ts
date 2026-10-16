@@ -8,7 +8,7 @@
 // what React can paint without starving the JS thread.
 
 import * as Location from 'expo-location';
-import { DeviceMotion } from 'expo-sensors';
+import { Accelerometer, DeviceMotion, Gyroscope } from 'expo-sensors';
 import { EgoEstimator, type EgoState } from '@/domain/fusion/ego-estimator';
 import { PoseEstimator, type LandscapeSide, type PoseEstimate, type Vec3 } from '@/domain/fusion/pose-estimator';
 import type { TripRecord } from '@/domain/recording/trip-log';
@@ -16,6 +16,12 @@ import { useEgoStore } from '@/store/egoStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const MOTION_INTERVAL_MS = 20;
+// Some phones (seen on a Xiaomi 2510DPC44G) deliver DeviceMotion events with
+// only `orientation` and `interval` — no acceleration, no rotation rate. If
+// none carries acceleration within this window, read the raw sensors instead.
+const MOTION_FALLBACK_MS = 1500;
+const G = 9.80665;
+const RAD_TO_DEG = 180 / Math.PI;
 const PUBLISH_INTERVAL_MS = 50;
 // Landscape side flips only on a clear reading (phone being re-mounted).
 const SIDE_SWITCH_MPS2 = 5;
@@ -33,7 +39,8 @@ export class SensorHub {
   // Bumped by stop(): a start() still awaiting permissions must not subscribe.
   private generation = 0;
   private locationSub: Location.LocationSubscription | null = null;
-  private motionSub: { remove(): void } | null = null;
+  private motionSubs: { remove(): void }[] = [];
+  private fallbackTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly listeners = new Set<TickListener>();
   // Trip log tap: raw inputs and fused state (see domain/recording).
   private recordSink: ((rec: TripRecord) => void) | null = null;
@@ -103,7 +110,7 @@ export class SensorHub {
             spd: fix.speedMps,
           });
           status({ location: 'ok' });
-          if (!this.motionSub) this.tickWithoutMotion();
+          if (!this.motionSubs.length) this.tickWithoutMotion();
         },
       );
       if (stale()) {
@@ -116,20 +123,65 @@ export class SensorHub {
     const motionAvailable = await DeviceMotion.isAvailableAsync();
     if (stale()) return;
     if (!motionAvailable) {
-      status({ motion: 'unavailable' });
+      this.startRawSensors(gen);
       return;
     }
     DeviceMotion.setUpdateInterval(MOTION_INTERVAL_MS);
-    this.motionSub = DeviceMotion.addListener((m) => {
-      const g = m.accelerationIncludingGravity;
-      const r = m.rotationRate;
-      this.onMotion(
-        { x: g.x, y: g.y, z: g.z },
-        // alpha/beta/gamma are rotations about z/x/y.
-        r ? { x: r.beta, y: r.gamma, z: r.alpha } : { x: 0, y: 0, z: 0 },
-      );
-    });
+    let gotAccel = false;
+    this.motionSubs.push(
+      DeviceMotion.addListener((m) => {
+        const g = m.accelerationIncludingGravity;
+        if (!g) return;
+        gotAccel = true;
+        const r = m.rotationRate;
+        this.onMotion(
+          { x: g.x, y: g.y, z: g.z },
+          // alpha/beta/gamma are rotations about z/x/y, already in deg/s.
+          r ? { x: r.beta, y: r.gamma, z: r.alpha } : { x: 0, y: 0, z: 0 },
+        );
+      }),
+    );
+    this.fallbackTimer = setTimeout(() => {
+      this.fallbackTimer = null;
+      if (gotAccel || stale()) return;
+      console.warn('[SensorHub] DeviceMotion has no acceleration on this phone; using raw sensors');
+      this.removeMotionSubs();
+      this.startRawSensors(gen);
+    }, MOTION_FALLBACK_MS);
     status({ motion: 'ok' });
+  }
+
+  // Accelerometer (g) + gyroscope (rad/s), converted to the DeviceMotion units
+  // the fusion expects (m/s², deg/s). The accelerometer drives the loop; the
+  // latest gyro sample rides along.
+  private startRawSensors(gen: number): void {
+    const status = useEgoStore.getState().setStatus;
+    void Promise.all([Accelerometer.isAvailableAsync(), Gyroscope.isAvailableAsync()]).then(([acc, gyro]) => {
+      if (gen !== this.generation) return;
+      if (!acc) {
+        status({ motion: 'unavailable' });
+        return;
+      }
+      let rate = { x: 0, y: 0, z: 0 };
+      if (gyro) {
+        Gyroscope.setUpdateInterval(MOTION_INTERVAL_MS);
+        this.motionSubs.push(
+          Gyroscope.addListener((r) => {
+            rate = { x: r.x * RAD_TO_DEG, y: r.y * RAD_TO_DEG, z: r.z * RAD_TO_DEG };
+          }),
+        );
+      }
+      Accelerometer.setUpdateInterval(MOTION_INTERVAL_MS);
+      this.motionSubs.push(
+        Accelerometer.addListener((a) => this.onMotion({ x: a.x * G, y: a.y * G, z: a.z * G }, rate)),
+      );
+      status({ motion: 'ok' });
+    });
+  }
+
+  private removeMotionSubs(): void {
+    for (const sub of this.motionSubs) sub.remove();
+    this.motionSubs = [];
   }
 
   private onMotion(accel: Vec3, gyroDegS: Vec3): void {
@@ -192,8 +244,9 @@ export class SensorHub {
     this.generation++;
     this.locationSub?.remove();
     this.locationSub = null;
-    this.motionSub?.remove();
-    this.motionSub = null;
+    if (this.fallbackTimer) clearTimeout(this.fallbackTimer);
+    this.fallbackTimer = null;
+    this.removeMotionSubs();
     this.lastMotionT = null;
     this.pose.reset();
     useEgoStore.getState().setStatus({ location: 'off', motion: 'off' });
