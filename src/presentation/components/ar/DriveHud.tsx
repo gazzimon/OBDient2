@@ -37,7 +37,16 @@ export function maneuverIcon(m: Maneuver): IconName {
   }
 }
 
-export function DriveHud({ onExit, ribbonVisible }: { onExit: () => void; ribbonVisible: boolean }) {
+export function DriveHud({
+  onExit,
+  ribbonVisible,
+  arVisible,
+}: {
+  onExit: () => void;
+  ribbonVisible: boolean;
+  // False while the map is full screen: AR-only notices would just be noise.
+  arVisible: boolean;
+}) {
   const progress = useNavStore((s) => s.progress);
   const route = useNavStore((s) => s.route);
   const status = useNavStore((s) => s.status);
@@ -52,7 +61,7 @@ export function DriveHud({ onExit, ribbonVisible }: { onExit: () => void; ribbon
   const guide =
     route && progress && ego?.headingValid ? headingGuide(route, progress, ego.position, ego.headingDeg) : null;
   const blocker =
-    status === 'arrived'
+    status === 'arrived' || !arVisible
       ? null
       : arBlocker({
           hasPosition: ego != null,

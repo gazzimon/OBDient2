@@ -1,17 +1,46 @@
 // AR guidance: camera + route drawn on the road + HUD. Landscape, screen on.
+//
+// The map rides along as a floating window; tapping it swaps roles (map full
+// screen, AR floating) and tapping again swaps back. Both views stay mounted
+// and only change size and layer, so the swap is instant and the camera
+// never restarts.
 
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { ArOverlay } from '@/presentation/components/ar/ArOverlay';
 import { CameraStage } from '@/presentation/components/ar/CameraStage';
 import { DriveHud } from '@/presentation/components/ar/DriveHud';
+import { DriveMap } from '@/presentation/components/ar/DriveMap';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { useLandscapeWhileFocused } from '@/presentation/hooks/useLandscape';
 import { useSensorsWhileFocused } from '@/presentation/hooks/useSensors';
 import { navigation } from '@/presentation/services/navigation-controller';
 import { useNavStore } from '@/store/navStore';
+
+// Floating window: bottom centre, between the speed and ETA cards; 16:9.
+const PIP_W = 224;
+const PIP_H = 126;
+const PIP_BOX: ViewStyle = {
+  position: 'absolute',
+  bottom: 12,
+  left: '50%',
+  marginLeft: -PIP_W / 2,
+  width: PIP_W,
+  height: PIP_H,
+};
+const PIP: ViewStyle = {
+  ...PIP_BOX,
+  zIndex: 2,
+  elevation: 2,
+  borderRadius: 14,
+  overflow: 'hidden',
+  borderWidth: 1,
+  borderColor: '#2DE1A5',
+};
+const FULL: ViewStyle = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, elevation: 0 };
+const PIP_TAP: ViewStyle = { ...PIP_BOX, zIndex: 10, elevation: 10 };
 
 export default function DriveScreen() {
   useKeepAwake();
@@ -20,6 +49,7 @@ export default function DriveScreen() {
   const router = useRouter();
   const route = useNavStore((s) => s.route);
   const [ribbonVisible, setRibbonVisible] = useState(false);
+  const [mapPrimary, setMapPrimary] = useState(false);
 
   const exit = () => {
     navigation.stop();
@@ -37,10 +67,22 @@ export default function DriveScreen() {
 
   return (
     <View className="flex-1 bg-black">
-      <CameraStage>
-        {({ width, height }) => <ArOverlay width={width} height={height} onRibbonVisible={setRibbonVisible} />}
-      </CameraStage>
-      <DriveHud onExit={exit} ribbonVisible={ribbonVisible} />
+      <View style={mapPrimary ? PIP : FULL}>
+        <CameraStage>
+          {({ width, height }) => <ArOverlay width={width} height={height} onRibbonVisible={setRibbonVisible} />}
+        </CameraStage>
+      </View>
+      <View style={mapPrimary ? FULL : PIP}>
+        <DriveMap primary={mapPrimary} />
+      </View>
+      <DriveHud onExit={exit} ribbonVisible={ribbonVisible} arVisible={!mapPrimary} />
+      {/* Tap target over the floating window, above everything else. */}
+      <Pressable
+        onPress={() => setMapPrimary((m) => !m)}
+        style={PIP_TAP}
+        accessibilityRole="button"
+        accessibilityLabel={mapPrimary ? 'Mostrar la cámara' : 'Mostrar el mapa'}
+      />
     </View>
   );
 }
