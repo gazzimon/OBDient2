@@ -4,15 +4,22 @@ import { SensorHub } from '@/data/sensors/sensor-hub';
 import { ObdManager } from '@/data/obd/obd-manager';
 import { OsrmRouting } from '@/data/routing/osrm-routing';
 import { PhotonGeocoder } from '@/data/routing/photon-geocoder';
+import { TripRecorder } from '@/data/recording/trip-recorder';
 import type { GeocodingPort, RoutingPort } from '@/domain/navigation/route';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const sensors = new SensorHub();
-const obd = new ObdManager((kmh, t) => sensors.onObdSpeed(kmh, t));
+const trips = new TripRecorder();
+sensors.setRecordSink((rec) => trips.record(rec));
+const obd = new ObdManager((kmh, t) => {
+  sensors.onObdSpeed(kmh, t);
+  trips.record({ k: 'obd', t, kmh });
+});
 
 export const container = {
   sensors,
   obd,
+  trips,
   // Built per call so an endpoint changed in Settings applies immediately.
   routing(): RoutingPort {
     return new OsrmRouting(useSettingsStore.getState().routingUrl);

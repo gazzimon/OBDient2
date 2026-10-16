@@ -31,7 +31,8 @@ entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-14.
 2. Banco con el B33 (Vehículo → Banco del adaptador): chip y firmware, Hz de velocidad por método y
    configuración de ahorro de energía. Ver [docs/hardware/adaptador-stn.md](hardware/adaptador-stn.md).
 3. Calibración en auto: confirmar signos de sensores (`gravitySign`, lado landscape) y FOV.
-4. Primer viaje real con el registro de datos técnicos activado.
+4. Primer viaje real con el registro de viaje activado (por defecto), luego `npm run trips:pull` y
+   `npm run replay` para revisar la fusión y la AR en la PC.
 
 ## Fuera del MVP, ya decidido
 

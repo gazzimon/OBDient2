@@ -11,6 +11,7 @@ import type { Place, Route } from '@/domain/navigation/route';
 import type { EgoState } from '@/domain/fusion/ego-estimator';
 import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
+import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const PROGRESS_INTERVAL_MS = 100;
@@ -41,6 +42,16 @@ class NavigationController {
     const { route } = useNavStore.getState();
     if (!route) return;
     await container.sensors.acquire();
+    const { recordTrips, calibration } = useSettingsStore.getState();
+    if (recordTrips) {
+      const { destination } = useNavStore.getState();
+      container.trips.start({
+        destination: destination ? { name: destination.name, ...destination.location } : null,
+        routeDistanceM: Math.round(route.distanceM),
+        calibration,
+        obd: useOBDStore.getState().session?.identity ?? null,
+      });
+    }
     this.bind(route);
     useNavStore.getState().start();
     this.say('Iniciando navegación');
@@ -52,6 +63,7 @@ class NavigationController {
     this.unsubscribe = null;
     if (this.tracker) container.sensors.release();
     this.tracker = null;
+    container.trips.stop();
     Speech.stop();
     useNavStore.getState().clear();
   }
@@ -72,8 +84,17 @@ class NavigationController {
     const progress = this.tracker.update(ego.position, ego.gpsAccuracyM, ego.tMs);
     const nav = useNavStore.getState();
     nav.setProgress(progress);
+    container.trips.record({
+      k: 'nav',
+      t: ego.tMs,
+      off: progress.offsetM,
+      xt: progress.crossTrackM,
+      rem: progress.remainingM,
+      offRoute: progress.offRoute,
+    });
 
     if (progress.arrived && nav.status !== 'arrived') {
+      container.trips.event('arrived');
       nav.setArrived();
       this.say('Llegaste a tu destino');
       return;
@@ -93,9 +114,11 @@ class NavigationController {
     this.rerouting = true;
     this.lastReroute = Date.now();
     this.say('Recalculando');
+    container.trips.event('reroute');
     try {
       const route = await this.fetchRoute(dest.location);
       useNavStore.getState().setRoute(route, true);
+      container.trips.event('route', { distanceM: Math.round(route.distanceM) });
       this.bind(route);
     } catch (err) {
       // Offline: keep the old route on screen; the next off-route tick retries.
@@ -117,6 +140,7 @@ class NavigationController {
   }
 
   private say(text: string): void {
+    container.trips.event('voice', { text });
     if (!useSettingsStore.getState().voiceEnabled) return;
     Speech.stop();
     Speech.speak(text, { language: 'es-ES' });

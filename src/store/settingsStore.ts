@@ -53,6 +53,9 @@ interface SettingsState {
   geocoderUrl: string;
   mapStyleUrl: string;
   voiceEnabled: boolean;
+  // Local trip log while navigating (domain/recording). On while the MVP is
+  // being field-tested: it is how AR problems get diagnosed afterwards.
+  recordTrips: boolean;
   disclaimerAccepted: boolean;
   // Shows pose/heading/rates over the AR view — a field-testing aid.
   debugOverlay: boolean;
@@ -62,6 +65,7 @@ interface SettingsState {
   resetCalibration: () => void;
   setEndpoints: (patch: Partial<typeof DEFAULT_ENDPOINTS>) => void;
   setVoiceEnabled: (on: boolean) => void;
+  setRecordTrips: (on: boolean) => void;
   setDisclaimerAccepted: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
 }
@@ -74,6 +78,7 @@ export const useSettingsStore = create<SettingsState>()(
       calibration: DEFAULT_CALIBRATION,
       ...DEFAULT_ENDPOINTS,
       voiceEnabled: true,
+      recordTrips: true,
       disclaimerAccepted: false,
       debugOverlay: false,
 
@@ -82,6 +87,7 @@ export const useSettingsStore = create<SettingsState>()(
       resetCalibration: () => set({ calibration: DEFAULT_CALIBRATION }),
       setEndpoints: (patch) => set(patch),
       setVoiceEnabled: (on) => set({ voiceEnabled: on }),
+      setRecordTrips: (on) => set({ recordTrips: on }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
     }),
@@ -96,6 +102,7 @@ export const useSettingsStore = create<SettingsState>()(
         geocoderUrl: s.geocoderUrl,
         mapStyleUrl: s.mapStyleUrl,
         voiceEnabled: s.voiceEnabled,
+        recordTrips: s.recordTrips,
         disclaimerAccepted: s.disclaimerAccepted,
         debugOverlay: s.debugOverlay,
       }),

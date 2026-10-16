@@ -1,10 +1,12 @@
 // Preferences, AR calibration entry point and service endpoints.
 
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { container } from '@/data/container';
+import type { TripFileInfo } from '@/data/recording/trip-recorder';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
@@ -18,6 +20,16 @@ export default function SettingsScreen() {
     geocoderUrl: s.geocoderUrl,
     mapStyleUrl: s.mapStyleUrl,
   });
+  const [trips, setTrips] = useState<TripFileInfo[]>([]);
+  const refreshTrips = useCallback(() => {
+    try {
+      setTrips(container.trips.list());
+    } catch {
+      setTrips([]);
+    }
+  }, []);
+  useFocusEffect(refreshTrips);
+
   const dirty =
     endpoints.routingUrl !== s.routingUrl ||
     endpoints.geocoderUrl !== s.geocoderUrl ||
@@ -48,6 +60,40 @@ export default function SettingsScreen() {
           </View>
           <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
         </Pressable>
+
+        <SectionHeader title="Viajes grabados" />
+        <Row label="Grabar registro técnico al navegar">
+          <Switch value={s.recordTrips} onValueChange={s.setRecordTrips} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
+        </Row>
+        <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
+          GPS, sensores, OBD y progreso de ruta, solo en este teléfono. Sirve para reproducir un viaje y depurar la
+          AR. Unos 10 MB por hora.
+        </Text>
+        {trips.length === 0 ? (
+          <Text className="text-brand-muted font-mono text-xs mb-6">Todavía no hay viajes grabados.</Text>
+        ) : (
+          <View className="mb-6 gap-2">
+            {trips.map((t) => (
+              <View key={t.name} className="flex-row items-center bg-brand-surface rounded-2xl px-4 py-3">
+                <MaterialCommunityIcons name="map-marker-path" size={16} color={COLORS.mint} />
+                <View className="ml-3 flex-1">
+                  <Text className="text-brand-text font-mono text-xs">{t.name}</Text>
+                  <Text className="text-brand-muted font-mono text-[10px]">{(t.sizeBytes / 1e6).toFixed(1)} MB</Text>
+                </View>
+                <Pressable
+                  hitSlop={8}
+                  onPress={() => {
+                    container.trips.remove(t.name);
+                    refreshTrips();
+                  }}
+                  className="active:opacity-60"
+                >
+                  <MaterialCommunityIcons name="delete-outline" size={18} color={COLORS.red} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
 
         <SectionHeader title="Servicios" />
         <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">

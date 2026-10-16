@@ -44,6 +44,22 @@ npm run typecheck && npm test && npm run lint
    Alinear el horizonte y el carril dibujados con los reales.
 3. **Ruta** → buscar un destino (o mantener presionado el mapa) → *Iniciar AR*.
 
+## Registro de viaje y reproducción
+
+Con *Ajustes → Grabar registro técnico al navegar* (activado por defecto mientras se valida el MVP),
+cada navegación guarda un archivo JSONL en el teléfono. Contiene GPS, IMU a 50 Hz, velocidad OBD,
+estado fusionado, progreso de ruta y eventos. Unos 10 MB por hora, y nunca sale del teléfono por sí solo.
+
+```bash
+npm run trips:pull                         # copia los viajes del teléfono a ./trips/ (USB, build de desarrollo)
+npm run replay -- trips/trip-XXXX.jsonl    # re-ejecuta la fusión y resume hallazgos
+npm run replay -- trips/trip-XXXX.jsonl --sign -1   # ¿se arregla invirtiendo el sensor?
+```
+
+El análisis detecta, entre otras cosas, un **acelerómetro con el signo invertido**. Para eso compara la
+aceleración medida a lo largo del eje de la cámara con la que se deriva de la velocidad: es la única
+forma de verlo, porque una pose en reposo no lo delata.
+
 ## Estructura
 
 ```
@@ -52,7 +68,8 @@ src/
     geo/           geodesia de área pequeña (ENU)
     navigation/    ruta, progreso, guía por voz
     ar/            modelo de cámara y escena AR
-    fusion/        estimadores de ego-estado y pose de cámara
+    fusion/        estimadores de ego-estado, pose de cámara y signo del sensor
+    recording/     formato del registro de viaje y su reproducción
   data/            adaptadores: OBD (BLE/ELM/STN), sensores, OSRM, Photon
   presentation/    componentes, hooks, controlador de navegación
   store/           estado (zustand + MMKV)

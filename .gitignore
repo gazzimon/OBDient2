@@ -53,3 +53,6 @@ crash.txt
 .claude/agents/
 .claude/settings/
 .claude/system-prompts/
+
+# viajes grabados traídos del teléfono (datos de ubicación personales)
+/trips/

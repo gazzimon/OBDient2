@@ -11,6 +11,7 @@ import * as Location from 'expo-location';
 import { DeviceMotion } from 'expo-sensors';
 import { EgoEstimator, type EgoState } from '@/domain/fusion/ego-estimator';
 import { PoseEstimator, type LandscapeSide, type PoseEstimate, type Vec3 } from '@/domain/fusion/pose-estimator';
+import type { TripRecord } from '@/domain/recording/trip-log';
 import { useEgoStore } from '@/store/egoStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -34,6 +35,8 @@ export class SensorHub {
   private locationSub: Location.LocationSubscription | null = null;
   private motionSub: { remove(): void } | null = null;
   private readonly listeners = new Set<TickListener>();
+  // Trip log tap: raw inputs and fused state (see domain/recording).
+  private recordSink: ((rec: TripRecord) => void) | null = null;
 
   // Reference-counted: the map and the AR screen can both hold it.
   async acquire(): Promise<void> {
@@ -49,6 +52,10 @@ export class SensorHub {
   onTick(listener: TickListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  setRecordSink(sink: ((rec: TripRecord) => void) | null): void {
+    this.recordSink = sink;
   }
 
   onObdSpeed(kmh: number, tMs: number): void {
@@ -78,12 +85,22 @@ export class SensorHub {
       const sub = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 0 },
         (loc) => {
-          this.ego.onGps({
+          const fix = {
             position: { lat: loc.coords.latitude, lng: loc.coords.longitude },
             accuracyM: loc.coords.accuracy ?? 50,
             courseDeg: loc.coords.heading,
             speedMps: loc.coords.speed,
             tMs: Date.now(),
+          };
+          this.ego.onGps(fix);
+          this.recordSink?.({
+            k: 'gps',
+            t: fix.tMs,
+            lat: fix.position.lat,
+            lng: fix.position.lng,
+            acc: fix.accuracyM,
+            crs: fix.courseDeg,
+            spd: fix.speedMps,
           });
           status({ location: 'ok' });
           if (!this.motionSub) this.tickWithoutMotion();
@@ -124,6 +141,7 @@ export class SensorHub {
     this.updateSide(accel, gravitySign);
     this.pose.configure({ side: this.side, gravitySign, timeConstantS: 1.5 });
 
+    this.recordSink?.({ k: 'imu', t, a: [accel.x, accel.y, accel.z], g: [gyroDegS.x, gyroDegS.y, gyroDegS.z] });
     const yawRate = this.pose.yawRateDegS(gyroDegS);
     const ego = this.ego.tick(t, yawRate);
     const pose = this.pose.update(
@@ -132,6 +150,20 @@ export class SensorHub {
     );
     if (!ego) return;
 
+    this.recordSink?.({
+      k: 'st',
+      t,
+      lat: ego.position.lat,
+      lng: ego.position.lng,
+      hdg: ego.headingDeg,
+      hv: ego.headingValid,
+      spd: ego.speedMps,
+      src: ego.speedSource,
+      al: ego.accelLongMps2,
+      yr: ego.yawRateDegS,
+      p: pose.pitchDeg,
+      r: pose.rollDeg,
+    });
     for (const l of this.listeners) l(ego, pose);
     if (t - this.lastPublish >= PUBLISH_INTERVAL_MS) {
       this.lastPublish = t;
