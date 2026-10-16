@@ -9,6 +9,7 @@ import { BleTransport, type ScannedDevice } from '@/data/adapters/ble-transport'
 import { createBlePlxPlatform } from '@/data/adapters/ble-plx-platform';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import type { BenchReport } from './adapter-bench';
 import { ObdSession } from './obd-session';
 
 // Names that look like an OBD adapter, to sort them to the top of the list.
@@ -65,7 +66,15 @@ export class ObdManager {
           if (reason === 'connection-lost') void this.disconnect('Se perdió la conexión con el adaptador');
         },
       });
-      this.rateTimer = setInterval(() => useOBDStore.getState().setSpeedRate(session.speedRateHz()), 1000);
+      this.rateTimer = setInterval(
+        () =>
+          useOBDStore.getState().setLinkStats({
+            hz: session.speedRateHz(),
+            style: session.requestStyle(),
+            resets: session.adapterResets,
+          }),
+        1000,
+      );
     } catch (err) {
       await session.close();
       store.setDisconnected(err instanceof Error ? err.message : 'No se pudo conectar');
@@ -80,6 +89,11 @@ export class ObdManager {
     if (!lastDeviceId || useOBDStore.getState().connectionState !== 'disconnected') return;
     if (!(await this.requestPermissions())) return;
     await this.connect(lastDeviceId, lastDeviceName).catch(() => useOBDStore.getState().setDisconnected(null));
+  }
+
+  async runBench(): Promise<BenchReport> {
+    if (!this.session) throw new Error('No hay adaptador conectado');
+    return this.session.runBench();
   }
 
   async disconnect(error: string | null = null): Promise<void> {

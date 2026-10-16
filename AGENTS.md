@@ -12,6 +12,7 @@ between majors.
 - **Qué es y cómo correrlo:** [README.md](README.md)
 - **Trayectoria por etapas (E0 → E6) y estado:** [docs/ROADMAP.md](docs/ROADMAP.md)
 - **Decisiones de arquitectura:** [docs/ADR/](docs/ADR/README.md)
+- **Adaptador OBD (B33 / familia STN), comandos y banco:** [docs/hardware/adaptador-stn.md](docs/hardware/adaptador-stn.md)
 - **Investigación de fondo (Qwen-Drive-1.0):** [docs/research/qwen-drive-1.0.md](docs/research/qwen-drive-1.0.md)
 
 # Reglas del proyecto

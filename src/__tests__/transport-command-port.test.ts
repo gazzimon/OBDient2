@@ -1,4 +1,4 @@
-import { CommandTimeoutError, ConnectionLostError, NoDataError } from '@/core/errors/obd.errors';
+import { AdapterResetError, CommandTimeoutError, ConnectionLostError, NoDataError } from '@/core/errors/obd.errors';
 import { TransportCommandPort } from '@/data/adapters/transport-command-port';
 import { Listeners, type ByteTransport } from '@/data/adapters/transport';
 
@@ -94,5 +94,43 @@ describe('TransportCommandPort', () => {
     const t = new FakeTransport();
     t.write = async () => { throw new Error('GATT 133'); };
     await expect(new TransportCommandPort(t, 5000).send('ATZ')).rejects.toBeInstanceOf(ConnectionLostError);
+  });
+
+  describe('STN replies (OBD Family Reference Manual §9)', () => {
+    it.each(['BUFFER FULL', 'BUS BUSY', 'BUS ERROR', 'DATA ERROR', 'FB ERROR', 'OUT OF MEMORY', 'STOPPED'])(
+      'treats "%s" as no usable data',
+      async (reply) => {
+        const t = new FakeTransport((w, tr) => tr.emit(`${reply}\r\r>`));
+        await expect(new TransportCommandPort(t).send('010D')).rejects.toBeInstanceOf(NoDataError);
+      },
+    );
+
+    it('rejects a frame that failed its checksum, even with bytes before the marker', async () => {
+      const t = new FakeTransport((w, tr) => tr.emit('41 0D 32 <DATA ERROR\r\r>'));
+      await expect(new TransportCommandPort(t).send('010D')).rejects.toBeInstanceOf(NoDataError);
+    });
+
+    it('drops PowerSave alerts mixed into an answer', async () => {
+      const t = new FakeTransport((w, tr) => tr.emit('ACT ALERT\r41 0D 32\r\r>'));
+      await expect(new TransportCommandPort(t).send('010D')).resolves.toBe('41 0D 32');
+    });
+
+    it('reports LV RESET during a command and to reset listeners', async () => {
+      const t = new FakeTransport((w, tr) => tr.emit('LV RESET\r\rELM327 v1.4b\r\r>'));
+      const port = new TransportCommandPort(t);
+      const onReset = jest.fn();
+      port.onAdapterReset(onReset);
+      await expect(port.send('010D')).rejects.toBeInstanceOf(AdapterResetError);
+      expect(onReset).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports an unsolicited LV RESET between commands', () => {
+      const t = new FakeTransport();
+      const port = new TransportCommandPort(t);
+      const onReset = jest.fn();
+      port.onAdapterReset(onReset);
+      t.emit('LV RESET\r\rELM327 v1.4b\r\r>');
+      expect(onReset).toHaveBeenCalledTimes(1);
+    });
   });
 });

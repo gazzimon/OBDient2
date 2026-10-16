@@ -20,12 +20,14 @@ describe('tokenizeHexBytes', () => {
     expect(tokenizeHexBytes('')).toEqual([]);
   });
 
-  it('does not crash on non-hex garbage (odd length stays one token)', () => {
-    // Even-length garbage falls through the same "concatenated response" path
-    // as a real payload would — harmless, since extractPidPayload only ever
-    // matches on the literal '41' token, never on garbage chunks like these.
-    expect(tokenizeHexBytes('NODATA')).toEqual(['NO', 'DA', 'TA']);
+  it('leaves non-hex text whole instead of cutting it into fake bytes', () => {
+    expect(tokenizeHexBytes('NODATA')).toEqual(['NODATA']);
     expect(tokenizeHexBytes('?')).toEqual(['?']);
+  });
+
+  it('re-splits every run when spaces are off and two ECUs answer (ATS0)', () => {
+    expect(tokenizeHexBytes('410D32\r410D33')).toEqual(['41', '0D', '32', '41', '0D', '33']);
+    expect(extractPidPayload('0D', '410D32\r410D33')).toEqual(['32', '41', '0D', '33']);
   });
 });
 

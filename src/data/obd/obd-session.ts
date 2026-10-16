@@ -1,17 +1,19 @@
 // One live connection to the OBD adapter: link → protocol → identity →
-// supported PIDs → telemetry. Everything below the BLE binding is testable
-// with a fake transport; this file only wires the pieces.
+// settings → supported PIDs → telemetry. Everything below the BLE binding is
+// testable with a fake transport; this file only wires the pieces — and puts
+// them back together when the adapter reboots on its own (LV RESET).
 
 import { MAX_QUERYABLE_PID_NUMBER, SUPPORTED_PID_QUERIES, filterSupportedPids, parseSupportedPidsMask } from '@/core/utils/supportedPids';
 import { CommandTimeoutError, NoDataError } from '@/core/errors/obd.errors';
 import { isCan } from '@/data/adapters/elm-protocol';
 import { ProtocolManager, type CommandPort } from '@/data/adapters/protocol-manager';
 import { TransportCommandPort } from '@/data/adapters/transport-command-port';
-import type { ByteTransport } from '@/data/adapters/transport';
+import type { ByteTransport, Unsubscribe } from '@/data/adapters/transport';
 import type { OBDProtocol } from '@/domain/entities/vehicle';
 import type { PidId } from '@/core/constants/pids';
-import { applyFastTiming, identifyAdapter, type AdapterIdentity } from './stn';
-import { SECONDARY_PIDS, TelemetryPoller, type TelemetryListener } from './telemetry-poller';
+import { runAdapterBench, type BenchReport } from './adapter-bench';
+import { applyFastSettings, identifyAdapter, type AdapterIdentity } from './stn';
+import { SECONDARY_PIDS, TelemetryPoller, stylesFor, type RequestStyle, type TelemetryListener } from './telemetry-poller';
 
 export interface SessionInfo {
   readonly protocol: OBDProtocol;
@@ -22,7 +24,11 @@ export interface SessionInfo {
 export class ObdSession {
   private port: TransportCommandPort | null = null;
   private poller: TelemetryPoller | null = null;
+  private listener: TelemetryListener | null = null;
   private info: SessionInfo | null = null;
+  private offReset: Unsubscribe | null = null;
+  private recovering: Promise<void> | null = null;
+  private resetCount = 0;
 
   constructor(private readonly transport: ByteTransport) {}
 
@@ -31,11 +37,8 @@ export class ObdSession {
     const port = new TransportCommandPort(this.transport);
     this.port = port;
     try {
-      const { protocol } = await new ProtocolManager(port).initialize();
-      const identity = await identifyAdapter(port);
-      await applyFastTiming(port, identity);
-      const supportedPids = await discoverPids(port);
-      this.info = { protocol, identity, supportedPids };
+      this.info = await configure(port);
+      this.offReset = port.onAdapterReset(() => void this.recover());
       return this.info;
     } catch (err) {
       await this.close();
@@ -45,12 +48,11 @@ export class ObdSession {
 
   startTelemetry(listener: TelemetryListener): void {
     if (!this.port || !this.info) throw new Error('Session not open');
+    this.listener = listener;
     this.poller?.stop();
-    const supported = new Set(this.info.supportedPids);
     this.poller = new TelemetryPoller(this.port, listener, {
-      can: isCan(this.info.protocol),
-      // VOLTAGE is an adapter command, always available.
-      secondary: SECONDARY_PIDS.filter((p) => p === 'VOLTAGE' || supported.size === 0 || supported.has(p)),
+      styles: requestStyles(this.info),
+      secondary: secondaryPids(this.info),
     });
     this.poller.start();
   }
@@ -59,14 +61,77 @@ export class ObdSession {
     return this.poller?.speedRateHz() ?? 0;
   }
 
+  requestStyle(): RequestStyle | null {
+    return this.poller?.style ?? null;
+  }
+
+  // How many times the adapter rebooted itself this session (brown-outs).
+  get adapterResets(): number {
+    return this.resetCount;
+  }
+
+  // Pauses telemetry, measures, resumes. Navigation keeps GPS speed meanwhile.
+  async runBench(): Promise<BenchReport> {
+    if (!this.port || !this.info) throw new Error('Session not open');
+    this.poller?.stop();
+    try {
+      return await runAdapterBench(this.port, stylesFor(this.info.identity.stn != null, isCan(this.info.protocol)));
+    } finally {
+      if (this.listener) this.startTelemetry(this.listener);
+    }
+  }
+
   async close(): Promise<void> {
+    this.offReset?.();
+    this.offReset = null;
     this.poller?.stop();
     this.poller = null;
+    this.listener = null;
     this.port?.dispose();
     this.port = null;
     this.info = null;
     if (this.transport.isConnected()) await this.transport.disconnect().catch(() => undefined);
   }
+
+  // The adapter rebooted: protocol, echo, timing — all back to defaults.
+  // Configure it again and resume telemetry where it was.
+  private recover(): Promise<void> {
+    if (this.recovering) return this.recovering;
+    this.resetCount++;
+    this.recovering = (async () => {
+      const port = this.port;
+      if (!port) return;
+      this.poller?.stop();
+      try {
+        this.info = await configure(port);
+        if (this.listener && this.port === port) this.startTelemetry(this.listener);
+      } catch {
+        // Still browned out (engine cranking): the next LV RESET or command
+        // failure brings us back here; a dead link ends the session upstream.
+      }
+    })().finally(() => {
+      this.recovering = null;
+    });
+    return this.recovering;
+  }
+}
+
+async function configure(port: CommandPort): Promise<SessionInfo> {
+  const { protocol } = await new ProtocolManager(port).initialize();
+  const identity = await identifyAdapter(port);
+  await applyFastSettings(port, identity);
+  const supportedPids = await discoverPids(port);
+  return { protocol, identity, supportedPids };
+}
+
+function requestStyles(info: SessionInfo): RequestStyle[] {
+  return stylesFor(info.identity.stn != null, isCan(info.protocol));
+}
+
+function secondaryPids(info: SessionInfo): PidId[] {
+  const supported = new Set(info.supportedPids);
+  // VOLTAGE is an adapter command, always available.
+  return SECONDARY_PIDS.filter((p) => p === 'VOLTAGE' || supported.size === 0 || supported.has(p));
 }
 
 // Reads the supported-PID bitmasks (0100, 0120, …). An empty result means

@@ -28,7 +28,8 @@ entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-14.
 ## Próximos pasos inmediatos
 
 1. `eas init` + build de desarrollo e instalación en el teléfono de pruebas.
-2. Banco con el B33: confirmar la respuesta a `STI`, la tasa de velocidad y el soporte de `010D1`.
+2. Banco con el B33 (Vehículo → Banco del adaptador): chip y firmware, Hz de velocidad por método y
+   configuración de ahorro de energía. Ver [docs/hardware/adaptador-stn.md](hardware/adaptador-stn.md).
 3. Calibración en auto: confirmar signos de sensores (`gravitySign`, lado landscape) y FOV.
 4. Primer viaje real con el registro de datos técnicos activado.
 

@@ -14,12 +14,12 @@
 export function tokenizeHexBytes(raw: string): string[] {
   const cleaned = raw.replace(/[\r\n>]/g, ' ').trim().toUpperCase();
   const tokens = cleaned.split(/\s+/).filter(Boolean);
-  // Concatenated response (one long token) → re-split into 2-char bytes.
-  const only = tokens[0];
-  if (tokens.length === 1 && only !== undefined && only.length > 2 && only.length % 2 === 0) {
-    return only.match(/.{2}/g) ?? [];
-  }
-  return tokens;
+  // Concatenated bytes (spaces off, ATS0) → re-split each hex run into 2-char
+  // bytes. Per token, not only when the whole response is one token: with
+  // ATS0 two ECUs answer as two runs ("410D32 410D33").
+  return tokens.flatMap((t) =>
+    t.length > 2 && t.length % 2 === 0 && /^[0-9A-F]+$/.test(t) ? (t.match(/.{2}/g) ?? []) : [t],
+  );
 }
 
 // Locates a mode-01 response header ("41 <pidHex>") anywhere in the token

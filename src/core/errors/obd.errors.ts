@@ -72,6 +72,16 @@ export class NoDataError extends OBDientError {
   }
 }
 
+// The adapter rebooted on its own ("LV RESET": supply brown-out, typically while
+// the engine cranks). Every setting sent since connect is gone; the session
+// must be initialised again before the next request means anything.
+export class AdapterResetError extends OBDientError {
+  readonly code = 'ELM_ADAPTER_RESET';
+  constructor(readonly command: string | null) {
+    super(`Adapter reset itself${command ? ` during "${command}"` : ''}`);
+  }
+}
+
 export class ParseError extends OBDientError {
   readonly code = 'ELM_PARSE_ERROR';
   constructor(readonly rawResponse: string, cause?: unknown) {

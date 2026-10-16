@@ -1,11 +1,13 @@
 // OBD adapter: scan, connect, and the live telemetry the AR uses.
 
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
+import { formatBench } from '@/data/obd/adapter-bench';
 import { looksLikeObd } from '@/data/obd/obd-manager';
+import type { RequestStyle } from '@/data/obd/telemetry-poller';
 import type { ScannedDevice } from '@/data/adapters/ble-transport';
 import { ConnectionStatus } from '@/presentation/components/feedback/ConnectionStatus';
 import { MetricCard } from '@/presentation/components/dashboard/MetricCard';
@@ -18,8 +20,17 @@ import { useOBDStore } from '@/store/obdStore';
 
 const SCAN_MS = 10_000;
 
+const STYLE_LABEL: Record<RequestStyle, string> = {
+  stpx: 'STPX (STN, rápido)',
+  count: 'conteo de respuestas (CAN)',
+  plain: 'estándar (lento)',
+};
+
 export default function VehicleScreen() {
-  const { connectionState, deviceName, session, parameters, speedRateHz, error } = useOBDStore();
+  const { connectionState, deviceName, session, parameters, speedRateHz, requestStyle, adapterResets, error } =
+    useOBDStore();
+  const [bench, setBench] = useState<string | null>(null);
+  const [benching, setBenching] = useState(false);
   const [devices, setDevices] = useState<ScannedDevice[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -47,6 +58,18 @@ export default function VehicleScreen() {
   };
 
   useEffect(() => endScan, []);
+
+  const runBench = async () => {
+    setBenching(true);
+    setBench(null);
+    try {
+      setBench(formatBench(await container.obd.runBench()));
+    } catch (err) {
+      setBench(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setBenching(false);
+    }
+  };
 
   const connect = (d: ScannedDevice) => {
     endScan();
@@ -88,7 +111,35 @@ export default function VehicleScreen() {
             <Info label="Chip" value={session.identity.stn ?? `${session.identity.elm || 'ELM327'} (sin comandos STN)`} />
             <Info label="Protocolo" value={session.protocol} />
             <Info label="PIDs de motor" value={session.supportedPids.length ? session.supportedPids.join(', ') : 'sin descubrir'} />
-            <View className="mt-4">
+            <Info label="Petición de velocidad" value={requestStyle ? STYLE_LABEL[requestStyle] : '—'} />
+            {adapterResets > 0 && (
+              <Info label="Reinicios por bajo voltaje" value={`${adapterResets} (recuperados)`} />
+            )}
+
+            <View className="mt-6">
+              <SectionHeader title="Banco del adaptador" />
+              <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
+                Identifica el chip y mide la velocidad real con cada método de petición. Pausa la telemetría unos
+                segundos: hazlo con el auto detenido y el motor en marcha.
+              </Text>
+              <PillButton label={benching ? 'Midiendo…' : 'Ejecutar banco'} onPress={runBench} loading={benching} variant="secondary" />
+              {bench && (
+                <View className="bg-brand-surface rounded-2xl p-3 mt-3">
+                  <Text selectable className="text-brand-text font-mono text-[10px] leading-4">
+                    {bench}
+                  </Text>
+                  <View className="mt-3">
+                    <PillButton
+                      label="Compartir resultado"
+                      variant="secondary"
+                      onPress={() => void Share.share({ message: `OBDient2 · banco ${deviceName ?? ''}\n\n${bench}` })}
+                    />
+                  </View>
+                </View>
+              )}
+            </View>
+
+            <View className="mt-6">
               <PillButton label="Desconectar" variant="destructive" onPress={() => void container.obd.disconnect()} />
             </View>
           </>
