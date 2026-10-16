@@ -24,7 +24,9 @@
         "android.permission.CAMERA",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN"
       ],
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
@@ -84,7 +86,11 @@
     "extra": {
       "router": {
         "root": "src/app"
+      },
+      "eas": {
+        "projectId": "26823ce6-4f24-4238-b7c5-ad94c9a92424"
       }
-    }
+    },
+    "owner": "gazzimons-team"
   }
 }
