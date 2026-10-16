@@ -6,6 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { Camera, GeoJSONSource, Layer, Map, NativeUserLocation, type CameraRef } from '@maplibre/maplibre-react-native';
 import { container } from '@/data/container';
 import type { Place } from '@/domain/navigation/route';
@@ -53,13 +54,26 @@ export default function RouteScreen() {
     };
   }, [query]);
 
-  // "Where am I" first: jump to the first fix. MapLibre's own tracking only
-  // starts once it has the location permission, which expo-location asks for
-  // after the map is already up — so do not rely on it for the opening view.
+  // "Where am I" first. Without a centre the map opens on 0,0 — open ocean,
+  // a blue screen. MapLibre's own tracking only starts once it has the
+  // location permission, which expo-location asks for after the map is up,
+  // so do not rely on it: jump to the last known position right away (cached
+  // by the OS, instant), then to the first real fix.
+  const centerOn = (lat: number, lng: number) =>
+    cameraRef.current?.jumpTo({ center: [lng, lat], zoom: 16 });
+
+  useEffect(() => {
+    Location.getLastKnownPositionAsync()
+      .then((last) => {
+        if (last && !centered.current) centerOn(last.coords.latitude, last.coords.longitude);
+      })
+      .catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     if (!ego || centered.current || route) return;
     centered.current = true;
-    cameraRef.current?.jumpTo({ center: [ego.position.lng, ego.position.lat], zoom: 16 });
+    centerOn(ego.position.lat, ego.position.lng);
   }, [ego, route]);
 
   // Frame the whole route when it arrives.
@@ -202,6 +216,18 @@ export default function RouteScreen() {
           </Text>
         )}
       </SafeAreaView>
+
+      {/* Centre on me */}
+      {ego && (
+        <Pressable
+          onPress={() => centerOn(ego.position.lat, ego.position.lng)}
+          hitSlop={8}
+          className="absolute right-4 w-11 h-11 rounded-full bg-brand-surface border border-brand-border items-center justify-center active:opacity-60"
+          style={{ bottom: destination ? 236 : 24 }}
+        >
+          <MaterialCommunityIcons name="crosshairs-gps" size={20} color={COLORS.mint} />
+        </Pressable>
+      )}
 
       {/* Route card */}
       {destination && (
