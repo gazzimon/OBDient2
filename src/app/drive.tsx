@@ -1,5 +1,6 @@
 // AR guidance: camera + route drawn on the road + HUD. Landscape, screen on.
 
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -18,6 +19,7 @@ export default function DriveScreen() {
   useSensorsWhileFocused();
   const router = useRouter();
   const route = useNavStore((s) => s.route);
+  const [ribbonVisible, setRibbonVisible] = useState(false);
 
   const exit = () => {
     navigation.stop();
@@ -35,8 +37,10 @@ export default function DriveScreen() {
 
   return (
     <View className="flex-1 bg-black">
-      <CameraStage>{({ width, height }) => <ArOverlay width={width} height={height} />}</CameraStage>
-      <DriveHud onExit={exit} />
+      <CameraStage>
+        {({ width, height }) => <ArOverlay width={width} height={height} onRibbonVisible={setRibbonVisible} />}
+      </CameraStage>
+      <DriveHud onExit={exit} ribbonVisible={ribbonVisible} />
     </View>
   );
 }

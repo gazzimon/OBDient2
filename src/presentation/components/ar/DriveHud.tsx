@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { instructionEs } from '@/domain/navigation/guidance';
+import { AR_BLOCKER_ES, arBlocker, headingGuide } from '@/domain/navigation/heading-guide';
 import type { Maneuver } from '@/domain/navigation/route';
 import { formatDistance, formatEta } from '@/presentation/format';
 import { COLORS } from '@/presentation/theme';
@@ -36,7 +37,7 @@ export function maneuverIcon(m: Maneuver): IconName {
   }
 }
 
-export function DriveHud({ onExit }: { onExit: () => void }) {
+export function DriveHud({ onExit, ribbonVisible }: { onExit: () => void; ribbonVisible: boolean }) {
   const progress = useNavStore((s) => s.progress);
   const route = useNavStore((s) => s.route);
   const status = useNavStore((s) => s.status);
@@ -48,6 +49,18 @@ export function DriveHud({ onExit }: { onExit: () => void }) {
   const debug = useSettingsStore((s) => s.debugOverlay);
 
   const m = progress?.nextManeuver ?? null;
+  const guide =
+    route && progress && ego?.headingValid ? headingGuide(route, progress, ego.position, ego.headingDeg) : null;
+  const blocker =
+    status === 'arrived'
+      ? null
+      : arBlocker({
+          hasPosition: ego != null,
+          hasPose: pose != null,
+          headingValid: ego?.headingValid ?? false,
+          hasProgress: progress != null,
+          ribbonVisible,
+        });
   const remainingS =
     route && progress ? (route.durationS * progress.remainingM) / Math.max(1, route.distanceM) : null;
 
@@ -88,6 +101,26 @@ export function DriveHud({ onExit }: { onExit: () => void }) {
           <MaterialCommunityIcons name="close" size={22} color={COLORS.text} />
         </Pressable>
       </View>
+
+      {/* Direction arrow: always there, AR or not. */}
+      {guide && status !== 'arrived' && (
+        <View pointerEvents="none" className="self-center items-center mt-1">
+          <View
+            className="w-16 h-16 rounded-full bg-brand-surface/80 border border-brand-teal items-center justify-center"
+            style={{ transform: [{ rotate: `${guide.relativeDeg}deg` }] }}
+          >
+            <MaterialCommunityIcons name="navigation" size={38} color={COLORS.mint} />
+          </View>
+          {Math.abs(guide.relativeDeg) > 120 && (
+            <Text className="text-brand-amber font-mono text-xs mt-1">Da la vuelta</Text>
+          )}
+        </View>
+      )}
+      {blocker && (
+        <View pointerEvents="none" className="self-center mt-2 px-3 py-1.5 rounded-full bg-brand-surface/90 border border-brand-border">
+          <Text className="text-brand-muted font-mono text-xs">{AR_BLOCKER_ES[blocker]}</Text>
+        </View>
+      )}
 
       {progress?.offRoute && (
         <View className="self-center mt-2 px-3 py-1.5 rounded-full bg-brand-surface/90 border border-brand-amber">

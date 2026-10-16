@@ -38,7 +38,9 @@ export interface PollerOptions {
   readonly now?: () => number;
 }
 
-export const SECONDARY_PIDS: readonly PidId[] = ['RPM', 'TPS', 'COOLANT_TEMP', 'VOLTAGE', 'ENGINE_LOAD'];
+// Everything the Tablero shows besides speed. Each cycle reads speed plus ONE
+// of these, so adding PIDs slows how often each refreshes, not speed itself.
+export const SECONDARY_PIDS: readonly PidId[] = ['RPM', 'TPS', 'COOLANT_TEMP', 'VOLTAGE', 'ENGINE_LOAD', 'MAF', 'IAT'];
 
 // Styles worth trying for this adapter and bus.
 export function stylesFor(stn: boolean, can: boolean): RequestStyle[] {

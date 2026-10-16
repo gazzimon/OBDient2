@@ -10,9 +10,6 @@ import { looksLikeObd } from '@/data/obd/obd-manager';
 import type { RequestStyle } from '@/data/obd/telemetry-poller';
 import type { ScannedDevice } from '@/data/adapters/ble-transport';
 import { ConnectionStatus } from '@/presentation/components/feedback/ConnectionStatus';
-import { MetricCard } from '@/presentation/components/dashboard/MetricCard';
-import { RPMGauge } from '@/presentation/components/gauges/RPMGauge';
-import { SpeedGauge } from '@/presentation/components/gauges/SpeedGauge';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
@@ -27,7 +24,7 @@ const STYLE_LABEL: Record<RequestStyle, string> = {
 };
 
 export default function VehicleScreen() {
-  const { connectionState, deviceName, session, parameters, speedRateHz, requestStyle, adapterResets, error } =
+  const { connectionState, deviceName, session, speedRateHz, requestStyle, adapterResets, error } =
     useOBDStore();
   const [bench, setBench] = useState<string | null>(null);
   const [benching, setBenching] = useState(false);
@@ -93,21 +90,8 @@ export default function VehicleScreen() {
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 24 }}>
         {connectionState === 'connected' && session ? (
           <>
-            <SectionHeader title="En vivo" />
-            <View className="flex-row justify-between mb-4">
-              <SpeedGauge param={parameters.SPEED} />
-              <RPMGauge param={parameters.RPM} />
-            </View>
-            <View className="flex-row gap-3 mb-3">
-              <MetricCard icon="speedometer-slow" label="Acelerador" param={parameters.TPS} />
-              <MetricCard icon="thermometer" label="Refrigerante" param={parameters.COOLANT_TEMP} />
-            </View>
-            <View className="flex-row gap-3 mb-6">
-              <MetricCard icon="car-battery" label="Batería" param={parameters.VOLTAGE} />
-              <MetricCard icon="engine-outline" label="Carga" param={parameters.ENGINE_LOAD} />
-            </View>
-
             <SectionHeader title="Adaptador" />
+            <Text className="text-brand-muted font-mono text-[10px] mb-2">Los relojes en vivo están en la pestaña Tablero.</Text>
             <Info label="Chip" value={session.identity.stn ?? `${session.identity.elm || 'ELM327'} (sin comandos STN)`} />
             <Info label="Protocolo" value={session.protocol} />
             <Info label="PIDs de motor" value={session.supportedPids.length ? session.supportedPids.join(', ') : 'sin descubrir'} />

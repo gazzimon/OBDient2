@@ -26,7 +26,9 @@ export default function RouteScreen() {
   const mapStyleUrl = useSettingsStore((s) => s.mapStyleUrl);
   const { destination, route, status, error } = useNavStore();
   const ego = useEgoStore((s) => s.ego);
+  const locationOk = useEgoStore((s) => s.location === 'ok');
   const cameraRef = useRef<CameraRef>(null);
+  const centered = useRef(false);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Place[]>([]);
@@ -50,6 +52,15 @@ export default function RouteScreen() {
       ctrl.abort();
     };
   }, [query]);
+
+  // "Where am I" first: jump to the first fix. MapLibre's own tracking only
+  // starts once it has the location permission, which expo-location asks for
+  // after the map is already up — so do not rely on it for the opening view.
+  useEffect(() => {
+    if (!ego || centered.current || route) return;
+    centered.current = true;
+    cameraRef.current?.jumpTo({ center: [ego.position.lng, ego.position.lat], zoom: 16 });
+  }, [ego, route]);
 
   // Frame the whole route when it arrives.
   useEffect(() => {
@@ -109,9 +120,9 @@ export default function RouteScreen() {
         <Camera
           ref={cameraRef}
           initialViewState={{ zoom: 15 }}
-          {...(route ? {} : { trackUserLocation: 'default' as const })}
+          {...(route || !locationOk ? {} : { trackUserLocation: 'default' as const })}
         />
-        <NativeUserLocation mode="course" />
+        {locationOk && <NativeUserLocation mode="course" />}
         {routeShape && (
           <GeoJSONSource id="route" data={routeShape}>
             <Layer

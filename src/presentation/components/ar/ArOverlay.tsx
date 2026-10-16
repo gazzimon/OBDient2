@@ -1,7 +1,7 @@
 // Paints the AR scene (route ribbon + maneuver marker) over the camera frame.
 // All geometry comes from domain/ar; this component only draws.
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import Svg, { Circle, Line, Polygon, Polyline } from 'react-native-svg';
 import { buildOverlay } from '@/domain/ar/route-overlay';
 import { horizonY, type CameraPose, type Intrinsics, type Pixel } from '@/domain/ar/camera-model';
@@ -13,9 +13,11 @@ import { useSettingsStore } from '@/store/settingsStore';
 interface Props {
   width: number;
   height: number;
+  // Reports whether any of the route is on screen, so the HUD can say why not.
+  onRibbonVisible?: (visible: boolean) => void;
 }
 
-export function ArOverlay({ width, height }: Props) {
+export function ArOverlay({ width, height, onRibbonVisible }: Props) {
   const ego = useEgoStore((s) => s.ego);
   const pose = useEgoStore((s) => s.pose);
   const route = useNavStore((s) => s.route);
@@ -36,6 +38,8 @@ export function ArOverlay({ width, height }: Props) {
       : null;
 
   const scene = route && progress && ego && cameraPose ? buildOverlay(route, progress, ego.position, cameraPose, intr) : null;
+  const visible = scene != null && scene.ribbon.some((p) => p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height);
+  useEffect(() => onRibbonVisible?.(visible), [visible, onRibbonVisible]);
 
   return (
     <Svg width={width} height={height} pointerEvents="none">
