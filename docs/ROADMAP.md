@@ -45,5 +45,5 @@ Se avanza con **E4 (detector en el teléfono)**.
 
 - **Servidor**: Qwen-Drive solo como ayuda opcional (ADR-0001). Su mejor uso inicial es el modo
   diferido (revisión de viajes, etiquetado), no la guía en vivo.
-- **Detector**: no Ultralytics (AGPL), no DEIMv2 (licencia propia). Candidatos: YOLOX-Nano, EfficientDet-Lite0, D-FINE-N (pesos COCO). Ver [research/deteccion-en-telefono.md](research/deteccion-en-telefono.md).
+- **Detector**: Ultralytics YOLO nano destilado desde un maestro en la Z440; revisión de licencias diferida hasta antes de publicar (ADR-0005). Investigación en [research/deteccion-en-telefono.md](research/deteccion-en-telefono.md).
 - **Rutas y teselas de producción**: OSRM + Photon autoalojados o un proveedor (ADR-0003).
