@@ -5,7 +5,7 @@ entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-14.
 
 | Etapa | Qué entrega | Estado |
 |---|---|---|
-| **E0 Telemetría** | Conexión BLE con el Starcharm B33, detección STN, velocidad a la mayor tasa posible | ✅ código · ⏳ banco con B33 |
+| **E0 Telemetría** | Conexión BLE con el adaptador Starcharm, detección STN, velocidad a la mayor tasa posible | ✅ B35 en banco: 24 Hz (2026-10-17) |
 | **E1 Ego-estado** | Fusión GPS + IMU + OBD: posición suave, rumbo, aceleración, historia en marco ego | ✅ código · ⏳ campo |
 | **E2 Navegación** | Destino por búsqueda o mapa, ruta, progreso, voz, desvío y recálculo | ✅ código · ⏳ campo |
 | **E3 AR anclada** | Ruta dibujada sobre la calle, marcador de maniobra, calibración del soporte | ✅ código · ⏳ calibración real |

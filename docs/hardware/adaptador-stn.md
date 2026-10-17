@@ -53,6 +53,32 @@ Preguntas que responde en el primer uso:
 - ¿Cuántos Hz de velocidad da `STPX` frente a `010D1` frente al estándar?
 - ¿Se duerme solo si queda enchufado? En el `STSLCS`, mirar `UART SLEEP` y `VCHG WAKE`.
 
+## Resultados de banco
+
+### Starcharm B35, 2026-10-17 (auto con CAN 29 bits / 500 kbps, motor en marcha)
+
+| | |
+|---|---|
+| Enlace | **Bluetooth LE**: conecta sin cambios en la app |
+| `ATI` / `AT@1` | `ELM327 v1.5` / `OBD Scanner` |
+| `STI` / `STIX` | `STN1040 v1.3.6` / `[2024.02.01]` |
+| `STDI` / `STMFR` / `STSN` | `OBDII r3.1.3` / `OBD Scanner` / sin número de serie |
+| `STPRS` | `AUTO, ISO 15765-4 (CAN 29/500)` |
+| `STVR` | 14,53 V (alternador cargando) |
+| `STSLCS` | Modo nativo; duerme con 600 s de inactividad o <13 V durante 3 h; despierta por actividad UART (conexión BLE). La respuesta llegó truncada: falta `VCHG WAKE` |
+| Velocidad `STPX d:010D, r:1` | **24,2 Hz** (41 ms/pet, 20/20) |
+| Velocidad `010D1` | 23,8 Hz (42 ms/pet, 20/20) |
+| Velocidad `010D` | 15,0 Hz (66 ms/pet, 20/20) |
+
+Conclusiones:
+- **El STN1040 no es un chip OBDLink** (no figura en la familia del manual): es firmware compatible
+  del fabricante. Implementa lo que usamos (`STI`, `STPX`, `STSLCS`, `STVR`).
+- `STPX` y el sufijo de conteo empatan: el límite es la latencia BLE (~40 ms), no el adaptador.
+  Ganan un 60 % sobre la petición estándar.
+- Con un PID secundario por ciclo, la velocidad al navegar queda en ~12 Hz: más del doble del
+  objetivo del MVP.
+- No drena la batería si queda enchufado.
+
 ## Ideas para más adelante
 
 - **Ángulo de volante por escucha del bus CAN** (`STM` + `STFPA`, en modo silencioso `STCMM 0`). En
