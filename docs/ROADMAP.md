@@ -25,6 +25,13 @@ entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-14.
 - Desvío detectado y ruta recalculada en ≤ 10 s, con conexión.
 - Sin OBD, la app navega igual con GPS. Sin conexión, la ruta ya calculada sigue guiando.
 
+## Decisión 2026-10-17
+
+La prueba en la calle (calibración + primer viaje, criterios de AR) se **posterga** hasta que el
+proyecto esté más avanzado: hoy aportaría poco. E0 queda validada en banco con el B35 (24 Hz) y el
+Tablero probado en el auto. El registro de viaje y el `replay` siguen listos para cuando se haga.
+Se avanza con **E4 (detector en el teléfono)**.
+
 ## Próximos pasos inmediatos
 
 1. `eas init` + build de desarrollo e instalación en el teléfono de pruebas.
