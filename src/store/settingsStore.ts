@@ -59,6 +59,11 @@ interface SettingsState {
   disclaimerAccepted: boolean;
   // Shows pose/heading/rates over the AR view — a field-testing aid.
   debugOverlay: boolean;
+  // On-device detector (E4): alerts for vehicles, pedestrians, cyclists.
+  detectorEnabled: boolean;
+  // Accelerator for the detector; the bench says which one is fastest.
+  detectorDelegate: 'android-gpu' | 'nnapi' | 'cpu';
+  detectorModelId: string;
 
   setLastDevice: (id: string, name: string | null) => void;
   setCalibration: (patch: Partial<ArCalibration>) => void;
@@ -68,6 +73,7 @@ interface SettingsState {
   setRecordTrips: (on: boolean) => void;
   setDisclaimerAccepted: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
+  setDetector: (patch: Partial<Pick<SettingsState, 'detectorEnabled' | 'detectorDelegate' | 'detectorModelId'>>) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -81,6 +87,9 @@ export const useSettingsStore = create<SettingsState>()(
       recordTrips: true,
       disclaimerAccepted: false,
       debugOverlay: false,
+      detectorEnabled: true,
+      detectorDelegate: 'android-gpu',
+      detectorModelId: 'yolo26n-fp16',
 
       setLastDevice: (id, name) => set({ lastDeviceId: id, lastDeviceName: name }),
       setCalibration: (patch) => set((s) => ({ calibration: { ...s.calibration, ...patch } })),
@@ -90,6 +99,7 @@ export const useSettingsStore = create<SettingsState>()(
       setRecordTrips: (on) => set({ recordTrips: on }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
+      setDetector: (patch) => set(patch),
     }),
     {
       name: 'obdient2-settings',
@@ -105,6 +115,9 @@ export const useSettingsStore = create<SettingsState>()(
         recordTrips: s.recordTrips,
         disclaimerAccepted: s.disclaimerAccepted,
         debugOverlay: s.debugOverlay,
+        detectorEnabled: s.detectorEnabled,
+        detectorDelegate: s.detectorDelegate,
+        detectorModelId: s.detectorModelId,
       }),
       // New calibration fields get their defaults instead of `undefined`.
       merge: (persisted, current) => {

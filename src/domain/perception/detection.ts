@@ -51,6 +51,7 @@ const COCO: Readonly<Record<number, ObjectClass>> = {
 };
 
 export function cocoClass(index: number): ObjectClass | null {
+  'worklet';
   return COCO[index] ?? null;
 }
 

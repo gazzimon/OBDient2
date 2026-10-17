@@ -68,3 +68,58 @@ services:
     logging:
       driver: json-file
       options: {max-size: "50m", max-file: "3"}
+
+  # ── CPU: rutas y búsqueda (perfil propio: sigue en pie aunque se pare lo de GPU) ──
+  # Datos preparados por server/maps/prepare.sh en ~/obdient-stack/maps.
+  # Solo LAN: la K16 (Caddy) es la única entrada desde internet.
+  osrm:
+    profiles: [cpu]
+    image: ghcr.io/project-osrm/osrm-backend:v26.10.0-debian
+    container_name: osrm
+    network_mode: host
+    restart: unless-stopped
+    cpus: 2
+    mem_limit: 4g
+    volumes:
+      - /home/fiui-pss/obdient-stack/maps/osrm:/data:ro
+    command:
+      - osrm-routed
+      - --algorithm=mld
+      - --ip=192.168.100.210
+      - --port=5000
+      - --max-table-size=1000
+      - /data/argentina-latest.osrm
+    logging:
+      driver: json-file
+      options: {max-size: "20m", max-file: "3"}
+
+  photon:
+    profiles: [cpu]
+    image: eclipse-temurin:21-jre
+    container_name: photon
+    network_mode: host
+    restart: unless-stopped
+    cpus: 2
+    mem_limit: 6g
+    volumes:
+      - /home/fiui-pss/obdient-stack/maps/photon:/photon
+    # Photon 1.3: subcomando `serve`; -data-dir contiene photon_data/ (índice Argentina 1.0).
+    command:
+      - java
+      - -Xmx3g
+      - -jar
+      - /photon/photon.jar
+      - serve
+      - -data-dir
+      - /photon
+      - -listen-ip
+      - 192.168.100.210
+      - -listen-port
+      - "2322"
+      - -default-language
+      - es
+      - -j
+      - "2"
+    logging:
+      driver: json-file
+      options: {max-size: "20m", max-file: "3"}

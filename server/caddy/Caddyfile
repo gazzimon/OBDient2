@@ -1,0 +1,26 @@
+# Caddy en la K16 — única entrada desde internet (ADR-0006).
+# Reemplaza /etc/caddy/Caddyfile. Agrega rutas y búsqueda de OBDient2 (servidas
+# por la Z440 en la red local) sin tocar lo existente: todo lo demás sigue
+# yendo al proxy senior de OBDient en :8788.
+#
+#   sudo cp server/caddy/Caddyfile /etc/caddy/Caddyfile
+#   sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy
+#
+# Prueba:
+#   curl "https://obdient.duckdns.org/osrm/route/v1/driving/-58.3816,-34.6037;-58.4370,-34.6070?overview=false"
+#   curl "https://obdient.duckdns.org/photon/api?q=obelisco&limit=1"
+
+obdient.duckdns.org {
+	# OBDient2: rutas (OSRM) y búsqueda (Photon) en la Z440.
+	handle_path /osrm/* {
+		reverse_proxy 192.168.100.210:5000
+	}
+	handle_path /photon/* {
+		reverse_proxy 192.168.100.210:2322
+	}
+
+	# OBDient: proxy senior, como hasta ahora.
+	handle {
+		reverse_proxy localhost:8788
+	}
+}

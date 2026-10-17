@@ -21,11 +21,13 @@ export interface PlanOptions {
 export const DEFAULT_PLAN: PlanOptions = { cropEvery: 3, cropScale: 0.4, cropCenterY: 0.45 };
 
 export function regionForFrame(frameIndex: number, opts: PlanOptions = DEFAULT_PLAN): Region {
+  'worklet';
   if (opts.cropEvery <= 0 || frameIndex % opts.cropEvery !== opts.cropEvery - 1) return FULL_FRAME;
   return centreCrop(opts.cropScale, opts.cropCenterY);
 }
 
 export function centreCrop(scale: number, centerY: number): Region {
+  'worklet';
   const half = scale / 2;
   const cy = Math.min(1 - half, Math.max(half, centerY));
   return { x1: 0.5 - half, y1: cy - half, x2: 0.5 + half, y2: cy + half };

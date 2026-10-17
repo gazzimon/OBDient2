@@ -11,11 +11,19 @@ import type { TripFileInfo } from '@/data/recording/trip-recorder';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
+import { usePerceptionStore } from '@/store/perceptionStore';
 import { DEFAULT_ENDPOINTS, useSettingsStore } from '@/store/settingsStore';
+
+const DELEGATES = [
+  { id: 'android-gpu', label: 'GPU' },
+  { id: 'nnapi', label: 'NNAPI' },
+  { id: 'cpu', label: 'CPU' },
+] as const;
 
 export default function SettingsScreen() {
   const router = useRouter();
   const s = useSettingsStore();
+  const stats = usePerceptionStore((p) => p.stats);
   const [endpoints, setEndpoints] = useState({
     routingUrl: s.routingUrl,
     geocoderUrl: s.geocoderUrl,
@@ -58,6 +66,47 @@ export default function SettingsScreen() {
             <Text className="text-brand-muted font-mono text-[10px]">
               FOV {s.calibration.hfovDeg}° · altura {s.calibration.cameraHeightM} m · cabeceo {s.calibration.pitchOffsetDeg}°
             </Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
+        </Pressable>
+
+        <SectionHeader title="Detector" />
+        <Row label="Alertas de vehículos y peatones">
+          <Switch
+            value={s.detectorEnabled}
+            onValueChange={(on) => s.setDetector({ detectorEnabled: on })}
+            trackColor={{ true: COLORS.mintDark }}
+            thumbColor={COLORS.text}
+          />
+        </Row>
+        <View className="flex-row gap-2 mb-2">
+          {DELEGATES.map((d) => (
+            <Pressable
+              key={d.id}
+              onPress={() => s.setDetector({ detectorDelegate: d.id })}
+              className={`flex-1 rounded-xl py-2 items-center border ${
+                s.detectorDelegate === d.id ? 'border-brand-teal' : 'border-brand-border'
+              } active:opacity-60`}
+            >
+              <Text className={`font-mono text-xs ${s.detectorDelegate === d.id ? 'text-brand-teal' : 'text-brand-muted'}`}>
+                {d.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
+          {stats
+            ? `Último uso: ${stats.inferenceMs.toFixed(0)} ms por imagen (modelo), ${stats.frameMs.toFixed(0)} ms en total, ${stats.fps.toFixed(1)} img/s · ${stats.delegate}`
+            : 'Acelerador del modelo. Las estadísticas aparecen después de usar la guía AR.'}
+        </Text>
+        <Pressable
+          onPress={() => router.push('/cameras')}
+          className="flex-row items-center bg-brand-surface rounded-2xl px-4 py-3 mb-6 active:opacity-60"
+        >
+          <MaterialCommunityIcons name="camera-iris" size={18} color={COLORS.mint} />
+          <View className="ml-3 flex-1">
+            <Text className="text-brand-text font-mono text-sm">Cámaras del teléfono</Text>
+            <Text className="text-brand-muted font-mono text-[10px]">Qué lentes expone este teléfono a las apps</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
         </Pressable>
