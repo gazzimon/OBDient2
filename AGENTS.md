@@ -14,6 +14,7 @@ between majors.
 - **Decisiones de arquitectura:** [docs/ADR/](docs/ADR/README.md)
 - **Adaptador OBD (B33 / familia STN), comandos y banco:** [docs/hardware/adaptador-stn.md](docs/hardware/adaptador-stn.md)
 - **Detección en el teléfono (E4): qué detectar, repos y modelos con licencias:** [docs/research/deteccion-en-telefono.md](docs/research/deteccion-en-telefono.md)
+- **Modelos grandes de conducción para el maestro (monocular):** [docs/research/modelos-maestro-monocular.md](docs/research/modelos-maestro-monocular.md)
 - **Investigación de fondo (Qwen-Drive-1.0):** [docs/research/qwen-drive-1.0.md](docs/research/qwen-drive-1.0.md)
 
 # Reglas del proyecto
