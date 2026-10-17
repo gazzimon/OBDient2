@@ -71,7 +71,7 @@ class PerceptionPipeline {
       frameMs: median(this.frame),
       fps: span > 0 ? (this.times.length - 1) / span : 0,
       delegate: this.delegate,
-    });
+    }, now);
   };
 
   // Pose and intrinsics for metric distance: the same ones the AR uses.

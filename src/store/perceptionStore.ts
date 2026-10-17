@@ -23,9 +23,12 @@ interface PerceptionState {
   leadId: number | null;
   lastAlert: (DriverAlert & { at: number }) | null;
   stats: DetectorStats | null;
+  // When the scene was last published (detector clock, ms). Lets views judge
+  // "recent" without reading the clock during render.
+  updatedAt: number;
 
   setStatus: (status: DetectorStatus, error?: string | null) => void;
-  publish: (objects: readonly PerceivedObject[], leadId: number | null, stats: DetectorStats) => void;
+  publish: (objects: readonly PerceivedObject[], leadId: number | null, stats: DetectorStats, at: number) => void;
   setAlert: (alert: DriverAlert, at: number) => void;
   reset: () => void;
 }
@@ -37,9 +40,10 @@ export const usePerceptionStore = create<PerceptionState>()((set) => ({
   leadId: null,
   lastAlert: null,
   stats: null,
+  updatedAt: 0,
 
   setStatus: (status, error = null) => set({ status, error }),
-  publish: (objects, leadId, stats) => set({ objects, leadId, stats }),
+  publish: (objects, leadId, stats, at) => set({ objects, leadId, stats, updatedAt: at }),
   setAlert: (alert, at) => set({ lastAlert: { ...alert, at } }),
-  reset: () => set({ status: 'off', error: null, objects: [], leadId: null, lastAlert: null, stats: null }),
+  reset: () => set({ status: 'off', error: null, objects: [], leadId: null, lastAlert: null, stats: null, updatedAt: 0 }),
 }));

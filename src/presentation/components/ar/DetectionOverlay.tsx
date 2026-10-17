@@ -13,7 +13,9 @@ export function DetectionOverlay({ width, height }: { width: number; height: num
   const objects = usePerceptionStore((s) => s.objects);
   const leadId = usePerceptionStore((s) => s.leadId);
   const lastAlert = usePerceptionStore((s) => s.lastAlert);
-  const alerting = lastAlert != null && Date.now() - lastAlert.at < ALERT_FRESH_MS ? lastAlert : null;
+  const updatedAt = usePerceptionStore((s) => s.updatedAt);
+  // Fresh relative to the latest detector frame, not the wall clock: render stays pure.
+  const alerting = lastAlert != null && updatedAt - lastAlert.at < ALERT_FRESH_MS ? lastAlert : null;
 
   return (
     <Svg width={width} height={height} pointerEvents="none">
