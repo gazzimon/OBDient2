@@ -20,11 +20,17 @@ por GPU** (la GPU1 es la de lotes). Ninguno de estos modelos corre en el teléfo
 
 | Modelo | Qué hace | ¿Monocular? | Tamaño / GPU | Licencia |
 |---|---|---|---|---|
-| **Alpamayo 1.5 (10B, NVIDIA)** | Razonamiento causal + **trayectoria** de 6,4 s (64 puntos a 10 Hz) con historia de movimiento | **"Cantidad de cámaras flexible"** en la 1.5: es el mejor candidato para trayectoria con una cámara | 8,2B + 2,3B; NVIDIA pide ≥24 GB → justo en la GPU1 | Pesos OpenMDW-1.1 (uso comercial según NVIDIA), código Apache-2.0 *a verificar en el model card* |
-| **MiMo-Embodied-7B (Xiaomi)** | VLM de conducción + robótica: percepción, predicción de estado y planificación **en texto** | Sí: imagen + texto, una imagen alcanza | ~16 GB en BF16 | MIT *a verificar* (visto en un espejo) |
+| **Alpamayo 1.5 (10B, NVIDIA)** | Razonamiento causal + **trayectoria** de 6,4 s (64 puntos a 10 Hz) con historia de movimiento | **"Cantidad de cámaras flexible"** en la 1.5: es el mejor candidato para trayectoria con una cámara | 8,2B + 2,3B; NVIDIA pide ≥24 GB → justo en la GPU1 | Pesos OpenMDW-1.1, código Apache-2.0. **El model card dice "ready for non-commercial use; commercial licensing available upon request"**: para un producto pago hay que pedir licencia a NVIDIA (verificado 2026-10-17). Descarga pública, sin token |
+| **MiMo-Embodied-7B (Xiaomi)** | VLM de conducción + robótica: percepción, predicción de estado y planificación **en texto** | Sí: imagen + texto, una imagen alcanza | ~16 GB en BF16 | MIT (verificado en el model card, 2026-10-17) |
 | **Qwen-Drive-1.0** | El más fuerte en QA de conducción de los gráficos; planificación con 3 cámaras frontales | El QA funciona con una vista; **la planificación espera 3** | ~12 GB en BF16 | Apache-2.0 |
 | AutoVLA (UCLA, NeurIPS 2025) | VLA con acciones tokenizadas, SFT + GRPO | No confirmado | No confirmado | Sin licencia clara en el repo *a verificar* |
 | ReCogDrive (Xiaomi Research, ICLR 2026) | InternVL3-8B + planificador por difusión; NAVSIM 89,6 solo con cámaras | Vistas no confirmadas | ~8B | Pesos anunciados, sin confirmar |
+
+## Para más adelante
+
+- **Alpamayo 2 Super (NVIDIA, 08/2026):** 34–36B, 72 GB pico medidos en una H100 80 GB; validado solo con
+  6–7 cámaras, sin mención de una cámara ni de navegación. No entra en la Z440 (2×24 GB, GPU0 con el chat).
+  Probarlo alquilando una H100 por horas solo si Alpamayo 1.5 rinde bien con una cámara.
 
 ## Cómo encajan en OBDient2
 
