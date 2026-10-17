@@ -4,6 +4,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
 import type { TripFileInfo } from '@/data/recording/trip-recorder';
@@ -82,6 +83,20 @@ export default function SettingsScreen() {
                 </View>
                 <Pressable
                   hitSlop={8}
+                  accessibilityLabel={`Compartir ${t.name}`}
+                  onPress={() =>
+                    void Sharing.shareAsync(container.trips.uri(t.name), {
+                      mimeType: 'text/plain',
+                      dialogTitle: t.name,
+                    }).catch(() => undefined)
+                  }
+                  className="mr-4 active:opacity-60"
+                >
+                  <MaterialCommunityIcons name="share-variant-outline" size={18} color={COLORS.text} />
+                </Pressable>
+                <Pressable
+                  hitSlop={8}
+                  accessibilityLabel={`Borrar ${t.name}`}
                   onPress={() => {
                     container.trips.remove(t.name);
                     refreshTrips();

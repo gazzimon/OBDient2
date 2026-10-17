@@ -3,9 +3,11 @@
 //
 // Buffered in memory and appended every 2 s, so a crash loses at most that.
 // Local only: the log holds the driver's positions and never leaves the phone
-// unless the person exports it. On a development build it can be pulled with
+// unless the person exports it — Settings → Viajes grabados → share (any
+// build), or on a development build:
 //   adb exec-out run-as com.obdient.obdient2 cat files/trips/<name>
-// (Paths.document is the app's files dir on Android).
+// (Paths.document is the app's files dir on Android; run-as needs a
+// debuggable build, so preview/production builds rely on sharing).
 
 import { Directory, File, Paths } from 'expo-file-system';
 import { TRIP_LOG_VERSION, TripLogBuffer, type TripRecord } from '@/domain/recording/trip-log';
@@ -68,6 +70,11 @@ export class TripRecorder {
         return { name: f.name, sizeBytes: info.size ?? 0, modifiedMs: info.modificationTime ?? null };
       })
       .sort((a, b) => b.name.localeCompare(a.name));
+  }
+
+  // file:// URI for the share sheet.
+  uri(name: string): string {
+    return new File(tripsDir(), name).uri;
   }
 
   remove(name: string): void {
