@@ -70,6 +70,7 @@ src/
     ar/            modelo de cámara y escena AR
     fusion/        estimadores de ego-estado, pose de cámara y signo del sensor
     recording/     formato del registro de viaje y su reproducción
+    perception/    detección: seguimiento, distancia, TTC, escena y alertas (E4)
   data/            adaptadores: OBD (BLE/ELM/STN), sensores, OSRM, Photon
   presentation/    componentes, hooks, controlador de navegación
   store/           estado (zustand + MMKV)
