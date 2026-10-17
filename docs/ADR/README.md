@@ -7,6 +7,7 @@
 | [0003](0003-mapas-rutas-y-licencias.md) | Mapas, rutas y licencias para distribuir | Aceptada |
 | [0004](0004-proyeccion-ar-y-fusion.md) | Proyección AR y fusión de sensores | Aceptada |
 | [0005](0005-deteccion-maestro-alumno-multicamara.md) | Detección: maestro en la Z440, alumno en el teléfono, varias cámaras | Aceptada |
+| [0006](0006-z440-turnos-de-gpu.md) | Z440: una GPU en línea, una GPU para lotes | Aceptada |
 
 Formato: contexto → decisión → consecuencias. Una decisión que cambia se reemplaza con un ADR nuevo
 que la referencia; los ADR no se reescriben.

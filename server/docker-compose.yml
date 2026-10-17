@@ -1,0 +1,70 @@
+# OBDient2 — servicios en la Z440 (ADR-0006).
+#
+#   GPU0 · en línea   llm-chat: Qwen3.8-27B INT4, siempre cargado, una sola GPU.
+#   GPU1 · lotes      (próximo) worker del maestro, Qwen-Drive diferido, entrenamiento.
+#   CPU               (próximo) OSRM + Photon, ingesta de fotos.
+#
+# Perfiles: `docker compose --profile online up -d` levanta lo de GPU0.
+# Las GPUs van por UUID (no por índice), como en ~/serve.
+# Red de host: escucha solo en la IP de la LAN; ufw sí filtra el puerto.
+#
+# Desplegar:  scp server/docker-compose.yml fiui-pss@192.168.100.210:~/obdient-stack/
+#             ssh fiui-pss@192.168.100.210 'cd ~/obdient-stack && docker compose --profile online up -d'
+# La clave de la API se lee de ~/obdient-stack/.env (VLLM_API_KEY), copia de ~/serve/.env.
+
+name: obdient
+
+x-gpu0: &gpu0
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ["GPU-8e2f7908-bea0-9010-5bae-78a82a3ca503"]
+            capabilities: [gpu]
+
+services:
+  llm-chat:
+    profiles: [online]
+    <<: *gpu0
+    # vLLM 0.31.0, el mismo digest probado en ~/serve.
+    image: vllm/vllm-openai@sha256:c1c9f6fd5c109ba7f0546a59f5b2f15fb87f64c77782e90a27b648b42a8e67c3
+    container_name: llm-chat
+    network_mode: host
+    ipc: host
+    restart: unless-stopped # si la guardia térmica lo para, NO se reinicia solo
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    environment:
+      - VLLM_API_KEY=${VLLM_API_KEY}
+    volumes:
+      - /home/fiui-pss/models:/models:ro
+    # Una sola GPU (sin TP): el enlace PCIe entre las 3090 no tiene NVLink.
+    # 19 GB de pesos INT4 + caché KV en FP8 con contexto moderado.
+    # --enable-sleep-mode: los pesos pueden pasar a la RAM en segundos para
+    # prestar la GPU a un lote, sin reiniciar el servidor.
+    # Forma de lista: cada argumento llega tal cual (el JSON necesita sus comillas).
+    command:
+      - /models/qwen3.8-27b-int4
+      - --served-model-name=qwen3.8-27b
+      - --host=192.168.100.210
+      - --port=8000
+      - --max-model-len=16384
+      - --gpu-memory-utilization=0.92
+      - --kv-cache-dtype=fp8
+      - --max-num-seqs=8
+      - '--limit-mm-per-prompt={"image":2,"video":0}'
+      - --reasoning-parser=qwen3
+      - --enable-auto-tool-choice
+      - --tool-call-parser=qwen3_coder # el modelo emite <function=…><parameter=…>
+      - --enable-sleep-mode
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://192.168.100.210:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 600s
+    logging:
+      driver: json-file
+      options: {max-size: "50m", max-file: "3"}

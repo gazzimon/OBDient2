@@ -1,0 +1,11 @@
+# Guardia térmica del chat (copia del patrón de ~/.config/systemd/user/vllm-guard.service).
+# Instalar: cp server/llm-chat-guard.service ~/.config/systemd/user/ &&
+#           systemctl --user daemon-reload && systemctl --user enable --now llm-chat-guard
+[Unit]
+Description=Guardia térmica de llm-chat (OBDient2)
+[Service]
+ExecStart=%h/serve/guard.sh llm-chat
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=default.target
