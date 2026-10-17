@@ -177,8 +177,7 @@ export default function SettingsScreen() {
 
         <SectionHeader title="Servicios" />
         <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
-          Los servidores públicos por defecto son solo para desarrollo. Para distribuir la app, apunta a servidores
-          propios (por ejemplo OSRM y Photon en la Z440) o a un proveedor.
+          Por defecto, rutas y búsqueda propias (OSRM y Photon de Argentina en la Z440, vía obdient.duckdns.org).
         </Text>
         <Field label="Rutas (OSRM)" value={endpoints.routingUrl} onChange={(v) => setEndpoints((e) => ({ ...e, routingUrl: v }))} />
         <Field label="Búsqueda (Photon)" value={endpoints.geocoderUrl} onChange={(v) => setEndpoints((e) => ({ ...e, geocoderUrl: v }))} />

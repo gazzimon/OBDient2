@@ -37,12 +37,19 @@ export const DEFAULT_CALIBRATION: ArCalibration = {
   gravitySign: 1,
 };
 
-// Development defaults. Public demo servers forbid production traffic: a
-// distributed build must override these (self-hosted or a provider). ADR-0003.
+// Own servers: OSRM + Photon (Argentina) on the Z440, reached through Caddy
+// on the K16 (ADR-0006). The public demo servers forbid production traffic.
 export const DEFAULT_ENDPOINTS = {
-  routingUrl: 'https://router.project-osrm.org',
-  geocoderUrl: 'https://photon.komoot.io',
+  routingUrl: 'https://obdient.duckdns.org/osrm',
+  geocoderUrl: 'https://obdient.duckdns.org/photon',
   mapStyleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+};
+
+// Old defaults saved by earlier installs: moved to the new defaults on load.
+// A URL the person typed is not touched.
+const SUPERSEDED: Readonly<Record<string, string>> = {
+  'https://router.project-osrm.org': DEFAULT_ENDPOINTS.routingUrl,
+  'https://photon.komoot.io': DEFAULT_ENDPOINTS.geocoderUrl,
 };
 
 interface SettingsState {
@@ -122,7 +129,14 @@ export const useSettingsStore = create<SettingsState>()(
       // New calibration fields get their defaults instead of `undefined`.
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<SettingsState>;
-        return { ...current, ...p, calibration: { ...DEFAULT_CALIBRATION, ...p.calibration } };
+        const upgrade = (url: string | undefined) => (url && SUPERSEDED[url]) ?? url;
+        return {
+          ...current,
+          ...p,
+          calibration: { ...DEFAULT_CALIBRATION, ...p.calibration },
+          routingUrl: upgrade(p.routingUrl) ?? current.routingUrl,
+          geocoderUrl: upgrade(p.geocoderUrl) ?? current.geocoderUrl,
+        };
       },
     },
   ),
