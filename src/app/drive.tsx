@@ -61,8 +61,11 @@ export default function DriveScreen() {
   const detectorDelegate = useSettingsStore((s) => s.detectorDelegate);
   const detectorModelId = useSettingsStore((s) => s.detectorModelId);
   const manifest = useMemo(() => detectorModel(detectorModelId), [detectorModelId]);
-  const { frameOutput } = useDetector(manifest, detectorDelegate, detectorEnabled && route != null);
-  const outputs = useMemo(() => (detectorEnabled ? [frameOutput] : []), [detectorEnabled, frameOutput]);
+  // Frames for the teacher models ride on the same output, detector or not.
+  const captureFrames = useSettingsStore((s) => s.recordTrips && s.recordFrames) && route != null;
+  const { frameOutput } = useDetector(manifest, detectorDelegate, detectorEnabled && route != null, captureFrames);
+  const useOutput = detectorEnabled || captureFrames;
+  const outputs = useMemo(() => (useOutput ? [frameOutput] : []), [useOutput, frameOutput]);
 
   const exit = () => {
     navigation.stop();

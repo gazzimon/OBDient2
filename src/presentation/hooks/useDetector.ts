@@ -1,4 +1,5 @@
-// Camera frames → detector → perception pipeline.
+// Camera frames → detector → perception pipeline (and, optionally, frames
+// kept for the trip log: domain/recording/frame-capture).
 //
 // Returns a VisionCamera frame output to attach to the <Camera>. On the camera
 // thread, per frame: pick the region (full frame or virtual telephoto),
@@ -13,6 +14,9 @@ import { useFrameOutput, type Frame } from 'react-native-vision-camera';
 import { createSynchronizable, scheduleOnRN } from 'react-native-worklets';
 import { allocateInput, outputToFloat, type DetectorManifest } from '@/data/perception/detector-model';
 import { pixelSourceFromFrame } from '@/data/perception/frame-source';
+import type { CapturedFrame } from '@/data/recording/trip-recorder';
+import { container } from '@/data/container';
+import { DEFAULT_CAPTURE, captureDecision, initialCaptureState, packRows } from '@/domain/recording/frame-capture';
 import { DEFAULT_PLAN, regionForFrame } from '@/domain/perception/inference-plan';
 import { fillInput } from '@/domain/perception/tensor';
 import { decodeYolo, type DecodeOptions } from '@/domain/perception/yolo-decode';
@@ -24,10 +28,13 @@ export type DetectorDelegate = TensorflowModelDelegate | 'cpu';
 // 16:9 like the AR preview, enough pixels for the virtual-telephoto crop.
 const FRAME_RESOLUTION = { width: 1280, height: 720 };
 
-export function useDetector(manifest: DetectorManifest, delegate: DetectorDelegate, enabled: boolean) {
+// `capture`: keep frames for the trip log (only lands while a trip is recorded).
+export function useDetector(manifest: DetectorManifest, delegate: DetectorDelegate, enabled: boolean, capture = false) {
   const plugin = useTensorflowModel(manifest.source, delegate === 'cpu' ? [] : [delegate]);
   const model = plugin.state === 'loaded' ? plugin.model : undefined;
   const frameIndex = useMemo(() => createSynchronizable(0), []);
+  const captureState = useMemo(() => createSynchronizable(initialCaptureState()), []);
+  const onCapture = container.trips.saveFrame;
 
   useEffect(() => {
     const store = usePerceptionStore.getState();
@@ -54,20 +61,44 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
   const onFrame = useCallback(
     (frame: Frame) => {
       'worklet';
-      if (model == null || !enabled) {
+      if ((model == null || !enabled) && !capture) {
         frame.dispose();
         return;
       }
       const t0 = performance.now();
-      const i = frameIndex.getDirty();
-      frameIndex.setBlocking(i + 1);
-      const region = regionForFrame(i, DEFAULT_PLAN);
-
       const src = pixelSourceFromFrame(frame);
       if (src == null) {
         frame.dispose();
         return;
       }
+
+      if (capture) {
+        const now = Date.now();
+        const cs = captureState.getDirty();
+        const keep = captureDecision(cs, now, DEFAULT_CAPTURE);
+        if (keep) {
+          captureState.setBlocking(cs);
+          const shot: CapturedFrame = {
+            buffer: packRows(src.data, src.width, src.height, src.bytesPerRow, src.bytesPerPixel),
+            width: src.width,
+            height: src.height,
+            pixelFormat: src.bytesPerPixel === 3 ? 'RGB' : src.rOffset === 2 ? 'BGRA' : 'RGBA',
+            orientation: String(src.orientation),
+            tMs: now,
+            burst: keep.burst,
+            index: keep.index,
+          };
+          scheduleOnRN(onCapture, shot);
+        }
+      }
+      if (model == null || !enabled) {
+        frame.dispose();
+        return;
+      }
+
+      const i = frameIndex.getDirty();
+      frameIndex.setBlocking(i + 1);
+      const region = regionForFrame(i, DEFAULT_PLAN);
       const input = allocateInput(manifest);
       const lb = fillInput(src, region, manifest.inputSize, manifest.input, input);
       frame.dispose(); // pixels copied into the tensor; free the camera buffer early
@@ -87,7 +118,7 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
       };
       scheduleOnRN(onResult, result);
     },
-    [model, enabled, manifest, decode, frameIndex, onResult],
+    [model, enabled, capture, manifest, decode, frameIndex, captureState, onCapture, onResult],
   );
 
   const frameOutput = useFrameOutput({

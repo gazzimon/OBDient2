@@ -34,6 +34,9 @@ export type TripRecord =
     }
   // Route progress
   | { k: 'nav'; t: number; off: number; xt: number; rem: number; offRoute: boolean }
+  // Camera frame kept for the teacher models: JPEG path relative to the log,
+  // pixel orientation as delivered (rotate on the PC), burst start + index.
+  | { k: 'frm'; t: number; f: string; w: number; h: number; o: string; b: number; i: number }
   // Discrete events: voice prompts, reroutes, arrival, adapter resets…
   | { k: 'ev'; t: number; name: string; data?: Record<string, unknown> };
 

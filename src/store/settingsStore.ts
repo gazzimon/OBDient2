@@ -63,6 +63,8 @@ interface SettingsState {
   // Local trip log while navigating (domain/recording). On while the MVP is
   // being field-tested: it is how AR problems get diagnosed afterwards.
   recordTrips: boolean;
+  // Camera frames in the trip log (bursts, ~1 GB/h) for the teacher models.
+  recordFrames: boolean;
   disclaimerAccepted: boolean;
   // Shows pose/heading/rates over the AR view — a field-testing aid.
   debugOverlay: boolean;
@@ -78,6 +80,7 @@ interface SettingsState {
   setEndpoints: (patch: Partial<typeof DEFAULT_ENDPOINTS>) => void;
   setVoiceEnabled: (on: boolean) => void;
   setRecordTrips: (on: boolean) => void;
+  setRecordFrames: (on: boolean) => void;
   setDisclaimerAccepted: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
   setDetector: (patch: Partial<Pick<SettingsState, 'detectorEnabled' | 'detectorDelegate' | 'detectorModelId'>>) => void;
@@ -92,6 +95,7 @@ export const useSettingsStore = create<SettingsState>()(
       ...DEFAULT_ENDPOINTS,
       voiceEnabled: true,
       recordTrips: true,
+      recordFrames: true,
       disclaimerAccepted: false,
       debugOverlay: false,
       detectorEnabled: true,
@@ -104,6 +108,7 @@ export const useSettingsStore = create<SettingsState>()(
       setEndpoints: (patch) => set(patch),
       setVoiceEnabled: (on) => set({ voiceEnabled: on }),
       setRecordTrips: (on) => set({ recordTrips: on }),
+      setRecordFrames: (on) => set({ recordFrames: on }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
       setDetector: (patch) => set(patch),
@@ -120,6 +125,7 @@ export const useSettingsStore = create<SettingsState>()(
         mapStyleUrl: s.mapStyleUrl,
         voiceEnabled: s.voiceEnabled,
         recordTrips: s.recordTrips,
+        recordFrames: s.recordFrames,
         disclaimerAccepted: s.disclaimerAccepted,
         debugOverlay: s.debugOverlay,
         detectorEnabled: s.detectorEnabled,

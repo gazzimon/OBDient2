@@ -1,5 +1,7 @@
 // Writes the trip log to the app's document directory, one file per trip:
 //   <documents>/trips/trip-YYYYMMDD-HHMMSS.jsonl
+// plus, when frame capture is on, its camera frames (JPEG, bursts):
+//   <documents>/trips/trip-YYYYMMDD-HHMMSS/<epoch ms>.jpg
 //
 // Buffered in memory and appended every 2 s, so a crash loses at most that.
 // Local only: the log holds the driver's positions and never leaves the phone
@@ -10,9 +12,25 @@
 // debuggable build, so preview/production builds rely on sharing).
 
 import { Directory, File, Paths } from 'expo-file-system';
+import { Images, type PixelFormat } from 'react-native-nitro-image';
 import { TRIP_LOG_VERSION, TripLogBuffer, type TripRecord } from '@/domain/recording/trip-log';
 
 const FLUSH_MS = 2000;
+// JPEG encodes in flight at once; frames beyond that are dropped, never queued.
+const MAX_FRAME_SAVES = 2;
+const JPEG_QUALITY = 85;
+
+// Packed pixels handed over from the camera thread.
+export interface CapturedFrame {
+  readonly buffer: ArrayBuffer;
+  readonly width: number;
+  readonly height: number;
+  readonly pixelFormat: PixelFormat;
+  readonly orientation: string;
+  readonly tMs: number;
+  readonly burst: number;
+  readonly index: number;
+}
 
 export interface TripFileInfo {
   readonly name: string;
@@ -24,6 +42,9 @@ export class TripRecorder {
   private file: File | null = null;
   private buffer = new TripLogBuffer();
   private timer: ReturnType<typeof setInterval> | null = null;
+  // Frames of the current trip: <documents>/trips/<trip>/<t>.jpg
+  private frames: Directory | null = null;
+  private savingFrames = 0;
 
   get active(): boolean {
     return this.file != null;
@@ -37,6 +58,7 @@ export class TripRecorder {
     const file = new File(dir, name);
     file.create();
     this.file = file;
+    this.frames = new Directory(dir, stem(name));
     this.buffer = new TripLogBuffer();
     this.buffer.push({ k: 'hdr', v: TRIP_LOG_VERSION, startedAt: new Date().toISOString(), meta });
     this.flush();
@@ -52,11 +74,47 @@ export class TripRecorder {
     this.record({ k: 'ev', t: Date.now(), name, ...(data ? { data } : {}) });
   }
 
+  // Encodes and stores a camera frame, then logs it. Off the JS thread
+  // (nitro-image encodes natively); the log line is written once the file exists.
+  saveFrame = (f: CapturedFrame): void => {
+    const dir = this.frames;
+    if (!this.file || !dir || this.savingFrames >= MAX_FRAME_SAVES) return;
+    this.savingFrames += 1;
+    const name = `${f.tMs}.jpg`;
+    void (async () => {
+      try {
+        if (!dir.exists) dir.create({ intermediates: true });
+        const image = Images.loadFromRawPixelData({
+          buffer: f.buffer,
+          width: f.width,
+          height: f.height,
+          pixelFormat: f.pixelFormat,
+        });
+        await image.saveToFileAsync(new File(dir, name).uri.replace(/^file:\/\//, ''), 'jpg', JPEG_QUALITY);
+        this.record({
+          k: 'frm',
+          t: f.tMs,
+          f: `${dir.name}/${name}`,
+          w: f.width,
+          h: f.height,
+          o: f.orientation,
+          b: f.burst,
+          i: f.index,
+        });
+      } catch (err) {
+        console.warn('[TripRecorder] frame not saved:', err);
+      } finally {
+        this.savingFrames -= 1;
+      }
+    })();
+  };
+
   stop(): void {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     this.flush();
     this.file = null;
+    this.frames = null;
   }
 
   list(): TripFileInfo[] {
@@ -80,6 +138,8 @@ export class TripRecorder {
   remove(name: string): void {
     const f = new File(tripsDir(), name);
     if (f.exists) f.delete();
+    const frames = new Directory(tripsDir(), stem(name));
+    if (frames.exists) frames.delete();
   }
 
   private flush(): void {
@@ -99,6 +159,10 @@ export class TripRecorder {
 
 function tripsDir(): Directory {
   return new Directory(Paths.document, 'trips');
+}
+
+function stem(name: string): string {
+  return name.replace(/\.jsonl$/, '');
 }
 
 function stamp(d: Date): string {

@@ -135,6 +135,19 @@ export default function SettingsScreen() {
           GPS, sensores, OBD y progreso de ruta, solo en este teléfono. Sirve para reproducir un viaje y depurar la
           AR. Unos 10 MB por hora.
         </Text>
+        <Row label="Guardar cuadros de la cámara">
+          <Switch
+            value={s.recordFrames}
+            onValueChange={s.setRecordFrames}
+            disabled={!s.recordTrips}
+            trackColor={{ true: COLORS.mintDark }}
+            thumbColor={COLORS.text}
+          />
+        </Row>
+        <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
+          Ráfagas de 4 cuadros cada 2 s, junto al registro, para probar los modelos maestros en la Z440. Alrededor de
+          1 GB por hora; se borran con el viaje.
+        </Text>
         {trips.length === 0 ? (
           <Text className="text-brand-muted font-mono text-xs mb-6">Todavía no hay viajes grabados.</Text>
         ) : (
