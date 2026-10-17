@@ -79,7 +79,8 @@
           }
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "react-native-fast-tflite"
     ],
     "experiments": {
       "typedRoutes": true
