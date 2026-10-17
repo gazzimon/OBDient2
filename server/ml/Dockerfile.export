@@ -1,0 +1,13 @@
+# Imagen de exportación TFLite con versiones FIJADAS (E4).
+# La auto-instalación de Ultralytics durante el export mezcla versiones
+# (TensorFlow ausente, Protobuf 5.29 vs ONNX compilado con 6.31) y falla.
+# Aquí todo queda instalado de antemano y la auto-instalación desactivada.
+#   docker build -t obdient/yolo-export:8.4.82 -f Dockerfile.export .
+FROM ultralytics/ultralytics:8.4.82-cpu
+RUN pip install --no-cache-dir \
+      "tensorflow-cpu==2.19.0" "tf_keras==2.19.0" \
+      "onnx==1.17.0" "protobuf>=5.26,<6" \
+      "onnx2tf>=1.26.3,<1.28" "sng4onnx>=1.0.1" "onnx_graphsurgeon>=0.3.26" \
+      "onnxslim>=0.1.71" "ai-edge-litert>=1.2.0" \
+ && python -c "import tensorflow as tf, onnx, onnx2tf, google.protobuf as pb; print('tf', tf.__version__, 'onnx', onnx.__version__, 'onnx2tf', onnx2tf.__version__, 'protobuf', pb.__version__)"
+ENV YOLO_AUTOINSTALL=False

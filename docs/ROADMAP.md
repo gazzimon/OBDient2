@@ -9,8 +9,8 @@ entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-14.
 | **E1 Ego-estado** | Fusión GPS + IMU + OBD: posición suave, rumbo, aceleración, historia en marco ego | ✅ código · ⏳ campo |
 | **E2 Navegación** | Destino por búsqueda o mapa, ruta, progreso, voz, desvío y recálculo | ✅ código · ⏳ campo |
 | **E3 AR anclada** | Ruta dibujada sobre la calle, marcador de maniobra, calibración del soporte | ✅ código · ⏳ calibración real |
-| **E4 Ver la vía** | Detector local (licencia Apache) para alertas de vehículos y peatones | pendiente |
-| **E5 Ayuda en servidor** | Qwen-Drive en la Z440, opcional y con conexión: revisión de viajes, etiquetado | pendiente |
+| **E4 Ver la vía** | Detector local para alertas: colisión frontal, distancia, "arrancó el de adelante", peatones | ✅ código (YOLO11n TFLite, VisionCamera 5) · ⏳ build y banco en el teléfono |
+| **E5 Ayuda en servidor** | Z440: chat Qwen3.8-27B (GPU0), OSRM + Photon Argentina (CPU); luego maestro etiquetador y Qwen-Drive (GPU1) | ✅ chat, rutas y búsqueda · ⏳ Caddy en la K16 · pendiente maestro |
 | **E6 Presentación** | Modo HUD reflejado en el parabrisas, otras plataformas (iOS) | pendiente |
 
 **MVP = E0–E3**, solo Android.

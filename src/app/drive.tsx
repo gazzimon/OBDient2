@@ -5,19 +5,24 @@
 // and only change size and layer, so the swap is instant and the camera
 // never restarts.
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, Text, View, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
+import { detectorModel } from '@/data/perception/detector-model';
+import { AlertFlash } from '@/presentation/components/ar/AlertFlash';
 import { ArOverlay } from '@/presentation/components/ar/ArOverlay';
 import { CameraStage } from '@/presentation/components/ar/CameraStage';
 import { DriveHud } from '@/presentation/components/ar/DriveHud';
+import { DetectionOverlay } from '@/presentation/components/ar/DetectionOverlay';
 import { DriveMap } from '@/presentation/components/ar/DriveMap';
 import { PillButton } from '@/presentation/components/layout/PillButton';
+import { useDetector } from '@/presentation/hooks/useDetector';
 import { useLandscapeWhileFocused } from '@/presentation/hooks/useLandscape';
 import { useSensorsWhileFocused } from '@/presentation/hooks/useSensors';
 import { navigation } from '@/presentation/services/navigation-controller';
 import { useNavStore } from '@/store/navStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 // Floating window: bottom centre, between the speed and ETA cards; 16:9.
 const PIP_W = 224;
@@ -51,6 +56,14 @@ export default function DriveScreen() {
   const [ribbonVisible, setRibbonVisible] = useState(false);
   const [mapPrimary, setMapPrimary] = useState(false);
 
+  // On-device detector (E4) on the same camera session as the AR preview.
+  const detectorEnabled = useSettingsStore((s) => s.detectorEnabled);
+  const detectorDelegate = useSettingsStore((s) => s.detectorDelegate);
+  const detectorModelId = useSettingsStore((s) => s.detectorModelId);
+  const manifest = useMemo(() => detectorModel(detectorModelId), [detectorModelId]);
+  const { frameOutput } = useDetector(manifest, detectorDelegate, detectorEnabled && route != null);
+  const outputs = useMemo(() => (detectorEnabled ? [frameOutput] : []), [detectorEnabled, frameOutput]);
+
   const exit = () => {
     navigation.stop();
     router.back();
@@ -68,14 +81,20 @@ export default function DriveScreen() {
   return (
     <View className="flex-1 bg-black">
       <View style={mapPrimary ? PIP : FULL}>
-        <CameraStage>
-          {({ width, height }) => <ArOverlay width={width} height={height} onRibbonVisible={setRibbonVisible} />}
+        <CameraStage outputs={outputs}>
+          {({ width, height }) => (
+            <>
+              <ArOverlay width={width} height={height} onRibbonVisible={setRibbonVisible} />
+              {detectorEnabled && <DetectionOverlay width={width} height={height} />}
+            </>
+          )}
         </CameraStage>
       </View>
       <View style={mapPrimary ? FULL : PIP}>
         <DriveMap primary={mapPrimary} />
       </View>
       <DriveHud onExit={exit} ribbonVisible={ribbonVisible} arVisible={!mapPrimary} />
+      <AlertFlash />
       {/* Tap target over the floating window, above everything else. */}
       <Pressable
         onPress={() => setMapPrimary((m) => !m)}

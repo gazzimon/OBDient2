@@ -89,7 +89,7 @@ export const useSettingsStore = create<SettingsState>()(
       debugOverlay: false,
       detectorEnabled: true,
       detectorDelegate: 'android-gpu',
-      detectorModelId: 'yolo26n-fp16',
+      detectorModelId: 'yolo11n-fp16',
 
       setLastDevice: (id, name) => set({ lastDeviceId: id, lastDeviceName: name }),
       setCalibration: (patch) => set((s) => ({ calibration: { ...s.calibration, ...patch } })),

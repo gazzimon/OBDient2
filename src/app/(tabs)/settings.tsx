@@ -7,6 +7,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
+import { DETECTOR_MODELS } from '@/data/perception/detector-model';
 import type { TripFileInfo } from '@/data/recording/trip-recorder';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
@@ -79,6 +80,21 @@ export default function SettingsScreen() {
             thumbColor={COLORS.text}
           />
         </Row>
+        <View className="flex-row gap-2 mb-2">
+          {DETECTOR_MODELS.map((m) => (
+            <Pressable
+              key={m.id}
+              onPress={() => s.setDetector({ detectorModelId: m.id })}
+              className={`flex-1 rounded-xl py-2 items-center border ${
+                s.detectorModelId === m.id ? 'border-brand-teal' : 'border-brand-border'
+              } active:opacity-60`}
+            >
+              <Text className={`font-mono text-[11px] ${s.detectorModelId === m.id ? 'text-brand-teal' : 'text-brand-muted'}`}>
+                {m.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
         <View className="flex-row gap-2 mb-2">
           {DELEGATES.map((d) => (
             <Pressable
