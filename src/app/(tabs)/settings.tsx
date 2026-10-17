@@ -145,8 +145,8 @@ export default function SettingsScreen() {
           />
         </Row>
         <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
-          Ráfagas de 4 cuadros cada 2 s, junto al registro, para probar los modelos maestros en la Z440. Alrededor de
-          1 GB por hora; se borran con el viaje.
+          Ráfagas de 7 cuadros cada 2 s, junto al registro, para probar los modelos maestros en la Z440. Alrededor de
+          1,7 GB por hora; se borran con el viaje.
         </Text>
         {trips.length === 0 ? (
           <Text className="text-brand-muted font-mono text-xs mb-6">Todavía no hay viajes grabados.</Text>

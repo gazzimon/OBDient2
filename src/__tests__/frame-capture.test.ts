@@ -1,24 +1,29 @@
 import { DEFAULT_CAPTURE, captureDecision, initialCaptureState, packRows } from '@/domain/recording/frame-capture';
 
 describe('frame capture bursts', () => {
-  it('keeps 4 frames 100 ms apart every 2 s from a 30 fps stream', () => {
+  it('keeps 7 frames per burst at the planned offsets from a 30 fps stream', () => {
     const s = initialCaptureState();
     const kept: { t: number; burst: number; index: number }[] = [];
     for (let t = 1000; t < 5000; t += 33) {
       const k = captureDecision(s, t, DEFAULT_CAPTURE);
       if (k) kept.push({ t, ...k });
     }
-    expect(kept).toHaveLength(8);
     const bursts = [...new Set(kept.map((k) => k.burst))];
     expect(bursts).toEqual([1000, 3013]);
     const first = kept.filter((k) => k.burst === 1000);
-    expect(first.map((k) => k.index)).toEqual([0, 1, 2, 3]);
-    for (let i = 1; i < first.length; i++) expect(first[i]!.t - first[i - 1]!.t).toBeGreaterThanOrEqual(100);
+    expect(first.map((k) => k.index)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    // Each frame is the first one at or after its offset (frames every 33 ms).
+    first.forEach((k, i) => {
+      const off = k.t - 1000;
+      expect(off).toBeGreaterThanOrEqual(DEFAULT_CAPTURE.offsetsMs[i]!);
+      expect(off - DEFAULT_CAPTURE.offsetsMs[i]!).toBeLessThan(33);
+    });
   });
 
   it('starts a new burst when a slow camera could not finish the last one', () => {
     const s = initialCaptureState();
     expect(captureDecision(s, 0, DEFAULT_CAPTURE)).toEqual({ burst: 0, index: 0 });
+    expect(captureDecision(s, 600, DEFAULT_CAPTURE)).toEqual({ burst: 0, index: 1 });
     expect(captureDecision(s, 2100, DEFAULT_CAPTURE)).toEqual({ burst: 2100, index: 0 });
   });
 });

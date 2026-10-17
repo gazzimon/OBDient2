@@ -1,0 +1,13 @@
+# Alpamayo 1.5 (NVlabs/alpamayo1.5) y MiMo-Embodied-7B (Qwen2.5-VL): ambos con
+# transformers 4.57.1 y torch 2.8, como fija el pyproject de Alpamayo.
+# Sin flash-attn: atención SDPA (el README de Alpamayo la da como alternativa).
+FROM nvidia/cuda:12.8.0-devel-ubuntu24.04
+ENV DEBIAN_FRONTEND=noninteractive PIP_BREAK_SYSTEM_PACKAGES=1 PIP_NO_CACHE_DIR=1
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-dev git \
+      libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+RUN pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
+RUN pip install transformers==4.57.1 accelerate==1.12.0 einops hydra-core hydra-colorlog pandas pyarrow \
+      av pillow matplotlib qwen-vl-utils physical-ai-av==0.2.0
+COPY src/alpamayo /opt/alpamayo
+RUN pip install --no-deps -e /opt/alpamayo
+WORKDIR /work

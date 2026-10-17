@@ -63,7 +63,7 @@ interface SettingsState {
   // Local trip log while navigating (domain/recording). On while the MVP is
   // being field-tested: it is how AR problems get diagnosed afterwards.
   recordTrips: boolean;
-  // Camera frames in the trip log (bursts, ~1 GB/h) for the teacher models.
+  // Camera frames in the trip log (bursts, ~1.7 GB/h) for the teacher models.
   recordFrames: boolean;
   disclaimerAccepted: boolean;
   // Shows pose/heading/rates over the AR view — a field-testing aid.

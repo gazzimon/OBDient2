@@ -1,0 +1,232 @@
+<title>Banco de maestros OBDient2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: summary table first, then one card per scene (frame | top-down plot), answers folded below. */
+:root {
+  --bg: #0D0D0D; --surface: #1C1C1E; --line: #2C2C2E; --fg: #F5F5F5; --muted: #9A9A9A;
+  --mint: #2DE1A5; --amber: #F5A623; --blue: #8AB4FF; --red: #F26D6D; --gt: #F5F5F5; --hist: #6E6E73;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #F4F6F5; --surface: #FFFFFF; --line: #DCE3E0; --fg: #111414; --muted: #5E6966;
+  --mint: #0E9C6E; --amber: #B5700A; --blue: #2F5FC4; --red: #C23B3B; --gt: #111414; --hist: #9AA5A2;
+  color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #F4F6F5; --surface: #FFFFFF; --line: #DCE3E0; --fg: #111414; --muted: #5E6966;
+  --mint: #0E9C6E; --amber: #B5700A; --blue: #2F5FC4; --red: #C23B3B; --gt: #111414; --hist: #9AA5A2;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans); }
+main { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 28px; }
+h1 { font: 600 26px/1.2 var(--mono); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 span { color: var(--mint); }
+h2 { font: 600 13px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+.mono { font-family: var(--mono); }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font: 13px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: -1px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 12px/1 var(--mono); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: transparent; color: var(--fg); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.chip:focus-visible, summary:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.scenes { display: flex; flex-direction: column; gap: 20px; }
+.scene { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.scene header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; padding: 14px 16px;
+  border-bottom: 1px solid var(--line); font: 13px var(--mono); }
+.scene header b { font-weight: 600; }
+.tag { color: var(--muted); }
+.views { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+.frame { display: flex; flex-direction: column; gap: 6px; padding: 12px; min-width: 0; }
+.frame img { width: 100%; border-radius: 8px; display: block; }
+.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.caption { font: 11px var(--mono); color: var(--muted); }
+.bev { padding: 12px; min-width: 0; border-left: 1px solid var(--line); }
+.bev svg { width: 100%; height: auto; display: block; }
+.bev text { font: 10px var(--mono); fill: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 11px var(--mono); color: var(--muted); padding-top: 8px; }
+.runs { border-top: 1px solid var(--line); }
+details { border-bottom: 1px solid var(--line); }
+details:last-child { border-bottom: 0; }
+summary { cursor: pointer; padding: 12px 16px; font: 13px var(--mono); display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+summary .k { color: var(--muted); }
+.body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.reason { font-size: 14px; background: var(--bg); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.qa { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 8px 16px; font-size: 14px; }
+.qa .q { color: var(--muted); }
+.qa .a { white-space: pre-wrap; overflow-wrap: anywhere; }
+.qa .s { font: 11px var(--mono); color: var(--muted); }
+.empty { color: var(--muted); font: 13px var(--mono); padding: 16px; }
+@media (max-width: 760px) {
+  .views { grid-template-columns: 1fr; }
+  .bev { border-left: 0; border-top: 1px solid var(--line); }
+  .qa { grid-template-columns: 1fr; }
+  .qa .a { padding-bottom: 6px; }
+}
+</style>
+
+<main>
+  <section class="lede">
+    <h1>Banco de maestros <span>OBDient2</span></h1>
+    <p id="intro"></p>
+    <p>Trayectorias en el marco del auto: hacia arriba es adelante, a la izquierda es la izquierda.
+      ADE es el error medio contra el camino que el auto hizo de verdad; "mejor de 6" toma la trayectoria
+      más cercana de las 6 que propone el modelo.</p>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <h2>Resumen por modelo y variante</h2>
+    <div class="tablewrap"><table id="summary"></table></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <h2>Escenas</h2>
+    <div class="chips" id="filters" role="group" aria-label="Modelos visibles"></div>
+    <div class="scenes" id="scenes"></div>
+  </section>
+</main>
+
+<script>
+const DATA = /*__DATA__*/null;
+const COLOR = { 'qwen-drive-1.0-4b': 'var(--mint)', 'mimo-embodied-7b': 'var(--amber)', 'alpamayo-1.5-10b': 'var(--blue)' };
+const VARIANT = {
+  'tri': '3 cámaras reales', 'mono-dup': '1 cámara (copiada)', 'mono-crop': '1 cámara (recortes)',
+  'mono': '1 cámara', 'mono-2hz': '1 cámara · 2 Hz', 'mono-10hz': '1 cámara · 10 Hz',
+};
+const DASH = { 'tri': '', 'mono-dup': '6 3', 'mono-crop': '2 3', 'mono': '6 3', 'mono-2hz': '6 3', 'mono-10hz': '' };
+const SOURCE = { 'waymo-demo': 'Waymo (demo Qwen-Drive)', 'obdient2': 'Viaje OBDient2' };
+const visible = new Set(Object.keys(DATA.models));
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const median = (a) => { const v = a.filter((x) => x != null && isFinite(x)).sort((x, y) => x - y); return v.length ? v[Math.floor(v.length / 2)] : null; };
+const fmt = (x, d = 2) => (x == null ? '—' : x.toFixed(d));
+
+function intro() {
+  const sources = [...new Set(DATA.scenes.map((s) => SOURCE[s.source] || s.source))];
+  const models = [...new Set(DATA.results.map((r) => DATA.models[r.model]))];
+  document.getElementById('intro').textContent =
+    `${DATA.scenes.length} escenas (${sources.join(', ')}) · ${models.join(', ') || 'sin corridas todavía'} · Z440, una RTX 3090 por modelo.`;
+}
+
+function summary() {
+  const groups = new Map();
+  for (const r of DATA.results) {
+    const k = `${r.model}|${r.variant}`;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const rows = [...groups.entries()].map(([k, rs]) => {
+    const [model, variant] = k.split('|');
+    const qa = rs.flatMap((r) => (r.qa || []).map((q) => q.s));
+    return `<tr>
+      <td><span class="swatch" style="background:${COLOR[model]}"></span>${esc(DATA.models[model])}</td>
+      <td>${esc(VARIANT[variant] || variant)}</td>
+      <td>${rs.length}</td>
+      <td>${fmt(median(rs.map((r) => r.plan_s)), 1)} s</td>
+      <td>${qa.length ? fmt(median(qa), 1) + ' s' : '—'}</td>
+      <td>${fmt(Math.max(...rs.map((r) => r.vram_gb || 0)), 1)} GB</td>
+      <td>${fmt(median(rs.map((r) => r.metrics?.ade)))} m</td>
+      <td>${fmt(median(rs.map((r) => r.metrics_best_of?.ade)))} m</td>
+      <td>${fmt(median(rs.map((r) => r.metrics?.at3s)))} m</td>
+    </tr>`;
+  });
+  document.getElementById('summary').innerHTML = `<thead><tr>
+    <th>Modelo</th><th>Variante</th><th>Escenas</th><th>Planificar</th><th>Pregunta</th><th>VRAM pico</th>
+    <th>ADE</th><th>ADE mejor de 6</th><th>Error a 3 s</th></tr></thead><tbody>${rows.join('') ||
+    '<tr><td colspan="9">Todavía no hay corridas.</td></tr>'}</tbody>`;
+}
+
+function filters() {
+  const el = document.getElementById('filters');
+  el.innerHTML = Object.entries(DATA.models).map(([id, name]) =>
+    `<button class="chip" type="button" id="f-${id}" aria-pressed="true" data-id="${id}">
+      <span class="swatch" style="background:${COLOR[id]}"></span>${esc(name)}</button>`).join('');
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const on = b.getAttribute('aria-pressed') !== 'true';
+    b.setAttribute('aria-pressed', String(on));
+    on ? visible.add(b.dataset.id) : visible.delete(b.dataset.id);
+    scenes();
+  });
+}
+
+// Top-down plot: screen x = −y (left is left), screen y = −x (forward is up).
+function bev(scene, runs) {
+  const W = 320, H = 400, PAD = 26;
+  const lines = [];
+  const all = [...scene.history, ...(scene.gt || [])];
+  for (const r of runs) for (const t of r.trajectories || []) all.push(...t);
+  let xmin = Math.min(-5, ...all.map((p) => p[0])), xmax = Math.max(20, ...all.map((p) => p[0]));
+  let ymin = Math.min(-8, ...all.map((p) => p[1])), ymax = Math.max(8, ...all.map((p) => p[1]));
+  const s = Math.min((W - 2 * PAD) / (ymax - ymin), (H - 2 * PAD) / (xmax - xmin));
+  const cx = W / 2 - s * (-(ymax + ymin) / 2), cy = H / 2 - s * (-(xmax + xmin) / 2);
+  const P = (p) => `${(cx - s * p[1]).toFixed(1)},${(cy - s * p[0]).toFixed(1)}`;
+  const step = (xmax - xmin) > 80 ? 20 : 10;
+  for (let x = Math.ceil(xmin / step) * step; x <= xmax; x += step) {
+    const y = cy - s * x;
+    lines.push(`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`);
+    lines.push(`<text x="4" y="${y - 3}">${x} m</text>`);
+  }
+  const path = (pts, color, w, dash, op) => `<polyline points="${[[0, 0], ...pts].map(P).join(' ')}" fill="none" stroke="${color}"
+    stroke-width="${w}" stroke-dasharray="${dash}" stroke-linecap="round" stroke-linejoin="round" opacity="${op}"/>`;
+  for (const r of runs) {
+    (r.trajectories || []).forEach((t, i) => lines.push(path(t, COLOR[r.model], i === 0 ? 2.2 : 1.2, DASH[r.variant] ?? '', i === 0 ? 0.95 : 0.35)));
+  }
+  lines.push(`<polyline points="${scene.history.map(P).join(' ')}" fill="none" stroke="var(--hist)" stroke-width="3" stroke-linecap="round"/>`);
+  if (scene.gt) lines.push(path(scene.gt, 'var(--gt)', 2.6, '', 1));
+  lines.push(`<rect x="${(cx - s * 0.9).toFixed(1)}" y="${(cy - s * 1.0).toFixed(1)}" width="${(s * 1.8).toFixed(1)}" height="${(s * 4.5).toFixed(1)}" rx="2" fill="var(--fg)" opacity=".85"/>`);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Trayectorias vistas desde arriba">${lines.join('')}</svg>`;
+}
+
+function runDetails(r) {
+  const m = r.metrics, b = r.metrics_best_of;
+  const head = `<span><span class="swatch" style="background:${COLOR[r.model]}"></span>${esc(DATA.models[r.model])}</span>
+    <span class="k">${esc(VARIANT[r.variant] || r.variant)}</span>
+    <span>ADE ${fmt(m?.ade)} m</span><span class="k">mejor de 6 ${fmt(b?.ade)} m</span>
+    <span class="k">${fmt(r.plan_s, 1)} s · ${fmt(r.vram_gb, 1)} GB</span>`;
+  const reason = r.reasoning ? `<div class="reason">${esc(r.reasoning)}</div>` :
+    r.plan_raw ? `<div class="reason">${esc(r.plan_raw)}</div>` : '';
+  const qa = (r.qa || []).map((q) => `<div class="q">${esc(q.q)}</div><div class="a">${esc(q.a)} <span class="s">${fmt(q.s, 1)} s</span></div>`).join('');
+  return `<details><summary>${head}</summary><div class="body">${reason}${qa ? `<div class="qa">${qa}</div>` : ''}</div></details>`;
+}
+
+function scenes() {
+  const host = document.getElementById('scenes');
+  if (!DATA.scenes.length) { host.innerHTML = '<div class="empty">Todavía no hay escenas.</div>'; return; }
+  host.innerHTML = DATA.scenes.map((sc) => {
+    const runs = DATA.results.filter((r) => r.key === sc.key && visible.has(r.model));
+    const variants = [...new Set(runs.map((r) => `${r.model}|${r.variant}`))];
+    const legend = [
+      `<span><span class="swatch" style="background:var(--hist)"></span>historia</span>`,
+      sc.gt ? `<span><span class="swatch" style="background:var(--gt)"></span>camino real</span>` : '',
+      ...variants.map((v) => { const [m, va] = v.split('|'); return `<span><span class="swatch" style="background:${COLOR[m]}"></span>${esc(VARIANT[va] || va)}</span>`; }),
+    ].join('');
+    const sides = sc.source === 'waymo-demo'
+      ? `<div class="sides"><img src="${sc.sides[0]}" alt="Cámara delantera izquierda"><img src="${sc.sides[1]}" alt="Cámara delantera derecha"></div>
+         <div class="caption">Arriba: cámara delantera (la única que tendría el teléfono). Abajo: las laterales que usa la variante de 3 cámaras.</div>`
+      : `<div class="caption">Cámara del teléfono.</div>`;
+    return `<article class="scene">
+      <header><b>${esc(sc.key)}</b><span class="tag">${esc(SOURCE[sc.source] || sc.source)}</span></header>
+      <div class="views">
+        <div class="frame"><img src="${sc.image}" alt="Cuadro actual, cámara delantera">${sides}</div>
+        <div class="bev">${bev(sc, runs)}<div class="legend">${legend}</div></div>
+      </div>
+      <div class="runs">${runs.map(runDetails).join('') || '<div class="empty">Sin corridas visibles.</div>'}</div>
+    </article>`;
+  }).join('');
+}
+
+intro(); summary(); filters(); scenes();
+</script>
