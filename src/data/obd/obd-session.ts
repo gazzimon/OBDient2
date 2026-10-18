@@ -21,6 +21,12 @@ export interface SessionInfo {
   readonly supportedPids: readonly PidId[];
 }
 
+const LOW_POWER_GRACE_MS = 150;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 export class ObdSession {
   private port: TransportCommandPort | null = null;
   private poller: TelemetryPoller | null = null;
@@ -89,8 +95,20 @@ export class ObdSession {
     this.listener = null;
     this.port?.dispose();
     this.port = null;
+    const plainElm = this.info != null && this.info.identity.stn == null;
     this.info = null;
-    if (this.transport.isConnected()) await this.transport.disconnect().catch(() => undefined);
+    if (!this.transport.isConnected()) return;
+    // A plain ELM327 never sleeps on its own (PP 0E/0F factory defaults) and,
+    // left plugged in, drains the battery. ATLP puts it in standby; the next
+    // connection wakes it (see ProtocolManager). STN chips sleep by themselves
+    // and reject ATLP in their native mode. Fire and forget: the reply is "OK"
+    // without a prompt. The pause lets a command still in flight finish, since
+    // any byte interrupts the adapter.
+    if (plainElm) {
+      await delay(LOW_POWER_GRACE_MS);
+      await this.transport.write('ATLP\r').catch(() => undefined);
+    }
+    await this.transport.disconnect().catch(() => undefined);
   }
 
   // The adapter rebooted: protocol, echo, timing — all back to defaults.

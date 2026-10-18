@@ -12,7 +12,8 @@ export class PromptFramer {
   // Feeds a chunk and returns every response completed by it (prompt stripped,
   // CR/LF collapsed to single spaces). Usually 0 or 1 items.
   feed(chunk: string): string[] {
-    this.buffer += chunk;
+    // The ELM327 may slip NUL bytes into its output (datasheet, EUSART erratum).
+    this.buffer += chunk.replace(/\0/g, '');
     const out: string[] = [];
     let idx: number;
     while ((idx = this.buffer.indexOf(PROMPT)) !== -1) {

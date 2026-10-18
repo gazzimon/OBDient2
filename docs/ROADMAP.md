@@ -54,11 +54,12 @@ sincronización cuando exista el login.
 - [ ] **M2.4 `VehicleToolAdapter`**: las 9 herramientas, error `rejected_by_car`.
 - [ ] **M2.5 Histórico de fallas**: lecturas y borrados con fecha, códigos, freeze frame y km.
 - [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
-  - [ ] esperar hasta 5 s ante `7F xx 78` (clones < v2.1 no lo hacen);
-  - [ ] descartar bytes nulos (`0x00`) en el lector de respuestas;
-  - [ ] reconocer `ERR94` y mandar `ATFE` antes de reintentar;
-  - [ ] `ATWS` en lugar de `ATZ` (~800 ms menos por conexión y por recuperación);
-  - [ ] energía: `AT LP` al desconectar o PP 0F configurado en fábrica (el ELM327 no se duerme solo).
+  - [x] esperar hasta 5 s ante `7F xx 78` y reenviar si el adaptador vuelve al prompt (clones < v2.1);
+  - [x] descartar bytes nulos (`0x00`) en el lector de respuestas;
+  - [x] `ERR94` se trata como reinicio del adaptador y la inicialización manda `ATFE`; otros `ERRxx`, sin dato;
+  - [x] `ATWS` en lugar de `ATZ` (~800 ms menos), con `ATZ` de respaldo si no contesta (despertar o clon);
+  - [x] energía: `ATLP` al cerrar la sesión si no es STN;
+  - [ ] energía, para el producto: PP 0F (dormir sin actividad OBD) configurado en fábrica; medir consumo del B14 dormido.
 - [ ] **Protocolo guardado por vehículo** (`ATSP A7` / `STP 34`): conexión sin búsqueda.
 
 ### Otros pendientes

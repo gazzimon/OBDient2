@@ -41,7 +41,7 @@ describe('ProtocolManager.initialize', () => {
       method: 'auto',
       atdp: 'AUTO, ISO 15765-4 (CAN 11/500)',
     });
-    expect(port.sent.slice(0, 5)).toEqual(['ATZ', 'ATE0', 'ATL0', 'ATH0', 'ATSP0']);
+    expect(port.sent.slice(0, 6)).toEqual(['ATWS', 'ATE0', 'ATL0', 'ATFE', 'ATH0', 'ATSP0']);
   });
 
   it('enables headers when asked', async () => {
@@ -51,9 +51,9 @@ describe('ProtocolManager.initialize', () => {
     expect(port.sent).not.toContain('ATH0');
   });
 
-  it('tolerates clones that never answer ATZ/ATE0', async () => {
+  it('tolerates clones that never answer ATWS/ATE0', async () => {
     const port = fakePort({
-      ATZ: new CommandTimeoutError('ATZ', 6000),
+      ATWS: new CommandTimeoutError('ATWS', 6000),
       ATE0: new CommandTimeoutError('ATE0', 4000),
       '0100': '41 00 BE 3F A8 13',
       ATDP: 'ISO 15765-4 (CAN 29/500)',

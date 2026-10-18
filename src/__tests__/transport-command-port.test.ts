@@ -134,3 +134,71 @@ describe('TransportCommandPort', () => {
     });
   });
 });
+
+describe('TransportCommandPort with plain ELM327 quirks', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('drops NUL bytes the ELM327 may slip into its output', async () => {
+    const t = new FakeTransport((w, tr) => tr.emit('41 0C\u0000 1A F8\r\u0000\r>'));
+    await expect(new TransportCommandPort(t).send('010C')).resolves.toBe('41 0C 1A F8');
+  });
+
+  it('treats ERR94 (fatal CAN error, chip back to defaults) as an adapter reset', async () => {
+    const t = new FakeTransport((w, tr) => tr.emit('ERR94\r\r>'));
+    const port = new TransportCommandPort(t);
+    const resets = jest.fn();
+    port.onAdapterReset(resets);
+    await expect(port.send('03')).rejects.toBeInstanceOf(AdapterResetError);
+    expect(resets).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats other internal ERRxx codes as no data', async () => {
+    const t = new FakeTransport((w, tr) => tr.emit('ERR12\r\r>'));
+    await expect(new TransportCommandPort(t).send('03')).rejects.toBeInstanceOf(NoDataError);
+  });
+
+  it('keeps the real answer when a response-pending frame precedes it', async () => {
+    const t = new FakeTransport((w, tr) => tr.emit('7F0478\r44\r\r>'));
+    await expect(new TransportCommandPort(t).send('04')).resolves.toBe('44');
+  });
+
+  it('waits for the answer when only response-pending came back', async () => {
+    jest.useFakeTimers();
+    const t = new FakeTransport((w, tr) => tr.emit('7F 04 78\r\r>'));
+    const result = new TransportCommandPort(t).send('04', 2000);
+    await Promise.resolve();
+    jest.advanceTimersByTime(3000); // past the command timeout: still waiting (J1979 allows 5 s)
+    t.emit('44\r\r>');
+    await expect(result).resolves.toBe('44');
+    expect(t.writes).toEqual(['04\r']);
+  });
+
+  it('asks again after 5 s of silence, also with headers on', async () => {
+    jest.useFakeTimers();
+    let n = 0;
+    const t = new FakeTransport((w, tr) => tr.emit(n++ === 0 ? '7E8037F0478\r\r>' : '7E80144\r\r>'));
+    const result = new TransportCommandPort(t).send('04', 2000);
+    await Promise.resolve();
+    jest.advanceTimersByTime(5000);
+    await expect(result).resolves.toBe('7E80144');
+    expect(t.writes).toEqual(['04\r', '04\r']);
+  });
+
+  it('gives up after two resends that only get response-pending', async () => {
+    jest.useFakeTimers();
+    const t = new FakeTransport((w, tr) => tr.emit('7F0278\r\r>'));
+    const result = new TransportCommandPort(t).send('0202', 2000);
+    const check = expect(result).rejects.toBeInstanceOf(CommandTimeoutError);
+    for (let i = 0; i < 3; i++) {
+      await Promise.resolve();
+      jest.advanceTimersByTime(5000);
+    }
+    await check;
+    expect(t.writes).toHaveLength(3);
+  });
+
+  it('does not mistake a negative answer for response-pending', async () => {
+    const t = new FakeTransport((w, tr) => tr.emit('7F0422\r\r>'));
+    await expect(new TransportCommandPort(t).send('04')).resolves.toBe('7F0422');
+  });
+});

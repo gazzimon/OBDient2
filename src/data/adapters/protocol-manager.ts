@@ -36,6 +36,7 @@ export interface ProtocolInitResult {
 }
 
 const RESET_TIMEOUT_MS = 6000;
+const WAKE_TIMEOUT_MS = 1500;
 const QUICK_TIMEOUT_MS = 4000;
 const CAN_PROBE_TIMEOUT_MS = 8000;
 const SLOW_PROBE_TIMEOUT_MS = 15000;
@@ -61,9 +62,18 @@ export class ProtocolManager {
   async initialize(options: ProtocolInitOptions = {}): Promise<ProtocolInitResult> {
     const { protocol = 'AUTO', headers = false, scanLegacy = false } = options;
 
-    await this.tolerant('ATZ', RESET_TIMEOUT_MS);
+    // Warm start: same reset as ATZ without the LED test (~2 ms against ~800 ms
+    // on an ELM327). It also clears the CAN-search block an LV RESET leaves.
+    // An ELM327 put to sleep (ATLP) wakes on the first bytes but discards that
+    // command while it restarts (~1 s): no answer → ask again, with ATZ, which
+    // also covers clones that lack ATWS.
+    if (!(await this.answers('ATWS', WAKE_TIMEOUT_MS))) await this.tolerant('ATZ', RESET_TIMEOUT_MS);
     await this.tolerant('ATE0');
     await this.tolerant('ATL0');
+    // ELM327: after ERR94 (fatal CAN error) the CAN protocols stay blocked for
+    // the search until power-off or ATFE — a reset is not enough. No-op on STN;
+    // clones that lack it answer '?'.
+    await this.tolerant('ATFE');
     await this.setHeaders(headers);
 
     if (protocol !== 'AUTO') return this.forceProtocol(protocol);
@@ -144,6 +154,16 @@ export class ProtocolManager {
   }
 
   // Some clones never answer individual AT commands but work anyway.
+  private async answers(command: string, timeoutMs: number): Promise<boolean> {
+    try {
+      await this.port.send(command, timeoutMs);
+      return true;
+    } catch (err) {
+      if (err instanceof NoDataError || err instanceof CommandTimeoutError) return false;
+      throw err;
+    }
+  }
+
   private async tolerant(command: string, timeoutMs = QUICK_TIMEOUT_MS): Promise<void> {
     try {
       await this.port.send(command, timeoutMs);
