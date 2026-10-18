@@ -56,3 +56,4 @@ crash.txt
 
 # viajes grabados traídos del teléfono (datos de ubicación personales)
 /trips/
+__pycache__/

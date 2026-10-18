@@ -33,14 +33,44 @@ proyecto esté más avanzado: hoy aportaría poco. E0 queda validada en banco co
 Tablero probado en el auto. El registro de viaje y el `replay` siguen listos para cuando se haga.
 Se avanza con **E4 (detector en el teléfono)**.
 
-## Próximos pasos inmediatos
+## Próximos pasos (2026-10-18)
 
-1. `eas init` + build de desarrollo e instalación en el teléfono de pruebas.
-2. Banco con el B33 (Vehículo → Banco del adaptador): chip y firmware, Hz de velocidad por método y
-   configuración de ahorro de energía. Ver [docs/hardware/adaptador-stn.md](hardware/adaptador-stn.md).
-3. Calibración en auto: confirmar signos de sensores (`gravitySign`, lado landscape) y FOV.
-4. Primer viaje real con el registro de viaje activado (por defecto), luego `npm run trips:pull` y
-   `npm run replay` para revisar la fusión y la AR en la PC.
+### E7 · M2 — herramientas OBD reales (en curso)
+
+Decisiones tomadas: códigos leídos **con encabezados** (`ATH1`, para saber qué módulo los tiene, con
+~0,5 s de pausa de la telemetría); descripciones **en inglés** ahora (el modelo explica en español) y
+traducidas para el modo sin conexión en M4; **histórico de fallas en el teléfono** (MMKV), con
+sincronización cuando exista el login.
+
+- [ ] **M2.0 Captura con el auto** (pendiente de una sesión en el auto): botón *Capturar diagnóstico*
+  en Vehículo; `0101`, `0131`, `03`, `07`, `0A`, `0200`, `0202`, `0900`, `0902`, `ATDP`, con `ATH0` y
+  `ATH1`; además prueba `STCSEGR 1`, `STVR 2`, `STDICES`, `STDITPO`, `STSLLT`, `STP 34`, y en ELM327
+  `ATAMC`/`ATCTM1` (genuino o clon).
+- [ ] **M2.1 Lectura de tramas**: respuestas en varios cuadros y varias ECUs, con y sin encabezados.
+- [ ] **M2.2 Parsers**: códigos (`43`/`47`/`4A`), freeze frame, readiness con km desde el borrado (`0131`),
+  VIN.
+- [ ] **M2.3 Sesión**: todos los PIDs soportados, `query` y `exclusive`, muestreo, `STPX` con `r:`/`t:`
+  en diagnóstico, `STVR`/`STPRS` cuando es STN.
+- [ ] **M2.4 `VehicleToolAdapter`**: las 9 herramientas, error `rejected_by_car`.
+- [ ] **M2.5 Histórico de fallas**: lecturas y borrados con fecha, códigos, freeze frame y km.
+- [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
+  - [ ] esperar hasta 5 s ante `7F xx 78` (clones < v2.1 no lo hacen);
+  - [ ] descartar bytes nulos (`0x00`) en el lector de respuestas;
+  - [ ] reconocer `ERR94` y mandar `ATFE` antes de reintentar;
+  - [ ] `ATWS` en lugar de `ATZ` (~800 ms menos por conexión y por recuperación);
+  - [ ] energía: `AT LP` al desconectar o PP 0F configurado en fábrica (el ELM327 no se duerme solo).
+- [ ] **Protocolo guardado por vehículo** (`ATSP A7` / `STP 34`): conexión sin búsqueda.
+
+### Otros pendientes
+
+- **Probar en el teléfono** (build Dev + Metro): detector YOLO y captura de cuadros, corregidos para
+  builds release.
+- **Banco de maestros con viajes propios**: un viaje con cuadros, `make_samples.py` y los tres modelos.
+- **AR**: anclar el comienzo de la línea al auto (hoy queda corrida ~2 m por el eje de la calle y ~4°
+  de rumbo).
+- **Búsqueda de destinos**: priorizar resultados cercanos (Photon eligió un homónimo a 900 km).
+- **new-api**: el límite de 10 pedidos por minuto es bajo para el asistente (2–4 llamadas por turno).
+- **Calibración y primer viaje de AR** (postergados, ver *Decisión 2026-10-17*).
 
 ## Fuera del MVP, ya decidido
 
