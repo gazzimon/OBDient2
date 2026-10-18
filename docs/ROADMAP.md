@@ -11,7 +11,7 @@ entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-18.
 | **E3 AR anclada** | Ruta dibujada sobre la calle, marcador de maniobra, calibración del soporte | ✅ código · ⏳ calibración real |
 | **E4 Ver la vía** | Detector local para alertas: colisión frontal, distancia, "arrancó el de adelante", peatones | ✅ código · 🔧 en release el modelo no cargaba y los cuadros no se guardaban: corregido, ⏳ probar en el teléfono |
 | **E5 Ayuda en servidor** | Z440: chat Qwen3.8-27B (GPU0), OSRM + Photon Argentina (CPU); luego maestro etiquetador y Qwen-Drive (GPU1) | ✅ rutas y búsqueda · ✅ banco de maestros (Waymo demo) · ⏳ con viajes propios |
-| **E7 Asistente** | Chat por texto, voz e imágenes con herramientas OBD (ADR-0007), cuentas Firebase y gateway new-api (ADR-0008) | ✅ M0 gateway: `obdient.duckdns.org/llm/v1` (alias `obdient-chat`, primer token 0,2 s) · ⏳ M1 núcleo |
+| **E7 Asistente** | Chat por texto, voz e imágenes con herramientas OBD (ADR-0007), cuenta por correo y gateway new-api (ADR-0008) | ✅ M0–M3: chat con las 9 herramientas, fotos, borrado con confirmación, login por correo; probado en el auto con el B35 (2026-10-18) · ⏳ M4 |
 | **E6 Presentación** | Modo HUD reflejado en el parabrisas, otras plataformas (iOS) | pendiente |
 
 **MVP = E0–E3**, solo Android.
