@@ -73,6 +73,7 @@ export class TransportCommandPort implements CommandPort {
   private queue: Promise<void> = Promise.resolve();
   private readonly unsubscribers: Unsubscribe[];
   private readonly resets = new Listeners<[]>();
+  private readonly raws = new Listeners<[string]>();
 
   constructor(
     private readonly transport: ByteTransport,
@@ -100,9 +101,17 @@ export class TransportCommandPort implements CommandPort {
     return this.resets.add(listener);
   }
 
+  // Every response exactly as the adapter framed it, before cleaning: line
+  // breaks, headers, "response pending" frames, unsolicited output. For the
+  // diagnostic capture; nothing on the hot path listens.
+  onRaw(listener: (raw: string) => void): Unsubscribe {
+    return this.raws.add(listener);
+  }
+
   dispose(): void {
     for (const off of this.unsubscribers) off();
     this.resets.clear();
+    this.raws.clear();
     this.failPending(new ConnectionLostError('Port disposed'));
   }
 
@@ -126,6 +135,7 @@ export class TransportCommandPort implements CommandPort {
 
   private handleChunk(chunk: string): void {
     for (const raw of this.framer.feed(chunk)) {
+      this.raws.emit(raw);
       const pending = this.pending;
       const reset = LV_RESET.test(raw.toUpperCase());
       if (reset) this.resets.emit();

@@ -1,0 +1,84 @@
+import { AdapterResetError, CommandTimeoutError, NoDataError } from '@/core/errors/obd.errors';
+import { Listeners } from '@/data/adapters/transport';
+import {
+  CAPTURE_ROUNDS,
+  formatCapture,
+  isReadOnly,
+  runDiagnosticCapture,
+  type CapturePort,
+} from '@/data/obd/diagnostic-capture';
+
+// Answers from a table; a function value throws instead.
+function fakePort(answers: Record<string, string | (() => never)>): CapturePort & { sent: string[] } {
+  const raws = new Listeners<[string]>();
+  const sent: string[] = [];
+  return {
+    sent,
+    onRaw: (l) => raws.add(l),
+    async send(command) {
+      sent.push(command);
+      const a = answers[command];
+      if (typeof a === 'function') return a();
+      raws.emit(a ?? 'OK');
+      return a ?? 'OK';
+    },
+  };
+}
+
+const ctx = { adapter: 'STN1040 v1.3.6', protocol: 'ISO_15765_4_CAN_29BIT_500K', stn: true };
+
+describe('diagnostic capture', () => {
+  it('never contains a request that clears or writes', () => {
+    for (const round of CAPTURE_ROUNDS) for (const c of round.commands) expect(isReadOnly(c)).toBe(true);
+    expect(isReadOnly('04')).toBe(false);
+    expect(isReadOnly('14FFFFFF')).toBe(false);
+    expect(isReadOnly('0 4')).toBe(false);
+  });
+
+  it('skips a forbidden command even if a round lists it', async () => {
+    const port = fakePort({});
+    await runDiagnosticCapture(port, ctx, [{ title: 't', commands: ['03', '04', '0A'] }]);
+    expect(port.sent).toEqual(['03', '0A']);
+  });
+
+  it('records failures and keeps going', async () => {
+    const port = fakePort({
+      '07': () => {
+        throw new NoDataError('07');
+      },
+      '0A': () => {
+        throw new CommandTimeoutError('0A', 6000);
+      },
+    });
+    const report = await runDiagnosticCapture(port, ctx, [{ title: 't', commands: ['07', '0A', '03'] }]);
+    expect(report.rounds[0]!.entries.map((e) => e.outcome)).toEqual(['no-data', 'timeout', 'ok']);
+    expect(report.interrupted).toBeNull();
+  });
+
+  it('stops when the adapter reboots', async () => {
+    const port = fakePort({
+      '03': () => {
+        throw new AdapterResetError('03');
+      },
+    });
+    const report = await runDiagnosticCapture(port, ctx, [
+      { title: 'a', commands: ['0101', '03', '07'] },
+      { title: 'b', commands: ['0902'] },
+    ]);
+    expect(port.sent).toEqual(['0101', '03']);
+    expect(report.interrupted).toBe('el adaptador se reinició');
+  });
+
+  it('runs the STN round only on STN and the clone check only on ELM327', async () => {
+    const titles = async (stn: boolean) =>
+      (await runDiagnosticCapture(fakePort({}), { ...ctx, stn })).rounds.map((r) => r.title);
+    expect(await titles(true)).toEqual(['Sin encabezados (ATH0)', 'Con encabezados (ATH1)', 'Comandos STN']);
+    expect(await titles(false)).toEqual(['Sin encabezados (ATH0)', 'Con encabezados (ATH1)', 'ELM327: genuino o clon']);
+  });
+
+  it('formats raw answers under each command', async () => {
+    const port = fakePort({ '0902': '014 0: 490201314731 1: 4A433534343452 2: 37323532333637' });
+    const report = await runDiagnosticCapture(port, ctx, [{ title: 'VIN', commands: ['0902'] }], () => 0);
+    expect(formatCapture(report)).toContain('> 0902 (0 ms)\n  014 0: 490201314731 1: 4A433534343452 2: 37323532333637');
+  });
+});

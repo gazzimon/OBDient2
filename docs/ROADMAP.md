@@ -42,8 +42,8 @@ Decisiones tomadas: códigos leídos **con encabezados** (`ATH1`, para saber qu�
 traducidas para el modo sin conexión en M4; **histórico de fallas en el teléfono** (MMKV), con
 sincronización cuando exista el login.
 
-- [ ] **M2.0 Captura con el auto** (pendiente de una sesión en el auto): botón *Capturar diagnóstico*
-  en Vehículo; `0101`, `0131`, `03`, `07`, `0A`, `0200`, `0202`, `0900`, `0902`, `ATDP`, con `ATH0` y
+- [ ] **M2.0 Captura con el auto**: ✅ botón *Capturar diagnóstico* en Vehículo (respuestas crudas,
+  solo lectura, reconfigura al terminar) · ⏳ correrlo en el auto (B35 y B14); `0101`, `0131`, `03`, `07`, `0A`, `0200`, `0202`, `0900`, `0902`, `ATDP`, con `ATH0` y
   `ATH1`; además prueba `STCSEGR 1`, `STVR 2`, `STDICES`, `STDITPO`, `STSLLT`, `STP 34`, y en ELM327
   `ATAMC`/`ATCTM1` (genuino o clon).
 - [ ] **M2.1 Lectura de tramas**: respuestas en varios cuadros y varias ECUs, con y sin encabezados.

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
 import { formatBench } from '@/data/obd/adapter-bench';
+import { formatCapture } from '@/data/obd/diagnostic-capture';
 import { looksLikeObd } from '@/data/obd/obd-manager';
 import type { RequestStyle } from '@/data/obd/telemetry-poller';
 import type { ScannedDevice } from '@/data/adapters/ble-transport';
@@ -28,6 +29,8 @@ export default function VehicleScreen() {
     useOBDStore();
   const [bench, setBench] = useState<string | null>(null);
   const [benching, setBenching] = useState(false);
+  const [capture, setCapture] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
   const [devices, setDevices] = useState<ScannedDevice[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -65,6 +68,18 @@ export default function VehicleScreen() {
       setBench(`Error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setBenching(false);
+    }
+  };
+
+  const runCapture = async () => {
+    setCapturing(true);
+    setCapture(null);
+    try {
+      setCapture(formatCapture(await container.obd.runCapture()));
+    } catch (err) {
+      setCapture(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setCapturing(false);
     }
   };
 
@@ -106,7 +121,13 @@ export default function VehicleScreen() {
                 Identifica el chip y mide la velocidad real con cada método de petición. Pausa la telemetría unos
                 segundos: hazlo con el auto detenido y el motor en marcha.
               </Text>
-              <PillButton label={benching ? 'Midiendo…' : 'Ejecutar banco'} onPress={runBench} loading={benching} variant="secondary" />
+              <PillButton
+                label={benching ? 'Midiendo…' : 'Ejecutar banco'}
+                onPress={runBench}
+                loading={benching}
+                disabled={capturing}
+                variant="secondary"
+              />
               {bench && (
                 <View className="bg-brand-surface rounded-2xl p-3 mt-3">
                   <Text selectable className="text-brand-text font-mono text-[10px] leading-4">
@@ -117,6 +138,36 @@ export default function VehicleScreen() {
                       label="Compartir resultado"
                       variant="secondary"
                       onPress={() => void Share.share({ message: `OBDient2 · banco ${deviceName ?? ''}\n\n${bench}` })}
+                    />
+                  </View>
+                </View>
+              )}
+            </View>
+
+            <View className="mt-6">
+              <SectionHeader title="Captura de diagnóstico" />
+              <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
+                Lee códigos, freeze frame, readiness y VIN tal como los contesta este auto, con y sin encabezados,
+                para que los parsers se escriban contra respuestas reales. Solo lectura: no borra nada. Tarda hasta
+                un minuto; mejor con el motor en marcha y, si es posible, con algún código guardado.
+              </Text>
+              <PillButton
+                label={capturing ? 'Capturando…' : 'Capturar diagnóstico'}
+                onPress={runCapture}
+                loading={capturing}
+                disabled={benching}
+                variant="secondary"
+              />
+              {capture && (
+                <View className="bg-brand-surface rounded-2xl p-3 mt-3">
+                  <Text selectable className="text-brand-text font-mono text-[10px] leading-4">
+                    {capture}
+                  </Text>
+                  <View className="mt-3">
+                    <PillButton
+                      label="Compartir captura"
+                      variant="secondary"
+                      onPress={() => void Share.share({ message: `OBDient2 · ${deviceName ?? ''}\n\n${capture}` })}
                     />
                   </View>
                 </View>

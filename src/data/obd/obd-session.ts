@@ -12,6 +12,7 @@ import type { ByteTransport, Unsubscribe } from '@/data/adapters/transport';
 import type { OBDProtocol } from '@/domain/entities/vehicle';
 import type { PidId } from '@/core/constants/pids';
 import { runAdapterBench, type BenchReport } from './adapter-bench';
+import { runDiagnosticCapture, type CaptureReport } from './diagnostic-capture';
 import { applyFastSettings, identifyAdapter, type AdapterIdentity } from './stn';
 import { SECONDARY_PIDS, TelemetryPoller, stylesFor, type RequestStyle, type TelemetryListener } from './telemetry-poller';
 
@@ -35,6 +36,7 @@ export class ObdSession {
   private offReset: Unsubscribe | null = null;
   private recovering: Promise<void> | null = null;
   private resetCount = 0;
+  private capturing = false;
 
   constructor(private readonly transport: ByteTransport) {}
 
@@ -87,6 +89,34 @@ export class ObdSession {
     }
   }
 
+  // Pauses telemetry, sends the read-only diagnostic requests in several
+  // configurations (headers, STN reassembly, fixed protocol), then configures
+  // the adapter from scratch so none of them stays on, and resumes.
+  async runCapture(): Promise<CaptureReport> {
+    const port = this.port;
+    const info = this.info;
+    if (!port || !info) throw new Error('Session not open');
+    this.poller?.stop();
+    this.capturing = true;
+    try {
+      return await runDiagnosticCapture(port, {
+        adapter: info.identity.stn ?? (info.identity.elm || 'ELM327'),
+        protocol: info.protocol,
+        stn: info.identity.stn != null,
+      });
+    } finally {
+      this.capturing = false;
+      if (this.port === port) {
+        try {
+          this.info = await configure(port);
+        } catch {
+          // The link is gone or still browned out: the session ends or recovers upstream.
+        }
+        if (this.listener && this.port === port) this.startTelemetry(this.listener);
+      }
+    }
+  }
+
   async close(): Promise<void> {
     this.offReset?.();
     this.offReset = null;
@@ -116,6 +146,8 @@ export class ObdSession {
   private recover(): Promise<void> {
     if (this.recovering) return this.recovering;
     this.resetCount++;
+    // The capture reconfigures the adapter when it ends.
+    if (this.capturing) return Promise.resolve();
     this.recovering = (async () => {
       const port = this.port;
       if (!port) return;

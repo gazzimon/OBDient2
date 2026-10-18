@@ -60,6 +60,7 @@ function reply(cmd: string): string {
   if (cmd.startsWith('STPX d:010D')) return '410D32';
   if (cmd.startsWith('01')) return 'NO DATA';
   if (cmd === 'ATRV') return '12.6V';
+  if (cmd === '03') return '7F0378\r43 01 01 71 00 00 00';
   return 'OK';
 }
 
@@ -104,6 +105,35 @@ describe('ObdSession', () => {
       expect(sim.count('ATWS')).toBe(2);
       expect(sim.count('ATS0')).toBe(2);
       expect(speeds.length).toBeGreaterThan(before);
+    } finally {
+      await session.close();
+    }
+  });
+
+  it('captures raw diagnostic answers, never clears, and configures the adapter again', async () => {
+    const sim = new SimAdapter();
+    const session = new ObdSession(sim);
+    await session.open('dev');
+    const speeds: number[] = [];
+    try {
+      session.startTelemetry({ onSpeed: (k) => speeds.push(k), onParameter: () => undefined, onStopped: () => undefined });
+      await tick(20);
+      const before = sim.count('ATWS');
+      const report = await session.runCapture();
+
+      expect(sim.sent.some((c) => c.startsWith('04'))).toBe(false);
+      const stored = report.rounds[0]!.entries.find((e) => e.command === '03');
+      expect(stored?.outcome).toBe('ok');
+      // The raw text keeps the "response pending" frame the parser never sees.
+      expect(stored?.raw.join(' ')).toContain('7F0378');
+      expect(report.rounds.map((r) => r.title)).toContain('Comandos STN');
+      expect(report.rounds.map((r) => r.title)).not.toContain('ELM327: genuino o clon');
+
+      // ATH1, STCSEGR and STP do not outlive the capture: a fresh init follows.
+      expect(sim.count('ATWS')).toBe(before + 1);
+      speeds.length = 0;
+      await tick(50);
+      expect(speeds.length).toBeGreaterThan(0);
     } finally {
       await session.close();
     }

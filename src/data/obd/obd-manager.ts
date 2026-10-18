@@ -10,6 +10,7 @@ import { createBlePlxPlatform } from '@/data/adapters/ble-plx-platform';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { BenchReport } from './adapter-bench';
+import type { CaptureReport } from './diagnostic-capture';
 import { ObdSession } from './obd-session';
 
 // Names that look like an OBD adapter, to sort them to the top of the list.
@@ -94,6 +95,11 @@ export class ObdManager {
   async runBench(): Promise<BenchReport> {
     if (!this.session) throw new Error('No hay adaptador conectado');
     return this.session.runBench();
+  }
+
+  async runCapture(): Promise<CaptureReport> {
+    if (!this.session) throw new Error('No hay adaptador conectado');
+    return this.session.runCapture();
   }
 
   async disconnect(error: string | null = null): Promise<void> {
