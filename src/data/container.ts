@@ -11,6 +11,8 @@ import { secureStore } from '@/data/auth/secure-store';
 import { SensorHub } from '@/data/sensors/sensor-hub';
 import { ObdManager } from '@/data/obd/obd-manager';
 import { VehicleToolAdapter } from '@/data/obd/vehicle-tool-adapter';
+import { DtcBaseDescriber } from '@/data/knowledge/dtc-base';
+import { loadDtcBaseAsset } from '@/data/knowledge/dtc-base-asset';
 import { createMmkvFaultStorage } from '@/data/faults/mmkv-fault-storage';
 import { FaultHistory } from '@/domain/faults/fault-history';
 import { OsrmRouting } from '@/data/routing/osrm-routing';
@@ -34,6 +36,7 @@ const MOVING_KMH = 5;
 const faults = new FaultHistory(createMmkvFaultStorage());
 const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
   history: faults,
+  describer: new DtcBaseDescriber(loadDtcBaseAsset),
   moving: () => (useOBDStore.getState().parameters.SPEED?.value ?? 0) > MOVING_KMH,
 });
 

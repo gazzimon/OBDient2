@@ -87,9 +87,24 @@ describe('VehicleToolAdapter', () => {
 
   it('adds a description when a source has one', async () => {
     const { session } = fakeSession({ '07': { h0: '', h1: '18DAF1110447010301' } });
-    const tools = new VehicleToolAdapter(() => session, { describer: { describe: (c) => (c === 'P0301' ? 'Cylinder 1 Misfire Detected' : null) } });
+    const info = {
+      title: 'Cylinder 1 Misfire Detected',
+      summary: 'The engine module detects misfire on cylinder 1.',
+      causes: [{ likelihood: 'high' as const, cause: 'Ignition coil of cylinder 1 faulty' }],
+      symptoms: ['Rough idle'],
+      repair: { difficulty: 'easy', costEur: [20, 150] as const },
+      reliability: 'checked' as const,
+    };
+    const tools = new VehicleToolAdapter(() => session, { describer: { describe: async (c) => (c === 'P0301' ? info : null) } });
     const data = ok(await tools.execute({ name: 'read_dtcs', kind: 'pending' }, signal));
-    expect(data.codes).toEqual([expect.objectContaining({ code: 'P0301', description: 'Cylinder 1 Misfire Detected' })]);
+    expect(data.codes).toEqual([
+      expect.objectContaining({
+        code: 'P0301',
+        description: 'Cylinder 1 Misfire Detected. The engine module detects misfire on cylinder 1.',
+        causes: info.causes,
+        reliability: 'checked',
+      }),
+    ]);
   });
 
   it('a refusal from the car becomes rejected_by_car with the reason', async () => {
