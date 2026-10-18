@@ -1,0 +1,151 @@
+// A conversation as the app keeps it (M3): what the model needs sent back
+// (`api`, the exact API messages) and what the screen shows (`items`).
+//
+// Pure functions: the store applies them, tests check them with plain data.
+// Photos travel to the model in their own turn; in the saved history they are
+// replaced by a marker, so twenty conversations do not grow to megabytes of
+// base64 (the model already described them in its answer).
+
+import type { ApiMessage } from '@/domain/ports/llm.port';
+import type { AgentEvent, TurnResult } from './agent-loop';
+import type { ToolName } from './tools';
+
+export type ToolStatus = 'running' | 'ok' | 'failed' | 'refused';
+
+export type ChatItem =
+  | { readonly kind: 'user'; readonly id: string; readonly at: number; readonly text: string; readonly photos: number }
+  | { readonly kind: 'assistant'; readonly id: string; readonly at: number; readonly text: string; readonly cancelled: boolean }
+  | {
+      readonly kind: 'tool';
+      readonly id: string;
+      readonly at: number;
+      readonly name: ToolName | string;
+      readonly status: ToolStatus;
+      // One line for the row: the tool's summary or the reason it did not run.
+      readonly detail: string | null;
+    }
+  | { readonly kind: 'error'; readonly id: string; readonly at: number; readonly text: string; readonly retryText: string | null };
+
+// Per-turn numbers, for the evaluation set (M3.4).
+export interface TurnStat {
+  readonly at: number;
+  readonly ms: number;
+  readonly modelCalls: number;
+  readonly invalidCalls: number;
+  readonly tools: readonly string[];
+}
+
+export interface Conversation {
+  readonly id: string;
+  readonly title: string;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+  readonly api: readonly ApiMessage[];
+  readonly items: readonly ChatItem[];
+  // Successful clears so far: policy allows one per conversation.
+  readonly clears: number;
+  readonly stats: readonly TurnStat[];
+}
+
+export const MAX_CONVERSATIONS = 20;
+export const MAX_MESSAGES = 200;
+const TITLE_CHARS = 40;
+export const PHOTO_MARKER = '[foto adjunta, ya analizada]';
+
+export function newConversation(id: string, now: number): Conversation {
+  return { id, title: 'Conversación nueva', createdAt: now, updatedAt: now, api: [], items: [], clears: 0, stats: [] };
+}
+
+// The user's message goes on screen at once, before the model answers.
+export function addUserMessage(c: Conversation, id: string, text: string, photos: number, now: number): Conversation {
+  const first = c.items.every((i) => i.kind !== 'user');
+  return {
+    ...c,
+    title: first ? titleFrom(text, photos) : c.title,
+    updatedAt: now,
+    items: [...c.items, { kind: 'user', id, at: now, text, photos }],
+  };
+}
+
+// Streaming answer text and tool rows, as the turn goes.
+export function applyEvent(c: Conversation, e: AgentEvent, now: number, answerId: string): Conversation {
+  switch (e.type) {
+    case 'text': {
+      const last = c.items[c.items.length - 1];
+      if (last?.kind === 'assistant' && last.id === answerId) {
+        return { ...c, items: [...c.items.slice(0, -1), { ...last, text: last.text + e.delta }] };
+      }
+      return { ...c, items: [...c.items, { kind: 'assistant', id: answerId, at: now, text: e.delta, cancelled: false }] };
+    }
+    case 'tool_start':
+      return { ...c, items: [...c.items, { kind: 'tool', id: e.id, at: now, name: e.call.name, status: 'running', detail: null }] };
+    case 'tool_end':
+      return updateTool(c, e.id, e.outcome.ok ? 'ok' : 'failed', e.outcome.ok ? e.outcome.summary : e.outcome.message);
+    case 'tool_refused':
+      return {
+        ...c,
+        items: [...c.items, { kind: 'tool', id: e.id, at: now, name: e.name, status: 'refused', detail: e.outcome.ok ? null : e.outcome.message }],
+      };
+  }
+}
+
+// The turn ended: its messages join the API history (photos replaced), the
+// answer is final, the history keeps to its bounds.
+export function finishTurn(c: Conversation, r: TurnResult, answerId: string, startedAt: number, now: number): Conversation {
+  const items = c.items.map((i) => (i.kind === 'tool' && i.status === 'running' ? { ...i, status: 'failed' as const, detail: 'Cancelado.' } : i));
+  const last = items[items.length - 1];
+  let finalItems = items;
+  if (last?.kind === 'assistant' && last.id === answerId) {
+    finalItems = [...items.slice(0, -1), { ...last, text: r.text || last.text, cancelled: r.cancelled }];
+  } else if (r.text || r.cancelled) {
+    finalItems = [...items, { kind: 'assistant', id: answerId, at: now, text: r.text, cancelled: r.cancelled }];
+  }
+  const tools = finalItems.filter((i) => i.kind === 'tool' && i.at >= startedAt).map((i) => (i as { name: string }).name);
+  return {
+    ...c,
+    updatedAt: now,
+    api: bound([...c.api, ...r.messages.map(withoutPhotos)]),
+    items: finalItems.slice(-MAX_MESSAGES),
+    clears: c.clears + r.clears,
+    stats: [...c.stats, { at: startedAt, ms: now - startedAt, modelCalls: r.modelCalls, invalidCalls: r.invalidCalls, tools }].slice(-MAX_MESSAGES),
+  };
+}
+
+// The turn failed before an answer (network, server, no account). The text
+// stays on screen with a way to send it again; nothing joins the API history.
+export function failTurn(c: Conversation, id: string, text: string, retryText: string | null, now: number): Conversation {
+  const items = c.items.map((i) => (i.kind === 'tool' && i.status === 'running' ? { ...i, status: 'failed' as const, detail: null } : i));
+  return { ...c, updatedAt: now, items: [...items, { kind: 'error', id, at: now, text, retryText }] };
+}
+
+// Newest first, at most MAX_CONVERSATIONS; empty ones are not kept.
+export function upsertConversation(list: readonly Conversation[], c: Conversation): Conversation[] {
+  const rest = list.filter((x) => x.id !== c.id);
+  return [c, ...rest].filter((x, i) => i === 0 || x.items.length > 0).slice(0, MAX_CONVERSATIONS);
+}
+
+function updateTool(c: Conversation, id: string, status: ToolStatus, detail: string | null): Conversation {
+  return { ...c, items: c.items.map((i) => (i.kind === 'tool' && i.id === id ? { ...i, status, detail } : i)) };
+}
+
+function withoutPhotos(m: ApiMessage): ApiMessage {
+  if (m.role !== 'user' || typeof m.content === 'string') return m;
+  const text = m.content.filter((p) => p.type === 'text').map((p) => (p as { text: string }).text).join('\n');
+  const photos = m.content.length - m.content.filter((p) => p.type === 'text').length;
+  return photos ? { role: 'user', content: `${text}\n${PHOTO_MARKER}` } : m;
+}
+
+// Drops the oldest whole turns beyond MAX_MESSAGES (a turn starts at a user
+// message, so tool calls never lose their results).
+function bound(api: ApiMessage[]): ApiMessage[] {
+  if (api.length <= MAX_MESSAGES) return api;
+  let start = api.length - MAX_MESSAGES;
+  while (start < api.length && api[start]!.role !== 'user') start++;
+  return api.slice(start);
+}
+
+function titleFrom(text: string, photos: number): string {
+  const t = text.trim().replace(/\s+/g, ' ');
+  if (!t) return photos ? 'Foto' : 'Conversación nueva';
+  return t.length > TITLE_CHARS ? `${t.slice(0, TITLE_CHARS - 1)}…` : t;
+}

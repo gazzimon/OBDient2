@@ -46,6 +46,8 @@ export class ToolMemo {
 export interface TurnOptions {
   readonly history: readonly ApiMessage[];
   readonly text: string;
+  // Photos attached to this message (data URLs), e.g. a dashboard warning light.
+  readonly images?: readonly string[];
   readonly context: AssistantContext;
   readonly llm: LlmPort;
   readonly vehicle: VehicleToolsPort;
@@ -82,7 +84,15 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
   const tools = toolSchemas(supported);
   const { kept, dropped } = trimHistory(opts.history, HISTORY_BUDGET_TOKENS);
 
-  const added: ApiMessage[] = [{ role: 'user', content: userMessage(opts.text, opts.context) }];
+  const prompt = userMessage(opts.text, opts.context);
+  const added: ApiMessage[] = [
+    {
+      role: 'user',
+      content: opts.images?.length
+        ? [{ type: 'text', text: prompt }, ...opts.images.map((url) => ({ type: 'image_url' as const, image_url: { url } }))]
+        : prompt,
+    },
+  ];
   const outcomes: ToolOutcome[] = [];
   let clears = 0;
   let invalidCalls = 0;

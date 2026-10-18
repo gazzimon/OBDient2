@@ -1,6 +1,9 @@
 // Composition root: the long-lived services, wired once.
 
 import Constants from 'expo-constants';
+import { fetch as expoFetch } from 'expo/fetch';
+import { AssistantService } from '@/data/assistant/assistant-service';
+import { OpenAiChatClient } from '@/data/llm/openai-chat-client';
 import { AccountService } from '@/data/auth/account-service';
 import { FirebaseRest } from '@/data/auth/firebase-rest';
 import { googleSignIn } from '@/data/auth/google-sign-in';
@@ -43,8 +46,22 @@ const account = new AccountService({
   authUrl: extra.authUrl,
 });
 
+// The assistant (M3): the account's key, the car through vehicleTools.
+const assistant = new AssistantService({
+  account,
+  vehicle: vehicleTools,
+  makeLlm: (c) =>
+    new OpenAiChatClient({
+      baseUrl: c.baseUrl,
+      apiKey: c.apiKey,
+      model: c.model,
+      fetch: expoFetch as unknown as ConstructorParameters<typeof OpenAiChatClient>[0]['fetch'],
+    }),
+});
+
 export const container = {
   account,
+  assistant,
   sensors,
   obd,
   trips,
