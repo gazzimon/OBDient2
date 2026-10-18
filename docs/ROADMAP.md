@@ -84,8 +84,9 @@ sincronización cuando exista el login.
 **2026-10-18: identidad cambiada a correo con código (Magic).** El login con Google funcionó hasta el
 servidor (el fallo era `obdient-auth` con el token viejo de new-api en memoria), pero se reemplaza por
 simplicidad: código por correo, aprobación de dispositivos nuevos, sin Firebase ni Google. Migración a
-Supabase Auth si se pasan los 1.000 usuarios activos por mes. Pendiente: `MAGIC_SECRET_KEY` en
-`auth.env`, reiniciar `obdient-auth`, build Dev y probar.
+Supabase Auth si se pasan los 1.000 usuarios activos por mes. **Probado en el teléfono el 2026-10-18:**
+código por correo → `obdient-auth` (modo Magic) → clave de la cuenta en new-api (activa, solo
+`obdient-chat`, una por cuenta).
 
 
 - [x] Servicio `server/auth` (K16, `127.0.0.1:8790`, Caddy `/auth`): valida el ID token de Firebase y
