@@ -5,7 +5,7 @@
 // get one; everything else in the app works without it.
 
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { ChatItem } from '@/domain/assistant/conversation';
@@ -15,9 +15,13 @@ import { ToolRow } from '@/presentation/components/assistant/ToolRow';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { useAccount } from '@/presentation/hooks/useAccount';
 import { useAssistant } from '@/presentation/hooks/useAssistant';
+import { pickPhoto, type Photo, type PhotoSource } from '@/presentation/services/photo';
 import { COLORS } from '@/presentation/theme';
 import { useChatStore } from '@/store/chatStore';
 import { useOBDStore } from '@/store/obdStore';
+
+// Each photo costs ~1.5k tokens of the 16k context.
+const MAX_PHOTOS = 2;
 
 const EXAMPLES = [
   '¿Cómo está la batería y tengo algún código?',
@@ -34,6 +38,7 @@ export default function AssistantScreen() {
   const { send, stop, running } = useAssistant();
   const [text, setText] = useState('');
   const [listOpen, setListOpen] = useState(false);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const list = useRef<FlatList<ChatItem>>(null);
 
   const items = conversation?.items ?? [];
@@ -45,11 +50,29 @@ export default function AssistantScreen() {
     if (last) setTimeout(() => list.current?.scrollToEnd({ animated: true }), 50);
   }, [last]);
 
-  const submit = (value = text) => {
-    if (!value.trim() || running) return;
+  // A photo alone gets a default question.
+  const submit = (value = text, attached: Photo[] = photos) => {
+    if (running || (!value.trim() && attached.length === 0)) return;
     setText('');
-    void send(value);
+    setPhotos([]);
+    void send(value.trim() || '¿Qué ves en la foto?', attached.map((p) => p.dataUrl));
   };
+
+  const attach = async (source: PhotoSource) => {
+    try {
+      const photo = await pickPhoto(source);
+      if (photo) setPhotos((list) => [...list, photo].slice(-MAX_PHOTOS));
+    } catch {
+      Alert.alert('Foto', 'No se pudo preparar la foto.');
+    }
+  };
+  const choosePhoto = () =>
+    Alert.alert('Adjuntar foto', 'Por ejemplo, un testigo del tablero o una etiqueta.', [
+      { text: 'Cámara', onPress: () => void attach('camera') },
+      { text: 'Galería', onPress: () => void attach('library') },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  const canSend = text.trim() !== '' || photos.length > 0;
 
   const newConversation = () => {
     if (running) return;
@@ -128,8 +151,27 @@ export default function AssistantScreen() {
           />
         )}
 
+        {status === 'signed-in' && photos.length > 0 && (
+          <View className="flex-row gap-2 px-4 pt-3">
+            {photos.map((p) => (
+              <View key={p.uri}>
+                <Image source={{ uri: p.uri }} style={{ width: 56, height: 56, borderRadius: 10 }} />
+                <Pressable
+                  onPress={() => setPhotos((list) => list.filter((x) => x.uri !== p.uri))}
+                  hitSlop={8}
+                  className="absolute -top-2 -right-2 bg-brand-surface rounded-full"
+                >
+                  <MaterialCommunityIcons name="close-circle" size={18} color={COLORS.muted} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
         {status === 'signed-in' && (
           <View className="flex-row items-end gap-2 px-4 py-3 border-t border-brand-border">
+            <Pressable onPress={choosePhoto} disabled={running} hitSlop={8} className="w-9 h-11 items-center justify-center active:opacity-60">
+              <MaterialCommunityIcons name="camera-outline" size={22} color={running ? COLORS.border : COLORS.muted} />
+            </Pressable>
             <TextInput
               value={text}
               onChangeText={setText}
@@ -145,12 +187,12 @@ export default function AssistantScreen() {
             ) : (
               <Pressable
                 onPress={() => submit()}
-                disabled={!text.trim()}
+                disabled={!canSend}
                 hitSlop={8}
                 className="w-11 h-11 rounded-full items-center justify-center active:opacity-60"
-                style={{ backgroundColor: text.trim() ? COLORS.mint : COLORS.surface }}
+                style={{ backgroundColor: canSend ? COLORS.mint : COLORS.surface }}
               >
-                <MaterialCommunityIcons name="send" size={20} color={text.trim() ? COLORS.bg : COLORS.muted} />
+                <MaterialCommunityIcons name="send" size={20} color={canSend ? COLORS.bg : COLORS.muted} />
               </Pressable>
             )}
           </View>

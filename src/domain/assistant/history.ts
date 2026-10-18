@@ -11,8 +11,10 @@ import type { ApiMessage } from '@/domain/ports/llm.port';
 // plus a few for the message envelope.
 const CHARS_PER_TOKEN = 3.5;
 const PER_MESSAGE = 4;
-// An attached image costs roughly this much at the server's resize.
-const IMAGE_TOKENS = 800;
+// An attached image (≤ 1024 px, see presentation/services/photo.ts): Qwen3.8
+// counts ~1.3k vision tokens at that size; a 164 kB photo with a short question
+// measured 2.5k prompt tokens (2026-10-18).
+const IMAGE_TOKENS = 1500;
 
 export function estimateTokens(m: ApiMessage): number {
   let chars = 0;
