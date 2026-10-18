@@ -67,6 +67,7 @@ function simulated(): VehicleToolsPort {
         return { ok: true, data: { expression: c.expression, result: 0 }, summary: 'cálculo' };
       case 'search_place':
       case 'set_destination':
+      case 'start_navigation':
       case 'route_status':
       case 'stop_navigation':
         return { ok: false, error: 'not_supported', message: 'Sin navegación en el humo.' };

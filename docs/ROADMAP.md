@@ -107,7 +107,9 @@ código por correo → `obdient-auth` (modo Magic) → clave de la cuenta en new
   borrar cuenta) · ⏳ probar en el teléfono con el build Dev nuevo (2026-10-18).
 - [x] Claves de new-api nombradas con el correo de la cuenta (los logs de uso muestran quién es); las
   viejas `fb-…` se renombran solas en el próximo login, misma clave y cuota (2026-10-18).
-- [ ] **Después del MVP: migrar de new-api a LiteLLM Proxy.** new-api identifica claves, no personas
+- [ ] **Después del MVP: migrar de new-api a LiteLLM Proxy** (con la cadena de respaldo Qwen3.8 Z440 →
+  Qwen3 4B K16 → modelo en la nube con presupuesto, y el servidor MCP de lugares; ver
+  [plans/voz-y-lugares.md](plans/voz-y-lugares.md)). new-api identifica claves, no personas
   (todo cuelga de `obdient2app`) y su límite de pedidos por minuto es por usuario, o sea compartido
   por toda la app. LiteLLM tiene claves virtuales con `user_id`, límites y presupuesto por clave o
   usuario, y gasto por usuario. Cambia `server/auth/src/newapi.mjs` y la ruta `/llm` de Caddy; la app no.
@@ -183,12 +185,11 @@ bajo, VIN "mal leído", "no tengo historial").
   elige bien (0 llamadas inválidas en el auto). Revisar si se pasan ~25 herramientas o si se suman
   modelos especializados (visión, diagnóstico); un router suma latencia y otra pieza.
 - **Herramientas en el servidor: no.** Corren en el teléfono, junto al adaptador (ADR-0007).
-- [x] **Navegación por chat** (2026-10-18): `search_place` (texto, o lo más cercano de 10 categorías:
-  combustible, carga eléctrica, estacionamiento, taller, lavadero, farmacia, hospital, comisaría,
-  cajero, supermercado), `set_destination` (ruta, guía y vista de manejo), `route_status` (falta,
-  llegada, próxima maniobra), `stop_navigation`. Las categorías se buscan por palabras y marcas dentro
-  de un recuadro de ~5 km (luego ~20) con filtro de OSM; el texto libre pone primero lo que está a
-  menos de 50 km (resuelve el homónimo a 900 km).
+- [x] **Navegación por chat, PLAN 0** (2026-10-18; ver [plans/voz-y-lugares.md](plans/voz-y-lugares.md)):
+  solo direcciones ("Uruguay 1223"), el más cercano primero; `set_destination` muestra el punto y la
+  ruta en el mapa y pregunta; `start_navigation` arranca con el sí; `route_status`, `stop_navigation`.
+  Comercios, búsqueda web (servidor MCP propio en la K16, HERE) y respaldo del modelo (LiteLLM):
+  después del MVP, con la migración del gateway.
 - **Antes del APK para probar en movimiento (decisión 2026-10-18):** navegación por chat → M4 (sin
   conexión y errores, resumen de conversaciones largas) → M5 (modo manejo: voz de salida, árbitro con
   alertas y guía, chips) → M6 (micrófono). Recién entonces el standalone y la prueba todo junto.

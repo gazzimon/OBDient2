@@ -24,5 +24,7 @@ export const navigationTools = new NavigationTools({
   start: () => navigation.start(),
   stop: () => navigation.stop(),
   openDrive: () => router.push('/drive'),
+  // The Ruta tab shows the planned route with its "Iniciar" button.
+  openMap: () => router.navigate('/'),
   state: () => useNavStore.getState(),
 });
