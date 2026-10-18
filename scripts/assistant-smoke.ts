@@ -61,6 +61,10 @@ function simulated(): VehicleToolsPort {
         return { ok: true, data: { speedHz: 24 }, summary: '24 Hz' };
       case 'clear_dtcs':
         return { ok: true, data: { cleared: true }, summary: 'Códigos borrados' };
+      case 'read_fault_history':
+        return { ok: true, data: { events: [] }, summary: 'Historial vacío' };
+      case 'calculate':
+        return { ok: true, data: { expression: c.expression, result: 0 }, summary: 'cálculo' };
     }
   };
   return {

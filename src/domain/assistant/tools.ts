@@ -21,6 +21,8 @@ export const TOOL_NAMES = [
   'read_adapter_info',
   'run_adapter_bench',
   'clear_dtcs',
+  'read_fault_history',
+  'calculate',
 ] as const;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
@@ -35,9 +37,11 @@ export type ToolCall =
   | { readonly name: 'read_freeze_frame' }
   | { readonly name: 'read_readiness' }
   | { readonly name: 'read_vehicle_info' }
-  | { readonly name: 'read_adapter_info'; readonly includePower: boolean }
+  | { readonly name: 'read_adapter_info'; readonly includePower: boolean; readonly fullCheck: boolean }
   | { readonly name: 'run_adapter_bench' }
-  | { readonly name: 'clear_dtcs' };
+  | { readonly name: 'clear_dtcs' }
+  | { readonly name: 'read_fault_history' }
+  | { readonly name: 'calculate'; readonly expression: string };
 
 export const TOOL_LIMITS = {
   readPidsMax: 6,
@@ -128,12 +132,21 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     fn('read_freeze_frame', 'Lee la foto que guardó la ECU cuando se registró el código: valores en ese momento.', NO_ARGS),
     fn('read_readiness', 'Lee el estado de los monitores de emisiones y el tiempo y la distancia desde el último borrado.', NO_ARGS),
     fn('read_vehicle_info', 'Lee el VIN y qué PIDs soporta el auto.', NO_ARGS),
-    fn('read_adapter_info', 'Datos del adaptador OBD: chip, firmware, protocolo y calidad de la conexión.', {
-      type: 'object',
-      properties: { include_power: { type: 'boolean', description: 'Incluir la tensión que mide el adaptador.' } },
-      required: ['include_power'],
-      additionalProperties: false,
-    }),
+    fn(
+      'read_adapter_info',
+      'Datos del adaptador OBD: chip, firmware, protocolo y calidad de la conexión. Con full_check, además: qué ' +
+        'módulos del auto responden, si el adaptador es genuino o una copia y si se apaga solo (pausa la ' +
+        'telemetría un momento; solo con el auto detenido). Usalo para "¿anda bien mi adaptador?".',
+      {
+        type: 'object',
+        properties: {
+          include_power: { type: 'boolean', description: 'Incluir la tensión que mide el adaptador.' },
+          full_check: { type: 'boolean', description: 'Prueba completa de la conexión.' },
+        },
+        required: ['include_power'],
+        additionalProperties: false,
+      },
+    ),
     fn(
       'run_adapter_bench',
       'Prueba la velocidad del adaptador durante unos segundos. Pausa la telemetría mientras corre.',
@@ -144,6 +157,23 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
       'Borra los códigos de falla y apaga el testigo. Es destructivo: la app le pide confirmación al usuario ' +
         'antes de ejecutarlo. Llamalo solo si el usuario pidió borrar.',
       NO_ARGS,
+    ),
+    fn(
+      'read_fault_history',
+      'Historial de fallas de este auto guardado en el teléfono: cuándo apareció o desapareció cada código, ' +
+        'freeze frames y borrados, con los km desde el borrado. No necesita el adaptador conectado.',
+      NO_ARGS,
+    ),
+    fn(
+      'calculate',
+      'Calcula una expresión aritmética exacta: + - * / % ^, paréntesis, sqrt, abs, round(x, decimales), min, ' +
+        'max, pow, log10, ln, pi. Decimales con punto. Usalo para toda cuenta en vez de calcular de cabeza.',
+      {
+        type: 'object',
+        properties: { expression: { type: 'string', maxLength: 200 } },
+        required: ['expression'],
+        additionalProperties: false,
+      },
     ),
   ];
 }
@@ -209,16 +239,25 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       return { ok: true, call: { name, kind: k as DtcKind } };
     }
     case 'read_adapter_info': {
-      const extra = only('include_power');
+      const extra = only('include_power', 'full_check');
       if (extra) return bad(extra);
       if (typeof a.include_power !== 'boolean') return bad('"include_power" debe ser true o false.');
-      return { ok: true, call: { name, includePower: a.include_power } };
+      if (a.full_check !== undefined && typeof a.full_check !== 'boolean') return bad('"full_check" debe ser true o false.');
+      return { ok: true, call: { name, includePower: a.include_power, fullCheck: a.full_check === true } };
+    }
+    case 'calculate': {
+      const extra = only('expression');
+      if (extra) return bad(extra);
+      const e = a.expression;
+      if (typeof e !== 'string' || e.trim() === '' || e.length > 200) return bad('"expression" debe ser texto de hasta 200 caracteres.');
+      return { ok: true, call: { name, expression: e } };
     }
     case 'read_freeze_frame':
     case 'read_readiness':
     case 'read_vehicle_info':
     case 'run_adapter_bench':
-    case 'clear_dtcs': {
+    case 'clear_dtcs':
+    case 'read_fault_history': {
       const extra = only();
       return extra ? bad(extra) : { ok: true, call: { name } };
     }

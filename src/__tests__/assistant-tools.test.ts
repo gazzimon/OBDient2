@@ -38,7 +38,10 @@ describe('parseToolCall', () => {
     expect(ok('read_pids', '{"pids":["RPM","VOLTAGE"]}')).toEqual({ name: 'read_pids', pids: ['RPM', 'VOLTAGE'] });
     expect(ok('sample_pids', '{"pids":["RPM"],"seconds":10}')).toEqual({ name: 'sample_pids', pids: ['RPM'], seconds: 10 });
     expect(ok('read_dtcs', '{"kind":"pending"}')).toEqual({ name: 'read_dtcs', kind: 'pending' });
-    expect(ok('read_adapter_info', '{"include_power":true}')).toEqual({ name: 'read_adapter_info', includePower: true });
+    expect(ok('read_adapter_info', '{"include_power":true}')).toEqual({ name: 'read_adapter_info', includePower: true, fullCheck: false });
+    expect(ok('read_adapter_info', '{"include_power":false,"full_check":true}')).toEqual({ name: 'read_adapter_info', includePower: false, fullCheck: true });
+    expect(ok('calculate', '{"expression":"2204*0.621371"}')).toEqual({ name: 'calculate', expression: '2204*0.621371' });
+    expect(ok('read_fault_history', '{}')).toEqual({ name: 'read_fault_history' });
     expect(ok('clear_dtcs', '')).toEqual({ name: 'clear_dtcs' });
     expect(ok('read_readiness', '{}')).toEqual({ name: 'read_readiness' });
   });

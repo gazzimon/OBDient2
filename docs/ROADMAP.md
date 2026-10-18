@@ -170,6 +170,21 @@ de ABS, airbag, carrocería y caja.
 - **Nunca** `2E` (escritura), `31` (rutinas), `14` (borrado del fabricante) ni `27` (acceso de
   seguridad). Si un dato pide sesión extendida (`10 03`), se decide aparte.
 
+### E7 · Herramientas del asistente (2026-10-18)
+
+11 herramientas: las 9 de M2.4 más `read_fault_history` (historial del teléfono, sin adaptador) y
+`calculate` (aritmética segura en el teléfono). `read_pids`/`sample_pids` traen `fuelEstimate` (L/h y
+L/100 km desde el MAF, calculado por la app); `read_adapter_info` con `full_check` (módulos que
+responden, ELM327 genuino o copia, si se apaga solo). El dígito verificador del VIN solo se informa en
+VIN norteamericanos. Salen de los errores vistos en la prueba en el auto (sin visión, consumo 3×
+bajo, VIN "mal leído", "no tengo historial").
+
+- **Router de preguntas con un modelo en el gateway: no por ahora.** Con 11 herramientas un solo modelo
+  elige bien (0 llamadas inválidas en el auto). Revisar si se pasan ~25 herramientas o si se suman
+  modelos especializados (visión, diagnóstico); un router suma latencia y otra pieza.
+- **Herramientas en el servidor: no.** Corren en el teléfono, junto al adaptador (ADR-0007).
+- Siguiente: navegación por chat (`search_place`, `set_destination`, estado de la ruta).
+
 ### Otros pendientes
 
 - **Probar en el teléfono** (build Dev + Metro): detector YOLO y captura de cuadros, corregidos para
