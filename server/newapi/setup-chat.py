@@ -12,8 +12,8 @@ Idempotent: creates what is missing and leaves the rest alone. Prints no secret.
   later (ADR-0008).
 
 Needs:
-- ~/.config/obdient/newapi-admin (0600): two lines, the admin user id and a system
-  access token (new-api → Personal settings → System access token).
+- ~/.config/obdient/newapi.env (0600) with NEWAPI_ADMIN_USER_ID and
+  NEWAPI_ADMIN_TOKEN (new-api → Security & Access → System Access Token).
 - ssh access to the Z440 (the vLLM key is read there and never shown).
 """
 
@@ -38,12 +38,20 @@ CONF = Path.home() / ".config" / "obdient"
 
 
 def admin_headers() -> dict:
-    f = CONF / "newapi-admin"
+    f = CONF / "newapi.env"
     if not f.exists():
-        sys.exit(f"Falta {f}: dos líneas, id del usuario admin y su token de acceso al sistema.")
+        sys.exit(f"Falta {f} con NEWAPI_ADMIN_USER_ID y NEWAPI_ADMIN_TOKEN.")
     if f.stat().st_mode & 0o077:
         sys.exit(f"{f} tiene que ser privado: chmod 600 {f}")
-    user_id, token = [line.strip() for line in f.read_text().splitlines() if line.strip()][:2]
+    env = {}
+    for line in f.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            env[k.strip()] = v.strip().strip('"').strip("'")
+    user_id, token = env.get("NEWAPI_ADMIN_USER_ID", ""), env.get("NEWAPI_ADMIN_TOKEN", "")
+    if not user_id or not token:
+        sys.exit(f"Completá NEWAPI_ADMIN_USER_ID y NEWAPI_ADMIN_TOKEN en {f}.")
     return {"Authorization": f"Bearer {token}", "New-Api-User": user_id, "Content-Type": "application/json"}
 
 
