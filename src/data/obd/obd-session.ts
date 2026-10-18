@@ -103,6 +103,7 @@ export class ObdSession {
         adapter: info.identity.stn ?? (info.identity.elm || 'ELM327'),
         protocol: info.protocol,
         stn: info.identity.stn != null,
+        can: isCan(info.protocol),
       });
     } finally {
       this.capturing = false;

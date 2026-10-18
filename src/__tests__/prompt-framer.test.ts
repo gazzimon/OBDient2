@@ -15,10 +15,10 @@ describe('PromptFramer', () => {
     expect(f.pending()).toBe('');
   });
 
-  it('joins multi-line (multi-ECU / multi-frame) output with single spaces', () => {
+  it('keeps multi-line (multi-ECU / multi-frame) output one line per frame', () => {
     const f = new PromptFramer();
-    expect(f.feed('7E8 10 14 49 02 01\r7E8 21 57 30 4C\r\r>')).toEqual([
-      '7E8 10 14 49 02 01 7E8 21 57 30 4C',
+    expect(f.feed('7E8 10 14 49 02 01\r7E8  21 57 30 4C\r\r>')).toEqual([
+      '7E8 10 14 49 02 01\n7E8 21 57 30 4C',
     ]);
   });
 

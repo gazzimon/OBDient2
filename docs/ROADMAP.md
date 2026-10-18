@@ -46,7 +46,10 @@ sincronización cuando exista el login.
   solo lectura, reconfigura al terminar) · ⏳ correrlo en el auto (B35 y B14); `0101`, `0131`, `03`, `07`, `0A`, `0200`, `0202`, `0900`, `0902`, `ATDP`, con `ATH0` y
   `ATH1`; además prueba `STCSEGR 1`, `STVR 2`, `STDICES`, `STDITPO`, `STSLLT`, `STP 34`, y en ELM327
   `ATAMC`/`ATCTM1` (genuino o clon).
-- [ ] **M2.1 Lectura de tramas**: respuestas en varios cuadros y varias ECUs, con y sin encabezados.
+- [x] **M2.1 Lectura de tramas** (`core/utils/obdFrames.ts`): varios cuadros y varias ECUs, con y sin
+  encabezados, CAN 11/29 bits y J1850/K-Line, espacios sí o no; probado con los ejemplos del datasheet
+  ELM327. El lector de respuestas conserva una línea por cuadro. La captura muestra cómo armó cada
+  respuesta (`= 7E8: …`) · ⏳ verificar en el auto · pendiente `STCSEGR 1` (el STN quita el PCI).
 - [ ] **M2.2 Parsers**: códigos (`43`/`47`/`4A`), freeze frame, readiness con km desde el borrado (`0131`),
   VIN.
 - [ ] **M2.3 Sesión**: todos los PIDs soportados, `query` y `exclusive`, muestreo, `STPX` con `r:`/`t:`

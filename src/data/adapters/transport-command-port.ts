@@ -53,10 +53,9 @@ const INTERNAL_ERROR = /^ERR[0-9A-F]{2}$/;
 // pending; then the request is sent again (the ECU answers at once if done).
 const PENDING_WAIT_MS = 5000;
 const MAX_PENDING_RESENDS = 2;
-// One pending frame per whitespace token (ATS0), with an optional CAN ID (11 or
-// 29 bit) and PCI byte when headers are on; the spaced form for ATS1.
-const PENDING_TOKEN = /^(?:[0-9A-F]{3}|[0-9A-F]{8})?(?:03)?7F[0-9A-F]{2}78$/i;
-const PENDING_SPACED = /(?:^|\s)(?:03 )?7F [0-9A-F]{2} 78(?=\s|$)/gi;
+// A pending frame, spaces removed: optional CAN ID (11 or 29 bit) and PCI byte
+// when headers are on, then 7F <service> 78, then CAN padding if any.
+const PENDING_FRAME = /^(?:[0-9A-F]{3}|[0-9A-F]{8})?(?:03)?7F[0-9A-F]{2}78(?:[0-9A-F]{2})*$/i;
 
 interface Pending {
   command: string;
@@ -201,23 +200,24 @@ export class TransportCommandPort implements CommandPort {
 }
 
 // Drops "response pending" frames; what remains is the real answer, if any.
+// One frame per line (ATS0 or ATS1, with or without header and PCI).
 function withoutPending(response: string): string {
   return response
-    .replace(PENDING_SPACED, ' ')
-    .split(' ')
-    .filter((token) => token !== '' && !PENDING_TOKEN.test(token))
-    .join(' ');
+    .split('\n')
+    .filter((line) => !PENDING_FRAME.test(line.replace(/\s/g, '')))
+    .join('\n');
 }
 
-// Strips the command echo (before ATE0 takes effect) and the "SEARCHING..." banner.
+// Strips the command echo (before ATE0 takes effect), the "SEARCHING..." banner
+// and the ISO 9141/14230 "BUS INIT: ...OK" line. Keeps one line per frame.
 function clean(raw: string, command: string): string {
-  let text = raw;
+  let text = raw.replace(ALERTS, ' ');
   if (text.toUpperCase().startsWith(command.toUpperCase())) {
     text = text.slice(command.length);
   }
   return text
-    .replace(ALERTS, ' ')
-    .replace(/^\s*SEARCHING\.\.\.\s*/i, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .split('\n')
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter((line) => line !== '' && !/^SEARCHING\.\.\.$/i.test(line) && !/^BUS INIT: ?\.*OK$/i.test(line))
+    .join('\n');
 }

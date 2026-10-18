@@ -25,7 +25,7 @@ function fakePort(answers: Record<string, string | (() => never)>): CapturePort 
   };
 }
 
-const ctx = { adapter: 'STN1040 v1.3.6', protocol: 'ISO_15765_4_CAN_29BIT_500K', stn: true };
+const ctx = { adapter: 'STN1040 v1.3.6', protocol: 'ISO_15765_4_CAN_29BIT_500K', stn: true, can: true };
 
 describe('diagnostic capture', () => {
   it('never contains a request that clears or writes', () => {
@@ -80,6 +80,22 @@ describe('diagnostic capture', () => {
       (await runDiagnosticCapture(fakePort({}), { ...ctx, stn })).rounds.map((r) => r.title);
     expect(await titles(true)).toEqual(['Sin encabezados (ATH0)', 'Con encabezados (ATH1)', 'Comandos STN']);
     expect(await titles(false)).toEqual(['Sin encabezados (ATH0)', 'Con encabezados (ATH1)', 'ELM327: genuino o clon']);
+  });
+
+  it('shows how the frame reader assembled each OBD answer, with headers once ATH1 is on', async () => {
+    const port = fakePort({
+      '03': '18DAF11003430171AAAAAAAA\n18DAF11801430000AAAAAA',
+      '0902': '014\n0:490201314434\n1:47503030523535\n2:42313233343536',
+    });
+    const report = await runDiagnosticCapture(port, ctx, [
+      { title: 'a', commands: ['0902'] },
+      { title: 'b', commands: ['ATH1', '03'] },
+    ]);
+    const text = formatCapture(report);
+    expect(text).toContain('  = ECU ?: 49 02 01 31 44 34 47 50 30 30 52 35 35 42 31 32 33 34 35 36');
+    expect(text).toContain('  = 18DAF110: 43 01 71');
+    expect(text).toContain('  = 18DAF118: 43');
+    expect(report.rounds[1]!.entries[0]!.messages).toBeUndefined();
   });
 
   it('formats raw answers under each command', async () => {

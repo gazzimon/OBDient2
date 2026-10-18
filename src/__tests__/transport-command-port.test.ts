@@ -1,4 +1,5 @@
 import { AdapterResetError, CommandTimeoutError, ConnectionLostError, NoDataError } from '@/core/errors/obd.errors';
+import { readMessages } from '@/core/utils/obdFrames';
 import { TransportCommandPort } from '@/data/adapters/transport-command-port';
 import { Listeners, type ByteTransport } from '@/data/adapters/transport';
 
@@ -34,6 +35,22 @@ describe('TransportCommandPort', () => {
       tr.emit('\r>');
     });
     await expect(new TransportCommandPort(t).send('0902')).resolves.toBe('49 02 01 57 30 4C');
+  });
+
+  it('keeps one line per frame, so multi-frame answers can be assembled', async () => {
+    const t = new FakeTransport((w, tr) => {
+      tr.emit('7E8 10 14 49 02 01 31 44 34\r7E8 2');
+      tr.emit('1 47 50 30 30 52 35 35\r7E8 22 42 31 32 33 34 35 36\r\r>');
+    });
+    const response = await new TransportCommandPort(t).send('0902');
+    expect(response).toBe('7E8 10 14 49 02 01 31 44 34\n7E8 21 47 50 30 30 52 35 35\n7E8 22 42 31 32 33 34 35 36');
+    const [vin] = readMessages(response, { headers: true, can: true });
+    expect(String.fromCharCode(...vin!.bytes.slice(3))).toBe('1D4GP00R55B123456');
+  });
+
+  it('drops a response-pending frame with headers and padding, keeps the answer', async () => {
+    const t = new FakeTransport((w, tr) => tr.emit('7E8037F037800000000\r7E80343017100000000\r\r>'));
+    await expect(new TransportCommandPort(t).send('03')).resolves.toBe('7E80343017100000000');
   });
 
   it('strips the command echo and the SEARCHING banner', async () => {

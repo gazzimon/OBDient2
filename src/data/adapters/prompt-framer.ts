@@ -9,8 +9,9 @@ const PROMPT = '>';
 export class PromptFramer {
   private buffer = '';
 
-  // Feeds a chunk and returns every response completed by it (prompt stripped,
-  // CR/LF collapsed to single spaces). Usually 0 or 1 items.
+  // Feeds a chunk and returns every response completed by it (prompt stripped).
+  // Usually 0 or 1 items. Lines stay apart ('\n'): each one is a frame, an ECU
+  // or a segment, and with spaces off (ATS0) that is the only boundary left.
   feed(chunk: string): string[] {
     // The ELM327 may slip NUL bytes into its output (datasheet, EUSART erratum).
     this.buffer += chunk.replace(/\0/g, '');
@@ -34,6 +35,11 @@ export class PromptFramer {
   }
 }
 
-function normalize(raw: string): string {
-  return raw.replace(/\r\n|\r|\n/g, ' ').replace(/\s+/g, ' ').trim();
+// One line per adapter line, inner whitespace collapsed, blank lines dropped.
+export function normalize(raw: string): string {
+  return raw
+    .split(/\r\n|\r|\n/)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter((line) => line !== '')
+    .join('\n');
 }

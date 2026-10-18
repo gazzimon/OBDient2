@@ -10,6 +10,7 @@
 import { AdapterResetError, CommandTimeoutError, ConnectionLostError, NoDataError } from '@/core/errors/obd.errors';
 import type { CommandPort } from '@/data/adapters/protocol-manager';
 import type { Unsubscribe } from '@/data/adapters/transport';
+import { readMessages, type EcuMessage } from '@/core/utils/obdFrames';
 
 export interface CapturePort extends CommandPort {
   onRaw(listener: (raw: string) => void): Unsubscribe;
@@ -94,6 +95,9 @@ export interface CaptureEntry {
   // What the adapter printed, prompt by prompt (a pending answer prints twice).
   readonly raw: readonly string[];
   readonly ms: number;
+  // OBD requests only: the answer as the frame reader assembled it (M2.1), to
+  // check it against the raw text on a real car.
+  readonly messages?: readonly EcuMessage[];
 }
 
 export interface CaptureReport {
@@ -109,11 +113,12 @@ const COMMAND_TIMEOUT_MS = 6000;
 
 export async function runDiagnosticCapture(
   port: CapturePort,
-  context: { adapter: string; protocol: string; stn: boolean },
+  context: { adapter: string; protocol: string; stn: boolean; can: boolean },
   rounds: readonly CaptureRound[] = CAPTURE_ROUNDS,
   now: () => number = () => Date.now(),
 ): Promise<CaptureReport> {
   const startedAt = now();
+  let headers = false;
   let interrupted: string | null = null;
   const out: { title: string; entries: CaptureEntry[] }[] = [];
 
@@ -128,14 +133,19 @@ export async function runDiagnosticCapture(
       const off = port.onRaw((r) => raw.push(r));
       const start = now();
       let outcome: CaptureOutcome = 'ok';
+      let response: string | null = null;
       try {
-        await port.send(command, COMMAND_TIMEOUT_MS);
+        response = await port.send(command, COMMAND_TIMEOUT_MS);
       } catch (err) {
         outcome = outcomeOf(err);
       } finally {
         off();
       }
-      entries.push({ command, outcome, raw, ms: now() - start });
+      const c = command.replace(/\s/g, '').toUpperCase();
+      if (c === 'ATH1' || c === 'ATH0') headers = outcome === 'ok' ? c === 'ATH1' : headers;
+      const obd = /^[0-9A-F]+$/.test(c);
+      const messages = obd && response != null ? readMessages(response, { headers, can: context.can }) : undefined;
+      entries.push({ command, outcome, raw, ms: now() - start, ...(messages ? { messages } : {}) });
       if (outcome === 'reset' || outcome === 'lost') {
         interrupted = outcome === 'reset' ? 'el adaptador se reinició' : 'se perdió la conexión';
         break;
@@ -174,7 +184,14 @@ export function formatCapture(report: CaptureReport): string {
     lines.push('', `== ${round.title} ==`);
     for (const e of round.entries) {
       lines.push(`> ${e.command} (${e.ms} ms${OUTCOME_LABEL[e.outcome]})`);
-      for (const r of e.raw) lines.push(`  ${r === '' ? '(vacío)' : r}`);
+      for (const r of e.raw) {
+        if (r === '') lines.push('  (vacío)');
+        else for (const line of r.split('\n')) lines.push(`  ${line}`);
+      }
+      for (const m of e.messages ?? []) {
+        const bytes = m.bytes.map((b) => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+        lines.push(`  = ${m.ecu ?? 'ECU ?'}: ${bytes}${m.complete ? '' : ' (INCOMPLETO)'}`);
+      }
     }
   }
   return lines.join('\n');
