@@ -131,7 +131,8 @@ renovación, cancelación a mitad, y el modal (aceptar, cancelar, segunda vez en
 M3.0 ✅ · M3.1 ✅ · M3.2 ✅ · M3.3 ✅ · M3.5 ✅ (foto ≈ 1,5k tokens; probada contra Qwen3.8) ·
 M3.4 ✅ `npm run assistant:eval` (21 casos). **Línea de base, 2 corridas: 40/42.** Fallas
 intermitentes: 03 (en el turno 2 usa los códigos leídos segundos antes en vez de releer; 1 de 3) y 07
-(26 palabras en movimiento, máximo 25). Pendiente: build Dev y prueba en el auto.
+(26 palabras en movimiento, máximo 25). **Probado en el auto con el B35 el 2026-10-18: todas las pruebas
+de aceptación OK** (batería y códigos, monitores, VIN, muestreo, adaptador, borrado cancelado, foto).
 
 ## 4. Decisiones (2026-10-18)
 
