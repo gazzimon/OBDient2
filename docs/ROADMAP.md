@@ -51,8 +51,12 @@ sincronización cuando exista el login.
   encabezados, CAN 11/29 bits y J1850/K-Line, espacios sí o no; probado con los ejemplos del datasheet
   ELM327. El lector de respuestas conserva una línea por cuadro. La captura muestra cómo armó cada
   respuesta (`= 7E8: …`) · ⏳ verificar en el auto · pendiente `STCSEGR 1` (el STN quita el PCI).
-- [ ] **M2.2 Parsers**: códigos (`43`/`47`/`4A`), freeze frame, readiness con km desde el borrado (`0131`),
-  VIN.
+- [x] **M2.2 Parsers** (`core/utils/obdDiagnostics.ts`): códigos `03`/`07`/`0A` (con la cantidad
+  inicial en CAN, tres por línea en J1850/K-Line, por ECU, rechazos aparte), genérico o de fabricante
+  según J2012 §5; monitores (`0101`, nafta y diésel, por ECU y combinados); freeze frame con número de
+  cuadro y las fórmulas en vivo; máscaras de PIDs soportados; VIN (CAN y J1850, dígito verificador
+  informativo: el del auto del B35 no cierra, normal fuera de Norteamérica). Km desde el borrado: PID
+  `DIST_SINCE_CLEAR` existente · ⏳ verificar con un auto con códigos y freeze frame.
 - [ ] **M2.3 Sesión**: todos los PIDs soportados, `query` y `exclusive`, muestreo, `STPX` con `r:`/`t:`
   en diagnóstico, `STVR`/`STPRS` cuando es STN.
 - [ ] **M2.4 `VehicleToolAdapter`**: las 9 herramientas, error `rejected_by_car` con el motivo del
