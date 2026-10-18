@@ -62,6 +62,39 @@ sincronización cuando exista el login.
   - [ ] energía, para el producto: PP 0F (dormir sin actividad OBD) configurado en fábrica; medir consumo del B14 dormido.
 - [ ] **Protocolo guardado por vehículo** (`ATSP A7` / `STP 34`): conexión sin búsqueda.
 
+### E7 · Base de conocimiento y RAG (hito aparte, después de M2)
+
+Parte de la estructura del agente: el modelo responde sobre códigos **solo con la base** y la cita;
+sin entrada, se abstiene (medido: [research/verificacion-de-respuestas.md](research/verificacion-de-respuestas.md)).
+
+- **Fuente de códigos genéricos: SAE J2012** (PDF entregado por el usuario, no se versiona). La rev.
+  DEC2007 tiene texto extraíble: 4.277 códigos definidos (P0 2.251, P2 1.177, P3 98, U0 532, B0 125,
+  C0 76, U3 18) y el apéndice F0 de *Failure Type Byte*. La rev. APR2002 está escaneada (sin texto) y
+  la de 2007 la reemplaza. Falta una revisión más nueva: la de 2007 deja casi vacíos P0D–P0F y P29–P2F,
+  que los autos posteriores usan.
+- **La base de OBDient no sirve como fuente**: de sus 580 descripciones, 96 difieren mucho de J2012 y
+  35 tienen otro significado (P0518 "nivel de aceite bajo" es "control de ralentí intermitente";
+  P2512–P2520 "bujías de precalentamiento" son A/C y registrador de eventos).
+- **Licencia**: J2012 es © SAE, "all rights reserved". Usarla para verificar y medir cobertura es
+  interno; publicar sus textos en la app se decide en la revisión de licencias antes de publicar
+  (como ADR-0005).
+- Pendiente de definir: códigos de fabricante (P1, B1, C1, U1…), causas y pasos de revisión por
+  código (J2012 solo da el nombre), idioma, y el banco de verificación con Qwen3.8 como juez.
+
+### E7 · Diagnóstico del fabricante (después de M2, solo lectura)
+
+El mayor potencial sin usar. La lectura obligatoria (`03`) en general no muestra los códigos B, C y U
+de ABS, airbag, carrocería y caja.
+
+- Direccionamiento físico a cada módulo (`ATSH 18DA28F1`; control de flujo con `STCFCPA` en STN,
+  `ATFCSH`/`ATFCSD`/`ATFCSM` en ELM327). Las direcciones cambian por marca.
+- UDS de solo lectura: **`19`** lee códigos con su estado (3 bytes: código + *Failure Type Byte*,
+  apéndice F0 de J2012) y **`22`** lee datos del fabricante (temperatura de la caja, vida útil del
+  aceite).
+- Necesita datos de cada marca: direcciones de módulos, identificadores de `22` y sus fórmulas.
+- **Nunca** `2E` (escritura), `31` (rutinas), `14` (borrado del fabricante) ni `27` (acceso de
+  seguridad). Si un dato pide sesión extendida (`10 03`), se decide aparte.
+
 ### Otros pendientes
 
 - **Probar en el teléfono** (build Dev + Metro): detector YOLO y captura de cuadros, corregidos para
