@@ -178,6 +178,11 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'read_fault_history':
       case 'calculate':
         throw new Error('handled before the session'); // see execute()
+      case 'search_place':
+      case 'set_destination':
+      case 'route_status':
+      case 'stop_navigation':
+        return fail('not_supported', 'La navegación no la maneja el adaptador.'); // NavigationTools
     }
   }
 

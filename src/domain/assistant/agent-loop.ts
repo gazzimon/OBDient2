@@ -197,9 +197,12 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
   }
 }
 
+// Calls that act or whose answer changes by the second are never reused.
+const NOT_REUSED: ReadonlySet<ToolCall['name']> = new Set(['sample_pids', 'set_destination', 'route_status', 'stop_navigation']);
+
 // Only one-shot reads are reused; a sample measures over time.
 function memoKey(call: ToolCall): string | null {
-  if (TOOL_LEVEL[call.name] !== 'read' || call.name === 'sample_pids') return null;
+  if (TOOL_LEVEL[call.name] !== 'read' || NOT_REUSED.has(call.name)) return null;
   return JSON.stringify(call);
 }
 

@@ -63,6 +63,14 @@ export interface Place {
   readonly location: LatLng;
 }
 
+export interface SearchOptions {
+  // OpenStreetMap tag filter, e.g. "amenity:fuel".
+  readonly osmTag?: string;
+  // Only inside this box: [west, south, east, north].
+  readonly bbox?: readonly [number, number, number, number];
+  readonly limit?: number;
+}
+
 export interface GeocodingPort {
-  search(query: string, near: LatLng | null, signal?: AbortSignal): Promise<Place[]>;
+  search(query: string, near: LatLng | null, signal?: AbortSignal, options?: SearchOptions): Promise<Place[]>;
 }

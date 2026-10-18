@@ -10,6 +10,7 @@
 //   an error the model can read, and counted.
 
 import { PID_DEFINITIONS, type PidId } from '@/core/constants/pids';
+import { PLACE_CATEGORY_IDS, type PlaceCategory } from '@/domain/navigation/places';
 
 export const TOOL_NAMES = [
   'read_pids',
@@ -23,6 +24,10 @@ export const TOOL_NAMES = [
   'clear_dtcs',
   'read_fault_history',
   'calculate',
+  'search_place',
+  'set_destination',
+  'route_status',
+  'stop_navigation',
 ] as const;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
@@ -41,7 +46,13 @@ export type ToolCall =
   | { readonly name: 'run_adapter_bench' }
   | { readonly name: 'clear_dtcs' }
   | { readonly name: 'read_fault_history' }
-  | { readonly name: 'calculate'; readonly expression: string };
+  | { readonly name: 'calculate'; readonly expression: string }
+  // A place by text ("Obelisco", an address) or the nearest of a category.
+  | { readonly name: 'search_place'; readonly query: string | null; readonly category: PlaceCategory | null }
+  // One of the results of the last search_place, numbered from 1.
+  | { readonly name: 'set_destination'; readonly result: number }
+  | { readonly name: 'route_status' }
+  | { readonly name: 'stop_navigation' };
 
 export const TOOL_LIMITS = {
   readPidsMax: 6,
@@ -175,6 +186,33 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
         additionalProperties: false,
       },
     ),
+    fn(
+      'search_place',
+      'Busca un lugar para navegar: por texto (un nombre, una dirección) o el más cercano de una categoría ' +
+        '(category). Devuelve hasta 5 resultados numerados con la distancia. Si hay más de uno razonable, ' +
+        'decíselos al usuario y que elija.',
+      {
+        type: 'object',
+        properties: {
+          query: { type: 'string', maxLength: 120, description: 'Nombre o dirección.' },
+          category: { type: 'string', enum: PLACE_CATEGORY_IDS, description: 'Para "el/la más cercano/a".' },
+        },
+        additionalProperties: false,
+      },
+    ),
+    fn(
+      'set_destination',
+      'Navega a uno de los resultados de la última search_place (número desde 1): calcula la ruta, inicia la ' +
+        'guía y abre la vista de manejo.',
+      {
+        type: 'object',
+        properties: { result: { type: 'integer', minimum: 1, maximum: 5 } },
+        required: ['result'],
+        additionalProperties: false,
+      },
+    ),
+    fn('route_status', 'Estado de la navegación: destino, distancia y tiempo que faltan, hora de llegada y próxima maniobra.', NO_ARGS),
+    fn('stop_navigation', 'Termina la navegación en curso.', NO_ARGS),
   ];
 }
 
@@ -252,12 +290,35 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       if (typeof e !== 'string' || e.trim() === '' || e.length > 200) return bad('"expression" debe ser texto de hasta 200 caracteres.');
       return { ok: true, call: { name, expression: e } };
     }
+    case 'search_place': {
+      const extra = only('query', 'category');
+      if (extra) return bad(extra);
+      const q = a.query;
+      const c = a.category;
+      if (q !== undefined && (typeof q !== 'string' || q.trim().length < 3 || q.length > 120)) {
+        return bad('"query" debe tener entre 3 y 120 caracteres.');
+      }
+      if (c !== undefined && (typeof c !== 'string' || !(PLACE_CATEGORY_IDS as readonly string[]).includes(c))) {
+        return bad(`"category" debe ser una de: ${PLACE_CATEGORY_IDS.join(', ')}.`);
+      }
+      if (q === undefined && c === undefined) return bad('Indicá "query" o "category".');
+      return { ok: true, call: { name, query: typeof q === 'string' ? q.trim() : null, category: (c as PlaceCategory | undefined) ?? null } };
+    }
+    case 'set_destination': {
+      const extra = only('result');
+      if (extra) return bad(extra);
+      const r = a.result;
+      if (typeof r !== 'number' || !Number.isInteger(r) || r < 1 || r > 5) return bad('"result" debe ser un número de 1 a 5.');
+      return { ok: true, call: { name, result: r } };
+    }
     case 'read_freeze_frame':
     case 'read_readiness':
     case 'read_vehicle_info':
     case 'run_adapter_bench':
     case 'clear_dtcs':
-    case 'read_fault_history': {
+    case 'read_fault_history':
+    case 'route_status':
+    case 'stop_navigation': {
       const extra = only();
       return extra ? bad(extra) : { ok: true, call: { name } };
     }
