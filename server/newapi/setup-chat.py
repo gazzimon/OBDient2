@@ -34,6 +34,10 @@ CHANNEL_NAME = "z440-qwen3.8"
 TOKEN_NAME = "obdient2-beta"
 # new-api quota units: 500000 = 1 USD equivalent. Generous for the beta, but bounded.
 TOKEN_QUOTA = 50_000_000
+# Price of the alias, as new-api ratios (1 = 0.002 USD per 1k prompt tokens). Our own
+# GPU, so it only exists to make quotas count; output tokens count double.
+MODEL_RATIO = 0.05
+COMPLETION_RATIO = 2
 CONF = Path.home() / ".config" / "obdient"
 
 
@@ -104,6 +108,19 @@ def ensure_channel() -> None:
     print(f"canal {CHANNEL_NAME}: creado ({ALIAS} → {SERVED_MODEL})")
 
 
+def ensure_price() -> None:
+    """Adds the alias to the model price tables, leaving every other entry untouched."""
+    options = {o["key"]: o["value"] for o in api("GET", "/api/option/").get("data", [])}
+    for key, value in (("ModelRatio", MODEL_RATIO), ("CompletionRatio", COMPLETION_RATIO)):
+        table = json.loads(options.get(key) or "{}")
+        if table.get(ALIAS) == value:
+            print(f"precio {key}[{ALIAS}]: ya configurado")
+            continue
+        table[ALIAS] = value
+        api("PUT", "/api/option/", {"key": key, "value": json.dumps(table)})
+        print(f"precio {key}[{ALIAS}] = {value}")
+
+
 def ensure_token() -> None:
     found = [t for t in items(api("GET", f"/api/token/search?keyword={TOKEN_NAME}")) if t.get("name") == TOKEN_NAME]
     if not found:
@@ -135,4 +152,5 @@ def ensure_token() -> None:
 if __name__ == "__main__":
     CONF.mkdir(parents=True, exist_ok=True)
     ensure_channel()
+    ensure_price()
     ensure_token()
