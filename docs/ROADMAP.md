@@ -170,7 +170,7 @@ de ABS, airbag, carrocería y caja.
   como canal de adquisición: vender el adaptador, ver historial y VIN, chatear con el asistente. El
   núcleo (BLE, AR) no puede ser mini app: el WebView no tiene Bluetooth.
 - **Búsqueda de destinos**: priorizar resultados cercanos (Photon eligió un homónimo a 900 km).
-- **new-api**: el límite de 10 pedidos por minuto es bajo para el asistente (2–4 llamadas por turno).
+- **Build local** (sin EAS): guía en [dev/build-local.md](dev/build-local.md), pendiente de instalar.
 - **Calibración y primer viaje de AR** (postergados, ver *Decisión 2026-10-17*).
 
 ## Fuera del MVP, ya decidido
