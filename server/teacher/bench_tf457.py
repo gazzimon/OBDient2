@@ -46,6 +46,13 @@ def displacement(pred: np.ndarray, gt: list | None) -> dict | None:
     return {"ade": float(err.mean()), "fde": float(err[-1]), "at3s": at(3), "at5s": at(5)}
 
 
+def as_text(x) -> str:
+    """Alpamayo returns text as nested lists or numpy arrays of strings: first one."""
+    while not isinstance(x, str):
+        x = np.asarray(x, dtype=object).reshape(-1)[0] if np.size(x) else ""
+    return x
+
+
 def speed_now(history: list) -> float:
     h = np.asarray(history)
     return float(np.linalg.norm(h[-1, :2] - h[-2, :2]) / 0.1)
@@ -175,18 +182,17 @@ def bench_alpamayo(args, scenes, out: Path):
                     r = model.generate_text(data=helper.to_device({"tokenized_data": vin}, "cuda"),
                                             top_p=0.98, temperature=0.6, num_samples=1,
                                             max_generation_length=256)
-                qa.append({"q": q, "a": r["answer"][0], "s": round(time.perf_counter() - t, 2)})
+                qa.append({"q": q, "a": as_text(r["answer"]), "s": round(time.perf_counter() - t, 2)})
 
-            cot = extra["cot"][0]
             row = {
                 "model": "alpamayo-1.5-10b", "key": sc["key"], "source": sc["source"],
                 "variant": "mono-10hz" if sc["front_10hz"] else "mono-2hz",
-                "reasoning": cot if isinstance(cot, str) else json.dumps(np.asarray(cot).tolist()),
+                "reasoning": as_text(extra["cot"]),
                 "plan_s": round(plan_s, 2), "trajectories": np.round(trajs, 2).tolist(),
                 "metrics": scores[0], "metrics_best_of": scores[best], "qa": qa,
                 "vram_gb": round(torch.cuda.max_memory_allocated() / 2**30, 2), "load_s": round(load_s, 1),
             }
-            fh.write(json.dumps(row) + "\n")
+            fh.write(json.dumps(row, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o)) + "\n")
             fh.flush()
             print(f"{sc['key']}: plan {row['plan_s']} s, ADE {(scores[0] or {}).get('ade')}, {row['vram_gb']} GB",
                   flush=True)
