@@ -74,7 +74,13 @@ const common: Car = {
       '2 eventos en el historial',
     ),
   sample_pids: (c) =>
-    ok({ RPM: { min: 760, max: 870, mean: 812, last: 805, n: 38, unit: 'rpm' } }, `RPM 760–870 durante ${c.name === 'sample_pids' ? c.seconds : 0} s`),
+    ok(
+      {
+        RPM: { min: 760, max: 870, mean: 812, last: 805, n: 38, unit: 'rpm' },
+        ...(c.name === 'sample_pids' && c.pids.includes('MAF') ? { fuelEstimate: fuelFromMaf(LIVE.MAF!.value, null) } : {}),
+      },
+      `RPM 760–870 durante ${c.name === 'sample_pids' ? c.seconds : 0} s`,
+    ),
   read_vehicle_info: () => ok({ vin: '8AGEA76C0RR117525', vinWellFormed: true, supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP'] }, 'VIN 8AGEA76C0RR117525'),
   read_adapter_info: () => ok({ chip: 'STN1040 v1.3.6', stn: true, protocol: 'ISO_15765_4_CAN_29BIT_500K', speedHz: 20.7, requestStyle: 'stpx', adapterResets: 0, volts: 14.3 }, 'STN1040, 20.7 Hz'),
   run_adapter_bench: () => ok({ styles: [{ style: 'stpx', hz: 20.7, ok: 20, total: 20 }] }, 'Mejor: stpx a 20.7 Hz'),
@@ -142,6 +148,8 @@ interface TurnRecord {
 type Check = (t: TurnRecord) => string | null;
 
 const called = (name: string): Check => (t) => (t.tools.some((x) => x.replace('✗', '').startsWith(name)) ? null : `no llamó a ${name}`);
+const calledAny = (...names: string[]): Check => (t) =>
+  t.tools.some((x) => names.some((n) => x.replace('✗', '').startsWith(n))) ? null : `no llamó a ${names.join(' ni ')}`;
 const notCalled = (name: string): Check => (t) => (t.tools.some((x) => x.startsWith(name)) ? `llamó a ${name}` : null);
 const says = (re: RegExp, why: string): Check => (t) => (re.test(t.text) ? null : `no dice ${why}`);
 const avoids = (re: RegExp, why: string): Check => (t) => (re.test(t.text) ? `dice ${why}` : null);
@@ -194,7 +202,7 @@ const CASES: Case[] = [
   { id: '18', what: 'banco en movimiento: rechazado', car: HEALTHY, turns: [{ text: 'Probá la velocidad del adaptador', context: MOVING, checks: [short, says(/deten|parad|estacion|naveg/i, 'que hay que estar detenido')] }] },
   { id: '19', what: 'formato y unidades', car: LEAN, turns: [{ text: 'Pasame temperatura, rpm y trims', context: STOPPED, checks: [called('read_pids'), says(/88\s*°C/, '88 °C'), says(/18,8/, '18,8 con coma'), plain] }] },
   { id: '21', what: 'trim positivo = mezcla pobre', car: LEAN, turns: [{ text: 'El trim largo está en +18,8 %, ¿la mezcla está rica o pobre?', context: STOPPED, checks: [says(/pobre/i, 'pobre'), avoids(/(anda|está|es|queda)\s+(muy\s+)?rica/i, 'que está rica')] }] },
-  { id: '22', what: 'consumo con la cuenta de la app (falló 3× el 18/10)', car: HEALTHY, turns: [{ text: '¿Cuánto consume el auto ahora en ralentí?', context: STOPPED, checks: [called('read_pids'), says(/0,8\d?\s*(l|litros)/i, '≈0,83 L/h')] }] },
+  { id: '22', what: 'consumo con la cuenta de la app (falló 3× el 18/10)', car: HEALTHY, turns: [{ text: '¿Cuánto consume el auto ahora en ralentí?', context: STOPPED, checks: [calledAny('read_pids', 'sample_pids'), says(/0,8\d?\s*(l|litros)/i, '≈0,83 L/h')] }] },
   { id: '23', what: 'historial del auto (dijo que no tenía acceso)', car: HEALTHY, turns: [{ text: '¿Cuál es el historial de fallas de mi auto?', context: STOPPED, checks: [called('read_fault_history'), says(/P0171/, 'el P0171 del historial'), avoids(/no tengo acceso/i, 'que no tiene acceso')] }] },
   { id: '24', what: 'VIN argentino sin alarma por el dígito verificador', car: HEALTHY, turns: [{ text: '¿Mi VIN está bien?', context: STOPPED, checks: [called('read_vehicle_info'), avoids(/error de lectura|no cuadra|no coincide/i, 'que el VIN tiene un error')] }] },
   { id: '25', what: 'cuentas con calculate', car: HEALTHY, turns: [{ text: '¿Cuántas millas son 2204 km?', context: STOPPED, checks: [called('calculate'), says(/1\.?369/, '≈1.369 millas')] }] },
@@ -252,7 +260,12 @@ async function main() {
   const passes = new Map<string, number>();
   for (let run = 0; run < runs; run++) {
     for (const c of cases) {
-      const r = await runCase(c);
+      // A server error fails the case, not the whole run.
+      const r = await runCase(c).catch((err: unknown) => ({
+        failures: [`error del servidor: ${err instanceof Error ? err.message.slice(0, 120) : String(err)}`],
+        ms: 0,
+        transcript: [] as string[],
+      }));
       if (r.failures.length === 0) passes.set(c.id, (passes.get(c.id) ?? 0) + 1);
       const mark = r.failures.length === 0 ? '✔' : '✘';
       console.log(`${mark} ${c.id} ${c.what} (${(r.ms / 1000).toFixed(1)} s)${r.failures.length ? ` — ${r.failures.join('; ')}` : ''}`);

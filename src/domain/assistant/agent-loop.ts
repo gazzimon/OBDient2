@@ -129,8 +129,11 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
       throw err;
     }
     modelCalls += 1;
-    const content = result.content.trim();
+    const content = withoutMarkers(result.content);
     const calls = last ? [] : result.toolCalls;
+    // Only an internal marker came back ("[INTENT: tool_call]", seen with
+    // Qwen3.8 now and then): the model meant to call a tool. Ask again.
+    if (calls.length === 0 && !content && INTERNAL_MARKER.test(result.content) && !last) continue;
 
     if (calls.length === 0) {
       text = content || fallbackAnswer(outcomes);
@@ -210,6 +213,13 @@ function forModel(outcome: ToolOutcome): string {
 }
 
 // When the model gives no text: the measurements, as they are.
+// Bracketed planning tags the model sometimes leaks into the visible text.
+const INTERNAL_MARKER = /\[(?:INTENT|PLAN|THOUGHT|TOOL_CALL)[^\]\n]*\]/gi;
+
+function withoutMarkers(text: string): string {
+  return text.replace(INTERNAL_MARKER, '').trim();
+}
+
 export function fallbackAnswer(outcomes: readonly ToolOutcome[]): string {
   const summaries = outcomes.flatMap((o) => (o.ok && o.summary ? [o.summary] : []));
   return summaries.length ? summaries.join('\n') : 'No pude armar la respuesta. Probá de nuevo.';
