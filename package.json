@@ -13,7 +13,8 @@
     "lint": "expo lint",
     "replay": "tsx --tsconfig tsconfig.json scripts/replay-trip.ts",
     "trips:pull": "bash scripts/pull-trips.sh",
-    "assistant:smoke": "tsx --tsconfig tsconfig.json scripts/assistant-smoke.ts"
+    "assistant:smoke": "tsx --tsconfig tsconfig.json scripts/assistant-smoke.ts",
+    "assistant:eval": "tsx --tsconfig tsconfig.json scripts/assistant-eval.ts"
   },
   "dependencies": {
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
