@@ -10,6 +10,7 @@ import {
   IBMPlexMono_500Medium,
   IBMPlexMono_700Bold,
 } from '@expo-google-fonts/ibm-plex-mono';
+import { ClearDtcsModal } from '@/presentation/components/assistant/ClearDtcsModal';
 import { AccountGate } from '@/presentation/components/feedback/AccountGate';
 import { DisclaimerGate } from '@/presentation/components/feedback/Disclaimer';
 import { restoreAccount } from '@/presentation/hooks/useAccount';
@@ -46,6 +47,7 @@ export default function RootLayout() {
       />
       <DisclaimerGate />
       <AccountGate />
+      <ClearDtcsModal />
     </>
   );
 }

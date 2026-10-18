@@ -201,3 +201,18 @@ describe('chatStore', () => {
     expect(migrate({ conversations: [{ weird: true }] }, 0)).toEqual({ conversations: [], activeId: null });
   });
 });
+
+describe('screen confirmation', () => {
+  it('the agent loop waits until the modal answers', async () => {
+    const { screenConfirmation, useConfirmStore } = await import('@/store/confirmStore');
+    const pending = screenConfirmation.confirm({ name: 'clear_dtcs' });
+    expect(useConfirmStore.getState().request?.call).toEqual({ name: 'clear_dtcs' });
+    useConfirmStore.getState().answer(true);
+    await expect(pending).resolves.toBe(true);
+    expect(useConfirmStore.getState().request).toBeNull();
+
+    const declined = screenConfirmation.confirm({ name: 'clear_dtcs' });
+    useConfirmStore.getState().answer(false);
+    await expect(declined).resolves.toBe(false);
+  });
+});
