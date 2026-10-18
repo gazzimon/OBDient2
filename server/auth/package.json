@@ -1,0 +1,14 @@
+{
+  "name": "obdient-auth",
+  "private": true,
+  "description": "Firebase account → new-api token for the OBDient2 assistant (ADR-0008).",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/main.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "jose": "6.2.12"
+  }
+}

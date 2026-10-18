@@ -70,9 +70,22 @@ sincronización cuando exista el login.
 - [x] **M2.5 Histórico de fallas** (`domain/faults/fault-history.ts`, MMKV `obdient2-faults`,
   `container.faults`): por VIN, guarda cambios y no cada lectura (misma lista → "visto por última vez" y
   km); freeze frames distintos; cada borrado con los códigos previos y los km desde el borrado anterior;
-  500 eventos. Lo alimenta `VehicleToolAdapter` · ⏳ mostrarlo (M3) y sincronizarlo: ADR-0008 §5 dice
-  que el VIN **no** va a Firebase, así que la sincronización por cuenta necesita una decisión (VIN
-  cifrado, hash o sin sincronizar).
+  500 eventos. Lo alimenta `VehicleToolAdapter` · ⏳ mostrarlo (M3) y sincronizarlo con la cuenta
+  (Firestore; ADR-0008 §5 revisado: el VIN sí va a Firebase).
+
+### E7 · Cuentas (ADR-0008, antes de M3)
+
+- [x] Servicio `server/auth` (K16, `127.0.0.1:8790`, Caddy `/auth`): valida el ID token de Firebase y
+  devuelve la clave de new-api de la cuenta (un token por cuenta bajo el usuario `obdient2app`, solo
+  `obdient-chat`, cuota propia); borra la clave al borrar la cuenta. Caché de 10 min por los límites
+  de new-api. Tests con `node --test`.
+- [x] Usuario `obdient2app` en new-api (`setup-app-user.py`) y `~/.config/obdient/auth.env`.
+- [ ] Panel de new-api: cuota de `obdient2app` y su token de acceso (piden verificación).
+- [ ] Límite de pedidos: hoy 10 respuestas/min por usuario, **compartido por todas las cuentas**.
+- [ ] Proyecto de Firebase (CLI en la K16), login con Google, apps Android (normal y Dev) con SHA-1,
+  `google-services.json`; Caddy `/auth`; arrancar `obdient-auth`.
+- [ ] App: pantalla de login, canje por la clave, guardarla en el almacén seguro; build Dev nuevo.
+- [ ] Firestore: historial de fallas y VIN por cuenta.
 - [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
   - [x] esperar hasta 5 s ante `7F xx 78` y reenviar si el adaptador vuelve al prompt (clones < v2.1);
   - [x] descartar bytes nulos (`0x00`) en el lector de respuestas;

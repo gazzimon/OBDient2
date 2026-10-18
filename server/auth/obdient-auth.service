@@ -1,0 +1,17 @@
+# systemd --user unit for obdient-auth (K16, linger on).
+#   cp server/auth/obdient-auth.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now obdient-auth
+[Unit]
+Description=OBDient2 auth: Firebase account -> new-api token (ADR-0008)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/src/OBDient2/server/auth
+ExecStart=/usr/bin/env node src/main.mjs
+Restart=on-failure
+RestartSec=5
+# Nothing to write but its own log.
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target
