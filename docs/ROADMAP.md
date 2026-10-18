@@ -81,9 +81,11 @@ sincronización cuando exista el login.
   de new-api. Tests con `node --test`.
 - [x] Usuario `obdient2app` en new-api (`setup-app-user.py`) y `~/.config/obdient/auth.env`.
 - [ ] Panel de new-api: cuota de `obdient2app` y su token de acceso (piden verificación).
-- [ ] Límite de pedidos: hoy 10 respuestas/min por usuario, **compartido por todas las cuentas**.
-- [ ] Proyecto de Firebase (CLI en la K16), login con Google, apps Android (normal y Dev) con SHA-1,
-  `google-services.json`; Caddy `/auth`; arrancar `obdient-auth`.
+- [x] Límite de pedidos de new-api: 120 respuestas/min (240 pedidos), compartido por todas las cuentas.
+- [x] Proyecto de Firebase **`obdient2`** (CLI en la K16) con las apps `com.obdient.obdient2` y
+  `com.obdient.obdient2.dev`, cada una con el SHA-1 y SHA-256 de su clave de EAS.
+- [ ] Consola de Firebase: activar el login con Google; después bajar `google-services.json` (trae el
+  cliente OAuth). Caddy `/auth`; arrancar `obdient-auth`.
 - [ ] App: pantalla de login, canje por la clave, guardarla en el almacén seguro; build Dev nuevo.
 - [ ] Firestore: historial de fallas y VIN por cuenta.
 - [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
