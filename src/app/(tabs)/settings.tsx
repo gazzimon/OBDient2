@@ -1,7 +1,7 @@
 // Preferences, AR calibration entry point and service endpoints.
 
 import { useCallback, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
 import { DETECTOR_MODELS } from '@/data/perception/detector-model';
 import type { TripFileInfo } from '@/data/recording/trip-recorder';
+import { useAccount } from '@/presentation/hooks/useAccount';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
@@ -231,6 +232,8 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <AccountSection />
+
         <SectionHeader title="Acerca de" />
         <Text className="text-brand-muted font-mono text-[10px] leading-4">
           OBDient2 · mapas © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap · rutas OSRM · búsqueda Photon.
@@ -238,6 +241,48 @@ export default function SettingsScreen() {
         </Text>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// ADR-0008: Google account for the assistant; sign out; delete account.
+function AccountSection() {
+  const { status, profile, busy, error, signIn, signOut, deleteAccount } = useAccount();
+  const confirmDelete = () =>
+    Alert.alert(
+      'Borrar cuenta',
+      'Se borra tu cuenta, su acceso al asistente y los datos guardados en ella. No se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Borrar', style: 'destructive', onPress: () => void deleteAccount() },
+      ],
+    );
+  return (
+    <>
+      <SectionHeader title="Cuenta" />
+      {status === 'signed-in' && profile ? (
+        <>
+          <Text className="text-brand-text font-mono text-sm">{profile.name ?? 'Cuenta de Google'}</Text>
+          <Text className="text-brand-muted font-mono text-xs mb-3">{profile.email ?? ''}</Text>
+          <View className="flex-row gap-3 mb-2">
+            <View className="flex-1">
+              <PillButton label="Cerrar sesión" variant="secondary" loading={busy} onPress={() => void signOut()} />
+            </View>
+            <View className="flex-1">
+              <PillButton label="Borrar cuenta" variant="destructive" disabled={busy} onPress={confirmDelete} />
+            </View>
+          </View>
+        </>
+      ) : (
+        <>
+          <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
+            Con tu cuenta de Google usás el asistente. Sin cuenta, todo lo demás funciona igual.
+          </Text>
+          <PillButton label="Continuar con Google" loading={busy} disabled={status === 'loading'} onPress={() => void signIn()} />
+        </>
+      )}
+      {error && <Text className="text-brand-red font-mono text-xs mt-2">{error}</Text>}
+      <View className="mb-6" />
+    </>
   );
 }
 
