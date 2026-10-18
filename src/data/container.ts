@@ -36,6 +36,10 @@ const faults = new FaultHistory(createMmkvFaultStorage());
 const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
   history: faults,
   describer: new DtcBaseDescriber(loadDtcBaseAsset),
+  live: (pid) => {
+    const p = useOBDStore.getState().parameters[pid];
+    return p ? { value: p.value, at: p.timestamp.getTime() } : null;
+  },
   moving: () => (useOBDStore.getState().parameters.SPEED?.value ?? 0) > MOVING_KMH,
 });
 

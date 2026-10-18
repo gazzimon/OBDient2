@@ -1,4 +1,4 @@
-import { ConnectionLostError, NoDataError } from '@/core/errors/obd.errors';
+import { AdapterResetError, ConnectionLostError, NoDataError } from '@/core/errors/obd.errors';
 import type { CommandPort } from '@/data/adapters/protocol-manager';
 import type { ObdSession, SessionInfo } from '@/data/obd/obd-session';
 import { VehicleToolAdapter } from '@/data/obd/vehicle-tool-adapter';
@@ -38,6 +38,7 @@ function fakeSession(answers: Record<string, Answer>, info: Partial<SessionInfo>
       exclusiveRuns++;
       return work(port, sessionInfo);
     },
+    settled: async () => undefined,
     speedRateHz: () => 20.7,
     requestStyle: () => 'stpx',
     adapterResets: 0,
@@ -223,6 +224,71 @@ describe('VehicleToolAdapter', () => {
       distSinceClearBeforeKm: 2197,
       codesBefore: [{ code: 'P0171', ecu: '18DAF111', owner: 'standard' }],
     });
+  });
+
+  it('read_pids answers from the Dashboard when its value is fresh; sampling always reads the bus', async () => {
+    let now = 10_000;
+    const { session, sent } = fakeSession({ '010C': '410C0C80' });
+    const tools = new VehicleToolAdapter(() => session, {
+      now: () => now,
+      sleep: async (ms) => void (now += ms),
+      live: (pid) => (pid === 'RPM' ? { value: 812, at: 9_000 } : null),
+    });
+    expect(ok(await tools.execute({ name: 'read_pids', pids: ['RPM'] }, signal))).toEqual({ RPM: { value: 812, unit: 'rpm' } });
+    expect(sent).toEqual([]);
+    now = 12_000; // 3 s old: read the car
+    expect(ok(await tools.execute({ name: 'read_pids', pids: ['RPM'] }, signal))).toEqual({ RPM: { value: 800, unit: 'rpm' } });
+    sent.length = 0;
+    await tools.execute({ name: 'sample_pids', pids: ['RPM'], seconds: 2 }, signal);
+    expect(sent.length).toBeGreaterThan(1);
+  });
+
+  it('battery voltage: STVR on STN, ATRV on a plain ELM327', async () => {
+    const stn = fakeSession({});
+    (stn.session as unknown as { send: (c: string) => Promise<string> }).send = async (c) => (c === 'STVR' ? '14.32' : 'NO');
+    expect(ok(await new VehicleToolAdapter(() => stn.session).execute({ name: 'read_pids', pids: ['VOLTAGE'] }, signal))).toEqual({
+      VOLTAGE: { value: 14.32, unit: 'V' },
+    });
+    const elm = fakeSession({}, { identity: { elm: 'ELM327 v2.2', stn: null } });
+    (elm.session as unknown as { send: (c: string) => Promise<string> }).send = async (c) => (c === 'ATRV' ? '12.6V' : 'NO');
+    expect(ok(await new VehicleToolAdapter(() => elm.session).execute({ name: 'read_pids', pids: ['VOLTAGE'] }, signal))).toEqual({
+      VOLTAGE: { value: 12.6, unit: 'V' },
+    });
+  });
+
+  it('a read interrupted by an adapter reboot is retried once the session recovered', async () => {
+    let resets = 1;
+    let waited = 0;
+    const { session } = fakeSession({
+      ...B35,
+      '0101': { h0: '', h1: '18DAF1110641010007E100' },
+    });
+    const s = session as unknown as { exclusive: (w: unknown) => Promise<unknown>; settled: () => Promise<void> };
+    const exclusive = s.exclusive;
+    s.exclusive = async (w) => {
+      if (resets-- > 0) throw new AdapterResetError('0101');
+      return exclusive(w);
+    };
+    s.settled = async () => void waited++;
+    const out = await new VehicleToolAdapter(() => session).execute({ name: 'read_readiness' }, signal);
+    expect(out).toMatchObject({ ok: true });
+    expect(waited).toBe(1);
+
+    resets = 2; // rebooted again on the retry: give up with the reason
+    expect(await new VehicleToolAdapter(() => session).execute({ name: 'read_readiness' }, signal)).toMatchObject({
+      ok: false,
+      error: 'adapter_reset',
+    });
+  });
+
+  it('clearing is never retried by itself after a reboot', async () => {
+    const { session, sent } = fakeSession({ ...B35, '04': { h0: '44', h1: '18DAF1110144' } });
+    const s = session as unknown as { exclusive: (w: unknown) => Promise<unknown> };
+    s.exclusive = async () => {
+      throw new AdapterResetError('04');
+    };
+    expect(await new VehicleToolAdapter(() => session).execute({ name: 'clear_dtcs' }, signal)).toMatchObject({ ok: false, error: 'adapter_reset' });
+    expect(sent).not.toContain('04');
   });
 
   it('maps failures to tool errors', async () => {

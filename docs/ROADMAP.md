@@ -59,8 +59,12 @@ sincronización cuando exista el login.
   cuadro y las fórmulas en vivo; máscaras de PIDs soportados; VIN (CAN y J1850, dígito verificador
   informativo: el del auto del B35 no cierra, normal fuera de Norteamérica). Km desde el borrado: PID
   `DIST_SINCE_CLEAR` existente · ⏳ verificar con un auto con códigos y freeze frame.
-- [ ] **M2.3 Sesión**: todos los PIDs soportados, `query` y `exclusive`, muestreo, `STPX` con `r:`/`t:`
-  en diagnóstico, `STVR`/`STPRS` cuando es STN.
+- [x] **M2.3 Sesión** (2026-10-18): `exclusive()` para banco, captura y diagnóstico; todos los PIDs
+  soportados; `read_pids` usa el valor del Tablero si tiene < 2 s (sin ir al bus); tensión con `STVR`
+  en STN; una lectura interrumpida por `LV RESET` espera la recuperación y se reintenta una vez (el
+  borrado y el banco no). Descartado, por simple: muestreo rotando en la telemetría (las lecturas
+  intercaladas no frenan la velocidad) y `STPX r:/t:` en diagnóstico (poca ganancia sobre `ATH1`, a
+  M7).
 - [x] **M2.4 `VehicleToolAdapter`** (`data/obd/vehicle-tool-adapter.ts`, en `container.vehicleTools`):
   las 9 herramientas sobre los parsers de M2.2. Valores en vivo por el canal compartido; diagnóstico con
   `ATH1` en exclusiva (pausa ~0,5 s) y, en movimiento, sin encabezados ni pausa (ADR-0007 §5). Borrado
