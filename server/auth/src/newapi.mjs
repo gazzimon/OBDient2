@@ -2,14 +2,18 @@
 // (ADR-0008 §2). new-api only lets a user manage its own tokens, so the
 // service acts as that user with its access token.
 //
-// Token name: "fb-" + 20 hex of sha256(uid). Stable, short, and the uid itself
-// never reaches new-api.
+// Token name: the account's email, so the usage logs say who it is (an email
+// is the account id since the move to email login, ADR-0008). new-api allows
+// 50 characters; a longer email is cut and given a short hash to stay unique.
+// Accounts from before (Firebase, 2026-10-18) were named "fb-" + 20 hex of
+// sha256(uid); they are renamed on their next login, keeping the same key.
 
 import { createHash } from 'node:crypto';
 
 // new-api token status
 const ENABLED = 1;
 const STATUS_ERROR = { 2: 'disabled', 3: 'expired', 4: 'exhausted' };
+const MAX_NAME = 50;
 
 export class AccountUnavailable extends Error {
   name = 'AccountUnavailable';
@@ -19,13 +23,18 @@ export class AccountUnavailable extends Error {
   }
 }
 
-export function tokenName(uid) {
-  return 'fb-' + createHash('sha256').update(uid).digest('hex').slice(0, 20);
+const hex = (s, n) => createHash('sha256').update(s).digest('hex').slice(0, n);
+
+export function legacyTokenName(uid) {
+  return 'fb-' + hex(uid, 20);
 }
 
-// new-api rate-limits token search and key reads per IP, and every call
-// from here comes from 127.0.0.1: a key stays cached this long before its
-// status is checked again (a disabled account takes at most this to cut).
+export function tokenName(uid) {
+  if (!uid.startsWith('email:')) return legacyTokenName(uid);
+  const email = uid.slice('email:'.length);
+  return email.length <= MAX_NAME ? email : `${email.slice(0, MAX_NAME - 9)}~${hex(email, 8)}`;
+}
+
 export const CACHE_MS = 10 * 60_000;
 
 export function newApiAccounts({ baseUrl, userId, accessToken, model, quota, fetch = globalThis.fetch, now = () => Date.now() }) {
@@ -64,6 +73,16 @@ export function newApiAccounts({ baseUrl, userId, accessToken, model, quota, fet
     return inFlight.get(name);
   };
 
+  // An account from the old naming: give it its new name, same key and quota.
+  // new-api's update takes every field (missing ones would be zeroed).
+  async function renameLegacy(uid, name) {
+    const legacy = await find(legacyTokenName(uid));
+    if (!legacy || legacy.name === name) return legacy;
+    const { key: _key, ...fields } = legacy;
+    await call('PUT', '/api/token/', { ...fields, name });
+    return { ...legacy, name };
+  }
+
   const cache = new Map(); // name → { key, at }
 
   return {
@@ -74,6 +93,7 @@ export function newApiAccounts({ baseUrl, userId, accessToken, model, quota, fet
       if (hit && now() - hit.at < CACHE_MS) return Promise.resolve(hit.key);
       return once(name, async () => {
         let token = await find(name);
+        if (!token) token = await renameLegacy(uid, name);
         if (!token) {
           await call('POST', '/api/token/', {
             name,
@@ -99,7 +119,7 @@ export function newApiAccounts({ baseUrl, userId, accessToken, model, quota, fet
     // Account deleted: its token goes too. Idempotent.
     async remove(uid) {
       cache.delete(tokenName(uid));
-      const token = await find(tokenName(uid));
+      const token = (await find(tokenName(uid))) ?? (await find(legacyTokenName(uid)));
       if (token) await call('DELETE', `/api/token/${token.id}`);
       return token != null;
     },
