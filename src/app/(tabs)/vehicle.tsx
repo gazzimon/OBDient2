@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
 import { formatBench } from '@/data/obd/adapter-bench';
@@ -35,6 +36,7 @@ export default function VehicleScreen() {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const stopScan = useRef<(() => void) | null>(null);
+  const router = useRouter();
 
   const scan = async () => {
     setDevices([]);
@@ -217,6 +219,9 @@ export default function VehicleScreen() {
             </View>
           </>
         )}
+        <View className="mt-6">
+          <PillButton label="Historial de fallas" variant="secondary" onPress={() => router.push('/faults')} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
