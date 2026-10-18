@@ -9,7 +9,7 @@
 import type { LatLng } from '@/domain/geo/geo';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import { instructionEs } from '@/domain/navigation/guidance';
-import { findByText, findNearby, PLACE_CATEGORIES, type FoundPlace } from '@/domain/navigation/places';
+import { findByText, type FoundPlace } from '@/domain/navigation/places';
 import type { GeocodingPort, Place, Route } from '@/domain/navigation/route';
 import type { RouteProgress } from '@/domain/navigation/route-progress';
 import type { NavStatus } from '@/store/navStore';
@@ -22,6 +22,8 @@ export interface NavigationToolDeps {
   readonly stop: () => void;
   // The driving view (AR), where guidance is shown.
   readonly openDrive: () => void;
+  // The map with the destination and its route, to check it is the right place.
+  readonly openMap: () => void;
   readonly state: () => {
     status: NavStatus;
     destination: Place | null;
@@ -32,11 +34,12 @@ export interface NavigationToolDeps {
   readonly now?: () => number;
 }
 
-type NavCall = Extract<ToolCall, { name: 'search_place' | 'set_destination' | 'route_status' | 'stop_navigation' }>;
+type NavCall = Extract<ToolCall, { name: 'search_place' | 'set_destination' | 'start_navigation' | 'route_status' | 'stop_navigation' }>;
 
 export const NAVIGATION_TOOL_NAMES: ReadonlySet<ToolCall['name']> = new Set([
   'search_place',
   'set_destination',
+  'start_navigation',
   'route_status',
   'stop_navigation',
 ]);
@@ -53,7 +56,9 @@ export class NavigationTools {
         case 'search_place':
           return await this.search(call as Extract<NavCall, { name: 'search_place' }>, signal);
         case 'set_destination':
-          return await this.go((call as Extract<NavCall, { name: 'set_destination' }>).result);
+          return await this.show((call as Extract<NavCall, { name: 'set_destination' }>).result);
+        case 'start_navigation':
+          return await this.startGuidance();
         case 'route_status':
           return this.status();
         case 'stop_navigation':
@@ -70,39 +75,44 @@ export class NavigationTools {
 
   private async search(call: Extract<NavCall, { name: 'search_place' }>, signal: AbortSignal): Promise<ToolOutcome> {
     const near = await this.deps.position();
-    if (call.category && !near) return fail('not_supported', 'Sin ubicación: no puedo buscar lo más cercano.');
-    this.results = call.category
-      ? await findNearby(this.deps.geocoder(), call.category, near!, signal)
-      : await findByText(this.deps.geocoder(), call.query!, near, signal);
-    const what = call.category ? PLACE_CATEGORIES[call.category].label : `"${call.query}"`;
+    this.results = await findByText(this.deps.geocoder(), call.query, near, signal);
     const results = this.results.map((p, i) => ({ result: i + 1, name: p.name, detail: p.detail, distanceKm: p.distanceKm }));
     return {
       ok: true,
       data: { results },
-      summary: results.length ? `${results.length} resultados para ${what}` : `Sin resultados para ${what}`,
+      summary: results.length ? `${results.length} resultados para "${call.query}"` : `Sin resultados para "${call.query}"`,
     };
   }
 
-  private async go(n: number): Promise<ToolOutcome> {
+  // Plan the route and show it on the map; guidance waits for the user's yes.
+  private async show(n: number): Promise<ToolOutcome> {
     const place = this.results[n - 1];
     if (!place) return fail('invalid_arguments', 'No hay un resultado con ese número: buscá primero con search_place.');
     await this.deps.planTo(place);
     const s = this.deps.state();
     if (s.status !== 'ready' || !s.route) return fail('not_supported', s.error ?? 'No se pudo calcular la ruta.');
-    await this.deps.start();
-    this.deps.openDrive();
-    const route = s.route;
+    this.deps.openMap();
     return {
       ok: true,
       data: {
         destination: place.name,
         detail: place.detail,
-        distanceKm: km(route.distanceM),
-        durationMin: Math.round(route.durationS / 60),
-        arrival: this.clock(route.durationS),
+        distanceKm: km(s.route.distanceM),
+        durationMin: Math.round(s.route.durationS / 60),
+        arrival: this.clock(s.route.durationS),
+        started: false,
       },
-      summary: `Navegando a ${place.name}`,
+      summary: `En el mapa: ${place.name}`,
     };
+  }
+
+  private async startGuidance(): Promise<ToolOutcome> {
+    const s = this.deps.state();
+    if (s.status === 'navigating') return { ok: true, data: { started: true, already: true }, summary: 'Ya estaba navegando' };
+    if (s.status !== 'ready' || !s.route) return fail('invalid_arguments', 'No hay un destino en el mapa: usá set_destination primero.');
+    await this.deps.start();
+    this.deps.openDrive();
+    return { ok: true, data: { started: true, destination: s.destination?.name ?? null }, summary: 'Navegación iniciada' };
   }
 
   private status(): ToolOutcome {

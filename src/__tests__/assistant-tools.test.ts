@@ -47,7 +47,7 @@ describe('parseToolCall', () => {
   });
 
   it('every tool without arguments parses on its own (no fall-through into another tool)', () => {
-    for (const name of ['read_freeze_frame', 'read_readiness', 'read_vehicle_info', 'run_adapter_bench', 'clear_dtcs', 'read_fault_history', 'route_status', 'stop_navigation']) {
+    for (const name of ['read_freeze_frame', 'read_readiness', 'read_vehicle_info', 'run_adapter_bench', 'clear_dtcs', 'read_fault_history', 'start_navigation', 'route_status', 'stop_navigation']) {
       expect(ok(name, '{}')).toEqual({ name });
     }
   });

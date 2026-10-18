@@ -10,7 +10,6 @@
 //   an error the model can read, and counted.
 
 import { PID_DEFINITIONS, type PidId } from '@/core/constants/pids';
-import { PLACE_CATEGORY_IDS, type PlaceCategory } from '@/domain/navigation/places';
 
 export const TOOL_NAMES = [
   'read_pids',
@@ -26,6 +25,7 @@ export const TOOL_NAMES = [
   'calculate',
   'search_place',
   'set_destination',
+  'start_navigation',
   'route_status',
   'stop_navigation',
 ] as const;
@@ -47,10 +47,12 @@ export type ToolCall =
   | { readonly name: 'clear_dtcs' }
   | { readonly name: 'read_fault_history' }
   | { readonly name: 'calculate'; readonly expression: string }
-  // A place by text ("Obelisco", an address) or the nearest of a category.
-  | { readonly name: 'search_place'; readonly query: string | null; readonly category: PlaceCategory | null }
-  // One of the results of the last search_place, numbered from 1.
+  // An address ("Uruguay 1223") or a well-known place by name (MVP: no shops).
+  | { readonly name: 'search_place'; readonly query: string }
+  // One of the results of the last search_place, numbered from 1: shown on the
+  // map with its route, not started until the user confirms.
   | { readonly name: 'set_destination'; readonly result: number }
+  | { readonly name: 'start_navigation' }
   | { readonly name: 'route_status' }
   | { readonly name: 'stop_navigation' };
 
@@ -188,22 +190,20 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     ),
     fn(
       'search_place',
-      'Busca un lugar para navegar: por texto (un nombre, una dirección) o el más cercano de una categoría ' +
-        '(category). Devuelve hasta 5 resultados numerados con la distancia. Si hay más de uno razonable, ' +
-        'decíselos al usuario y que elija.',
+      'Busca un destino por dirección (calle y número, por ejemplo "Uruguay 1223") o por el nombre de un lugar ' +
+        'conocido. Devuelve hasta 5 resultados numerados, el más cercano primero, con localidad y distancia. Para ' +
+        'otra ciudad, incluila en el texto ("Uruguay 1223, Rosario"). No busca comercios.',
       {
         type: 'object',
-        properties: {
-          query: { type: 'string', maxLength: 120, description: 'Nombre o dirección.' },
-          category: { type: 'string', enum: PLACE_CATEGORY_IDS, description: 'Para "el/la más cercano/a".' },
-        },
+        properties: { query: { type: 'string', maxLength: 120, description: 'Dirección o lugar.' } },
+        required: ['query'],
         additionalProperties: false,
       },
     ),
     fn(
       'set_destination',
-      'Navega a uno de los resultados de la última search_place (número desde 1): calcula la ruta, inicia la ' +
-        'guía y abre la vista de manejo.',
+      'Muestra en el mapa uno de los resultados de la última search_place (número desde 1) con su ruta, ' +
+        'distancia y hora de llegada. No arranca la guía: preguntale al usuario si es ahí.',
       {
         type: 'object',
         properties: { result: { type: 'integer', minimum: 1, maximum: 5 } },
@@ -211,6 +211,7 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
         additionalProperties: false,
       },
     ),
+    fn('start_navigation', 'Arranca la guía al destino ya mostrado, cuando el usuario confirmó. Abre la vista de manejo.', NO_ARGS),
     fn('route_status', 'Estado de la navegación: destino, distancia y tiempo que faltan, hora de llegada y próxima maniobra.', NO_ARGS),
     fn('stop_navigation', 'Termina la navegación en curso.', NO_ARGS),
   ];
@@ -291,18 +292,11 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       return { ok: true, call: { name, expression: e } };
     }
     case 'search_place': {
-      const extra = only('query', 'category');
+      const extra = only('query');
       if (extra) return bad(extra);
       const q = a.query;
-      const c = a.category;
-      if (q !== undefined && (typeof q !== 'string' || q.trim().length < 3 || q.length > 120)) {
-        return bad('"query" debe tener entre 3 y 120 caracteres.');
-      }
-      if (c !== undefined && (typeof c !== 'string' || !(PLACE_CATEGORY_IDS as readonly string[]).includes(c))) {
-        return bad(`"category" debe ser una de: ${PLACE_CATEGORY_IDS.join(', ')}.`);
-      }
-      if (q === undefined && c === undefined) return bad('Indicá "query" o "category".');
-      return { ok: true, call: { name, query: typeof q === 'string' ? q.trim() : null, category: (c as PlaceCategory | undefined) ?? null } };
+      if (typeof q !== 'string' || q.trim().length < 3 || q.length > 120) return bad('"query" debe tener entre 3 y 120 caracteres.');
+      return { ok: true, call: { name, query: q.trim() } };
     }
     case 'set_destination': {
       const extra = only('result');
@@ -317,6 +311,7 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
     case 'run_adapter_bench':
     case 'clear_dtcs':
     case 'read_fault_history':
+    case 'start_navigation':
     case 'route_status':
     case 'stop_navigation': {
       const extra = only();

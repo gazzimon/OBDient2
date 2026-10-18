@@ -23,6 +23,7 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   // Navigation is what the driver asks for while driving: allowed moving.
   search_place: 'read',
   set_destination: 'read',
+  start_navigation: 'read',
   route_status: 'read',
   stop_navigation: 'read',
 };

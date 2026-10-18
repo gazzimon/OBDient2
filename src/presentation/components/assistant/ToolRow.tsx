@@ -21,7 +21,8 @@ const TOOLS: Record<string, { label: string; icon: IconName }> = {
   read_fault_history: { label: 'Leyendo el historial de fallas', icon: 'history' },
   calculate: { label: 'Calculando', icon: 'calculator-variant-outline' },
   search_place: { label: 'Buscando el lugar', icon: 'map-search-outline' },
-  set_destination: { label: 'Calculando la ruta', icon: 'navigation-variant-outline' },
+  set_destination: { label: 'Mostrando el destino en el mapa', icon: 'map-marker-check-outline' },
+  start_navigation: { label: 'Arrancando la navegación', icon: 'navigation-variant-outline' },
   route_status: { label: 'Revisando la ruta', icon: 'map-marker-distance' },
   stop_navigation: { label: 'Terminando la navegación', icon: 'map-marker-off-outline' },
 };

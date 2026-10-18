@@ -61,21 +61,19 @@ const common: Car = {
       return { ok: false, error: 'invalid_arguments', message: (err as Error).message };
     }
   },
-  search_place: (c) =>
+  search_place: () =>
     ok(
       {
-        results:
-          c.name === 'search_place' && c.category === 'pharmacy'
-            ? [{ result: 1, name: 'Farmacia Central', detail: 'Av. Corrientes 1200', distanceKm: 0.8 }]
-            : [
-                { result: 1, name: 'Axion', detail: 'Chile 1100, CABA', distanceKm: 1.5 },
-                { result: 2, name: 'Shell', detail: 'Av. Independencia 900, CABA', distanceKm: 1.6 },
-                { result: 3, name: 'YPF', detail: 'Av. San Juan 700, CABA', distanceKm: 2.2 },
-              ],
+        results: [
+          { result: 1, name: 'Uruguay 1223', detail: 'Ciudad Autónoma de Buenos Aires, Argentina', distanceKm: 1.2 },
+          { result: 2, name: 'Uruguay 1223', detail: 'Adrogué, Buenos Aires, Argentina', distanceKm: 24.3 },
+        ],
       },
-      '3 resultados',
+      '2 resultados',
     ),
-  set_destination: () => ok({ destination: 'Axion', detail: 'Chile 1100, CABA', distanceKm: 1.5, durationMin: 6, arrival: '20:06' }, 'Navegando a Axion'),
+  set_destination: () =>
+    ok({ destination: 'Uruguay 1223', detail: 'Ciudad Autónoma de Buenos Aires, Argentina', distanceKm: 1.6, durationMin: 7, arrival: '20:07', started: false }, 'En el mapa: Uruguay 1223'),
+  start_navigation: () => ok({ started: true, destination: 'Uruguay 1223' }, 'Navegación iniciada'),
   route_status: () =>
     ok(
       { navigating: true, arrived: false, destination: 'Axion', remainingKm: 0.8, remainingMin: 3, arrival: '20:03', offRoute: false, next: { instruction: 'Doblá a la derecha en Chile', inKm: 0.2 } },
@@ -228,9 +226,17 @@ const CASES: Case[] = [
   { id: '24', what: 'VIN argentino sin alarma por el dígito verificador', car: HEALTHY, turns: [{ text: '¿Mi VIN está bien?', context: STOPPED, checks: [called('read_vehicle_info'), avoids(/error de lectura|no cuadra|no coincide/i, 'que el VIN tiene un error')] }] },
   { id: '25', what: 'cuentas con calculate', car: HEALTHY, turns: [{ text: '¿Cuántas millas son 2204 km?', context: STOPPED, checks: [called('calculate'), says(/1\.?369|1\.?370/, '≈1.369 millas (1.370 redondeado vale)')] }] },
   { id: '26', what: 've las fotos (dijo "no tengo visión")', car: HEALTHY, photo: true, turns: [{ text: '¿Qué ves en esta foto?', context: STOPPED, checks: [avoids(/no tengo visi[oó]n|no puedo ver|no puedo (leer|extraer|analizar).*(foto|imagen)/i, 'que no puede ver fotos')] }] },
-  { id: '27', what: 'navegar a la estación más cercana', car: HEALTHY, turns: [{ text: 'Llevame a la estación de servicio más cercana', context: STOPPED, checks: [called('search_place'), called('set_destination'), says(/Axion/, 'el destino elegido')] }] },
+  {
+    id: '27',
+    what: 'dirección: mostrar en el mapa y preguntar antes de arrancar',
+    car: HEALTHY,
+    turns: [
+      { text: 'Llevame a Uruguay 1223', context: STOPPED, checks: [called('search_place'), called('set_destination'), notCalled('start_navigation'), says(/\?/, 'una pregunta de confirmación')] },
+      { text: 'Sí, dale', context: STOPPED, checks: [called('start_navigation')] },
+    ],
+  },
   { id: '28', what: '¿cuánto falta?', car: HEALTHY, turns: [{ text: '¿Cuánto falta para llegar?', context: MOVING, checks: [called('route_status'), says(/3\s*min|20:03|0,8/, 'tiempo o distancia que faltan'), short] }] },
-  { id: '29', what: 'buscar en movimiento, respuesta corta', car: HEALTHY, turns: [{ text: 'Llevame a una farmacia', context: MOVING, checks: [called('search_place'), short] }] },
+  { id: '29', what: 'comercio: pide la dirección (MVP sin comercios)', car: HEALTHY, turns: [{ text: 'Llevame a una farmacia', context: MOVING, checks: [says(/direcci[oó]n|calle/i, 'que pida la dirección'), notCalled('start_navigation'), short] }] },
   { id: '20', what: 'rioplatense (voseo)', car: LEAN, turns: [{ text: 'Explicame qué tengo que revisar', context: STOPPED, checks: [says(/\b(revisá|fijate|mirá|tenés|podés|cambiá|llevalo|chequeá)\b/i, 'voseo'), avoids(/\b(revisa|fíjate|mira|tienes|puedes)\b/, 'tuteo')] }] },
 ];
 
