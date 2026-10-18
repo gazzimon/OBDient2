@@ -1,7 +1,7 @@
 # Trayectoria
 
 De una app de diagnóstico OBD (OBDient) a **navegación con realidad aumentada** en el auto. Cada etapa
-entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-14.
+entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-18.
 
 | Etapa | Qué entrega | Estado |
 |---|---|---|
@@ -9,8 +9,9 @@ entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-14.
 | **E1 Ego-estado** | Fusión GPS + IMU + OBD: posición suave, rumbo, aceleración, historia en marco ego | ✅ código · ⏳ campo |
 | **E2 Navegación** | Destino por búsqueda o mapa, ruta, progreso, voz, desvío y recálculo | ✅ código · ⏳ campo |
 | **E3 AR anclada** | Ruta dibujada sobre la calle, marcador de maniobra, calibración del soporte | ✅ código · ⏳ calibración real |
-| **E4 Ver la vía** | Detector local para alertas: colisión frontal, distancia, "arrancó el de adelante", peatones | ✅ código (YOLO11n TFLite, VisionCamera 5) · ⏳ build y banco en el teléfono |
-| **E5 Ayuda en servidor** | Z440: chat Qwen3.8-27B (GPU0), OSRM + Photon Argentina (CPU); luego maestro etiquetador y Qwen-Drive (GPU1) | ✅ chat, rutas y búsqueda · ⏳ Caddy en la K16 · pendiente maestro |
+| **E4 Ver la vía** | Detector local para alertas: colisión frontal, distancia, "arrancó el de adelante", peatones | ✅ código · 🔧 en release el modelo no cargaba y los cuadros no se guardaban: corregido, ⏳ probar en el teléfono |
+| **E5 Ayuda en servidor** | Z440: chat Qwen3.8-27B (GPU0), OSRM + Photon Argentina (CPU); luego maestro etiquetador y Qwen-Drive (GPU1) | ✅ rutas y búsqueda · ✅ banco de maestros (Waymo demo) · ⏳ con viajes propios |
+| **E7 Asistente** | Chat por texto, voz e imágenes con herramientas OBD (ADR-0007), cuentas Firebase y gateway new-api (ADR-0008) | ✅ M0 gateway: `obdient.duckdns.org/llm/v1` (alias `obdient-chat`, primer token 0,2 s) · ⏳ M1 núcleo |
 | **E6 Presentación** | Modo HUD reflejado en el parabrisas, otras plataformas (iOS) | pendiente |
 
 **MVP = E0–E3**, solo Android.
