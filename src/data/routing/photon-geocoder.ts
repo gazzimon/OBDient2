@@ -4,7 +4,7 @@
 // should self-host Photon or use a provider. Same API, different base URL.
 
 import type { LatLng } from '@/domain/geo/geo';
-import type { GeocodingPort, Place } from '@/domain/navigation/route';
+import type { GeocodingPort, Place, SearchOptions } from '@/domain/navigation/route';
 
 interface PhotonFeature {
   geometry: { coordinates: [number, number] };
@@ -26,12 +26,14 @@ export class PhotonGeocoder implements GeocodingPort {
     private readonly fetchFn: Fetch = fetch,
   ) {}
 
-  async search(query: string, near: LatLng | null, signal?: AbortSignal): Promise<Place[]> {
+  async search(query: string, near: LatLng | null, signal?: AbortSignal, options: SearchOptions = {}): Promise<Place[]> {
     const q = query.trim();
     if (q.length < 3) return [];
-    const params = [`q=${encodeURIComponent(q)}`, 'limit=6'];
+    const params = [`q=${encodeURIComponent(q)}`, `limit=${options.limit ?? 6}`];
     // Bias results toward where the driver is, not toward the whole planet.
     if (near) params.push(`lat=${near.lat.toFixed(5)}`, `lon=${near.lng.toFixed(5)}`);
+    if (options.osmTag) params.push(`osm_tag=${encodeURIComponent(options.osmTag)}`);
+    if (options.bbox) params.push(`bbox=${options.bbox.map((v) => v.toFixed(5)).join(',')}`);
     const res = await this.fetchFn(`${this.baseUrl.replace(/\/$/, '')}/api/?${params.join('&')}`, signal ? { signal } : undefined);
     if (!res.ok) throw new Error(`Geocoder HTTP ${res.status}`);
     const body = (await res.json()) as { features?: PhotonFeature[] };

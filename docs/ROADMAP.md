@@ -183,6 +183,12 @@ bajo, VIN "mal leído", "no tengo historial").
   elige bien (0 llamadas inválidas en el auto). Revisar si se pasan ~25 herramientas o si se suman
   modelos especializados (visión, diagnóstico); un router suma latencia y otra pieza.
 - **Herramientas en el servidor: no.** Corren en el teléfono, junto al adaptador (ADR-0007).
+- [x] **Navegación por chat** (2026-10-18): `search_place` (texto, o lo más cercano de 10 categorías:
+  combustible, carga eléctrica, estacionamiento, taller, lavadero, farmacia, hospital, comisaría,
+  cajero, supermercado), `set_destination` (ruta, guía y vista de manejo), `route_status` (falta,
+  llegada, próxima maniobra), `stop_navigation`. Las categorías se buscan por palabras y marcas dentro
+  de un recuadro de ~5 km (luego ~20) con filtro de OSM; el texto libre pone primero lo que está a
+  menos de 50 km (resuelve el homónimo a 900 km).
 - **Antes del APK para probar en movimiento (decisión 2026-10-18):** navegación por chat → M4 (sin
   conexión y errores, resumen de conversaciones largas) → M5 (modo manejo: voz de salida, árbitro con
   alertas y guía, chips) → M6 (micrófono). Recién entonces el standalone y la prueba todo junto.
@@ -197,7 +203,6 @@ bajo, VIN "mal leído", "no tengo historial").
 - **Distribución (idea):** mini app en Lemon (1,2 M usuarios activos, apps web dentro de su billetera)
   como canal de adquisición: vender el adaptador, ver historial y VIN, chatear con el asistente. El
   núcleo (BLE, AR) no puede ser mini app: el WebView no tiene Bluetooth.
-- **Búsqueda de destinos**: priorizar resultados cercanos (Photon eligió un homónimo a 900 km).
 - **Asistente: herramientas en el servidor o un modelo router** (decidido 2026-10-18: todavía no). Las
   herramientas corren en el teléfono (ADR-0007) y un solo modelo elige bien con 11 herramientas (cero
   llamadas inválidas en el auto, 24–26/26 en la evaluación). Revisar si se superan ~25 herramientas o

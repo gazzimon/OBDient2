@@ -3,6 +3,7 @@
 import Constants from 'expo-constants';
 import { fetch as expoFetch } from 'expo/fetch';
 import { AssistantService } from '@/data/assistant/assistant-service';
+import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import { OpenAiChatClient } from '@/data/llm/openai-chat-client';
 import { AccountService } from '@/data/auth/account-service';
 import { magicIdentity } from '@/data/auth/magic-identity';
@@ -47,10 +48,20 @@ const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
 const extra = Constants.expoConfig?.extra as { authUrl: string };
 const account = new AccountService({ identity: magicIdentity, secrets: secureStore, authUrl: extra.authUrl });
 
-// The assistant (M3): the account's key, the car through vehicleTools.
+// The assistant's tools: navigation ones go to NavigationTools (presentation,
+// registered at start to avoid an import cycle), the rest to the car.
+type ToolRunner = Pick<VehicleToolsPort, 'execute'>;
+let navigationTools: { names: ReadonlySet<string>; runner: ToolRunner } | null = null;
+const assistantTools: VehicleToolsPort = {
+  supportedPids: () => vehicleTools.supportedPids(),
+  execute: (call, signal) =>
+    navigationTools?.names.has(call.name) ? navigationTools.runner.execute(call, signal) : vehicleTools.execute(call, signal),
+};
+
+// The assistant (M3): the account's key, the car and the navigation as tools.
 const assistant = new AssistantService({
   account,
-  vehicle: vehicleTools,
+  vehicle: assistantTools,
   makeLlm: (c) =>
     new OpenAiChatClient({
       baseUrl: c.baseUrl,
@@ -61,6 +72,9 @@ const assistant = new AssistantService({
 });
 
 export const container = {
+  setNavigationTools(names: ReadonlySet<string>, runner: ToolRunner): void {
+    navigationTools = { names, runner };
+  },
   account,
   assistant,
   sensors,
