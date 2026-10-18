@@ -67,7 +67,12 @@ sincronización cuando exista el login.
   conocimiento; el prompt no deja adivinar códigos de fabricante · ⏳ probar con el modelo y el auto.
   De M2.3 quedó hecho: `exclusive()`, todos los PIDs soportados. Falta: `STPX r:/t:` en diagnóstico,
   `STVR`/`STPRS`.
-- [ ] **M2.5 Histórico de fallas**: lecturas y borrados con fecha, códigos, freeze frame y km.
+- [x] **M2.5 Histórico de fallas** (`domain/faults/fault-history.ts`, MMKV `obdient2-faults`,
+  `container.faults`): por VIN, guarda cambios y no cada lectura (misma lista → "visto por última vez" y
+  km); freeze frames distintos; cada borrado con los códigos previos y los km desde el borrado anterior;
+  500 eventos. Lo alimenta `VehicleToolAdapter` · ⏳ mostrarlo (M3) y sincronizarlo: ADR-0008 §5 dice
+  que el VIN **no** va a Firebase, así que la sincronización por cuenta necesita una decisión (VIN
+  cifrado, hash o sin sincronizar).
 - [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
   - [x] esperar hasta 5 s ante `7F xx 78` y reenviar si el adaptador vuelve al prompt (clones < v2.1);
   - [x] descartar bytes nulos (`0x00`) en el lector de respuestas;

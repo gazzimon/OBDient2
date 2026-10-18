@@ -30,6 +30,7 @@ import { parsePidBytes, parsePidResponse } from '@/core/utils/obdParser';
 import { pidNumberFor } from '@/core/utils/supportedPids';
 import { isCan } from '@/data/adapters/elm-protocol';
 import type { DtcKind, ToolCall, ToolErrorCode, ToolOutcome } from '@/domain/assistant/tools';
+import type { FaultEventInput } from '@/domain/faults/fault-history';
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
@@ -40,8 +41,14 @@ export interface DtcDescriber {
   describe(code: string): string | null;
 }
 
+// Where reads and clears are written down (FaultHistory on the phone).
+export interface FaultHistorySink {
+  record(event: FaultEventInput): void;
+}
+
 export interface VehicleToolDeps {
   readonly describer?: DtcDescriber;
+  readonly history?: FaultHistorySink;
   // Driving: diagnostic reads skip headers and never pause the telemetry.
   readonly moving?: () => boolean;
   readonly sleep?: (ms: number) => Promise<void>;
@@ -68,6 +75,8 @@ type Send = (command: string, timeoutMs?: number) => Promise<EcuMessage[]>;
 export class VehicleToolAdapter implements VehicleToolsPort {
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly now: () => number;
+  // VIN per session, read once: the history is kept per car.
+  private readonly vins = new WeakMap<ObdSession, string | null>();
 
   constructor(
     private readonly session: () => ObdSession | null,
@@ -201,6 +210,38 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     });
   }
 
+  // The car's VIN for the history, read on first need and kept for the session.
+  private async vinFor(s: ObdSession, send: Send, can: boolean): Promise<string | null> {
+    if (this.vins.has(s)) return this.vins.get(s)!;
+    let vin: string | null = null;
+    try {
+      const r = parseVin(await send('0902'), can);
+      vin = r?.wellFormed ? r.vin : null;
+    } catch (err) {
+      if (isLinkFailure(err)) throw err;
+    }
+    this.vins.set(s, vin);
+    return vin;
+  }
+
+  private async distSinceClear(send: Send): Promise<number | null> {
+    if (!this.supportedPids().includes('DIST_SINCE_CLEAR')) return null;
+    try {
+      return pidFromMessages(await send(PID_DEFINITIONS.DIST_SINCE_CLEAR.command), 'DIST_SINCE_CLEAR');
+    } catch (err) {
+      if (isLinkFailure(err)) throw err;
+      return null;
+    }
+  }
+
+  private record(event: FaultEventInput): void {
+    try {
+      this.deps.history?.record(event);
+    } catch {
+      // Losing a history entry must never fail the tool call.
+    }
+  }
+
   private describe(d: Dtc) {
     return {
       code: d.code,
@@ -216,6 +257,11 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     const report = await this.diag(s, async (send, can) => {
       const r = parseDtcs(await send(hex(service)), service, can);
       if (r.ecus.length === 0 && r.refusals.length > 0) throw new Rejected(nrcReason(r.refusals[0]!.code));
+      if (this.deps.history && !r.truncated) {
+        const vin = await this.vinFor(s, send, can);
+        const distSinceClearKm = await this.distSinceClear(send);
+        this.record({ type: 'codes', vin, kind, codes: r.codes.map(faultCode), distSinceClearKm });
+      }
       return r;
     });
     const codes = report.codes.map((d) => this.describe(d));
@@ -231,7 +277,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
 
   private async readFreezeFrame(s: ObdSession): Promise<ToolOutcome> {
     const supported = new Set(this.supportedPids());
-    return this.diag(s, async (send) => {
+    return this.diag(s, async (send, can) => {
       const dtc = parseFreezeFrameDtc(await send('020200'));
       if (!dtc) return { ok: true, data: { stored: false }, summary: 'Sin freeze frame guardado' } as const;
 
@@ -256,6 +302,9 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         } catch (err) {
           if (isLinkFailure(err)) throw err;
         }
+      }
+      if (this.deps.history) {
+        this.record({ type: 'freeze_frame', vin: await this.vinFor(s, send, can), dtc: faultCode(dtc), values });
       }
       return {
         ok: true,
@@ -361,12 +410,14 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   // ── Clear (mode 04) ────────────────────────────────────────────────────────
 
   private async clearDtcs(s: ObdSession): Promise<ToolOutcome> {
-    const supported = new Set(this.supportedPids());
-    return this.diag(s, async (send) => {
-      let distBefore: number | null = null;
-      if (supported.has('DIST_SINCE_CLEAR')) {
+    return this.diag(s, async (send, can) => {
+      // Before the clear: what the history needs to say what was erased.
+      const vin = this.deps.history ? await this.vinFor(s, send, can) : null;
+      const distBefore = await this.distSinceClear(send);
+      let codesBefore: Dtc[] = [];
+      if (this.deps.history) {
         try {
-          distBefore = pidFromMessages(await send(PID_DEFINITIONS.DIST_SINCE_CLEAR.command), 'DIST_SINCE_CLEAR');
+          codesBefore = [...parseDtcs(await send('03'), 0x03, can).codes];
         } catch (err) {
           if (isLinkFailure(err)) throw err;
         }
@@ -381,6 +432,13 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       const { positive, negative } = answersTo(messages, 0x04);
       if (positive.length === 0 && negative.length > 0) throw new Rejected(nrcReason(negative[0]!.code));
       if (positive.length === 0) return fail('not_supported', 'El auto no confirmó el borrado.');
+      this.record({
+        type: 'cleared',
+        vin,
+        ecus: positive.map((m) => m.ecu),
+        distSinceClearBeforeKm: distBefore,
+        codesBefore: codesBefore.map(faultCode),
+      });
       return {
         ok: true,
         data: {
@@ -393,6 +451,10 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       } as const;
     });
   }
+}
+
+function faultCode(d: Dtc) {
+  return { code: d.code, ecu: d.ecu, owner: d.owner };
 }
 
 // A mode-01 value out of per-ECU messages (works with or without headers).

@@ -3,6 +3,8 @@
 import { SensorHub } from '@/data/sensors/sensor-hub';
 import { ObdManager } from '@/data/obd/obd-manager';
 import { VehicleToolAdapter } from '@/data/obd/vehicle-tool-adapter';
+import { createMmkvFaultStorage } from '@/data/faults/mmkv-fault-storage';
+import { FaultHistory } from '@/domain/faults/fault-history';
 import { OsrmRouting } from '@/data/routing/osrm-routing';
 import { PhotonGeocoder } from '@/data/routing/photon-geocoder';
 import { TripRecorder } from '@/data/recording/trip-recorder';
@@ -21,7 +23,9 @@ const obd = new ObdManager((kmh, t) => {
 // The assistant's tools on the live session. "Moving" here is the last OBD
 // speed; the chat screen (M3) refines it with GPS and hysteresis (ADR-0007 §6).
 const MOVING_KMH = 5;
+const faults = new FaultHistory(createMmkvFaultStorage());
 const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
+  history: faults,
   moving: () => (useOBDStore.getState().parameters.SPEED?.value ?? 0) > MOVING_KMH,
 });
 
@@ -30,6 +34,7 @@ export const container = {
   obd,
   trips,
   vehicleTools,
+  faults,
   // Built per call so an endpoint changed in Settings applies immediately.
   routing(): RoutingPort {
     return new OsrmRouting(useSettingsStore.getState().routingUrl);

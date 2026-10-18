@@ -3,6 +3,7 @@ import type { CommandPort } from '@/data/adapters/protocol-manager';
 import type { ObdSession, SessionInfo } from '@/data/obd/obd-session';
 import { VehicleToolAdapter } from '@/data/obd/vehicle-tool-adapter';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
+import { FaultHistory } from '@/domain/faults/fault-history';
 
 // A session on the B35 car (CAN 29 bit, engine ECU 18DAF111). Answers depend
 // on whether headers are on, like the real adapter.
@@ -190,6 +191,22 @@ describe('VehicleToolAdapter', () => {
       requestStyle: 'stpx',
       adapterResets: 0,
       volts: 14.32,
+    });
+  });
+
+  it('writes reads and clears to the fault history, with the VIN read once', async () => {
+    let json: string | null = null;
+    const history = new FaultHistory({ load: () => json, save: (j) => void (json = j) });
+    const { session, sent } = fakeSession({ ...B35, '03': { h0: '43020171', h1: '18DAF1110443010171' }, '04': { h0: '44', h1: '18DAF1110144' } });
+    const tools = new VehicleToolAdapter(() => session, { history });
+    await tools.execute({ name: 'read_dtcs', kind: 'stored' }, signal);
+    await tools.execute({ name: 'read_dtcs', kind: 'stored' }, signal);
+    await tools.execute({ name: 'clear_dtcs' }, signal);
+    expect(sent.filter((c) => c === '0902')).toHaveLength(1);
+    expect(history.list().map((e) => e.type)).toEqual(['cleared', 'codes']);
+    expect(history.lastClear('8AGEA76C0RR117525')).toMatchObject({
+      distSinceClearBeforeKm: 2197,
+      codesBefore: [{ code: 'P0171', ecu: '18DAF111', owner: 'standard' }],
     });
   });
 
