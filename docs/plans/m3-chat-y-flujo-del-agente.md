@@ -126,16 +126,14 @@ Con el B35 en el auto, motor en marcha, detenido:
 Tests: el reducer y la persistencia del `chatStore` con migración, `AssistantService` con 401 →
 renovación, cancelación a mitad, y el modal (aceptar, cancelar, segunda vez en la conversación).
 
-## 4. Decisiones abiertas
+## 4. Decisiones (2026-10-18)
 
-| # | Pregunta | Propuesta |
-|---|---|---|
-| 1 | ¿Pestaña nueva o botón en el Tablero? | **Pestaña "Asistente"** (quinta). En M5 se suma el micrófono flotante en la AR |
-| 2 | ¿Fotos en el chat en M3 (testigo del tablero)? | **Sí, al final de M3** (M3.5): selector o cámara, foto reducida a ~1024 px. El modelo acepta imágenes y el cliente ya admite la forma |
-| 3 | ¿El VIN completo va al modelo? | **No**: solo los primeros 10 caracteres (fabricante, modelo, año). El VIN completo queda en el teléfono y en Firebase (ADR-0008) |
-| 4 | Borrar con el motor en marcha | **Avisar, no bloquear**: muchos autos lo rechazan solos (`7F 04 22`) y el asistente explica el motivo |
-| 5 | Resumen de conversaciones largas | **En M4**: en M3 se recorta lo viejo, que ya funciona |
-| 6 | ¿Chat en movimiento en M3? | **Permitido con la política actual** (respuestas cortas, sin borrado ni banco). La voz y la interfaz de manejo llegan en M5 |
+1. **Pestaña "Asistente"**, la quinta. En M5 se suma el micrófono flotante en la AR.
+2. **Fotos en el chat:** sí, en M3.5 (selector o cámara, reducida a ~1024 px).
+3. **VIN completo** al modelo y en pantalla: no hay problema en mostrarlo.
+4. **Borrar con el motor en marcha:** se avisa, no se bloquea; el auto puede rechazarlo (`7F 04 22`).
+5. **Resumen de conversaciones largas:** en M4.
+6. **Chat en movimiento:** permitido con la política actual.
 
 ## 5. Después de M3
 

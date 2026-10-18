@@ -108,6 +108,8 @@ sincronización cuando exista el login.
 Parte de la estructura del agente: el modelo responde sobre códigos **solo con la base** y la cita;
 sin entrada, se abstiene (medido: [research/verificacion-de-respuestas.md](research/verificacion-de-respuestas.md)).
 
+- La rev. APR2002 con texto (repo `df2e6`, 2026-10-18) no suma códigos: sus 1.932 definidos están todos
+  en la de 2007.
 - **Fuente de códigos genéricos: SAE J2012** (PDF entregado por el usuario, no se versiona). La rev.
   DEC2007 tiene texto extraíble: 4.277 códigos definidos (P0 2.251, P2 1.177, P3 98, U0 532, B0 125,
   C0 76, U3 18) y el apéndice F0 de *Failure Type Byte*. La rev. APR2002 está escaneada (sin texto) y
