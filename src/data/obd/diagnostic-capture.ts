@@ -70,11 +70,20 @@ export const CAPTURE_ROUNDS: readonly CaptureRound[] = [
   },
 ];
 
-// Mode 04 clears codes and freeze frame; 14 and 31 are their UDS cousins.
-// The capture must never send them, whatever the rounds say.
+// What may reach the car: OBD read modes only (01 current data, 02 freeze
+// frame, 03/07/0A codes, 09 vehicle info). An allowlist, not a blocklist: UDS
+// (ISO 14229-1) has many services that change the car besides 04/14 —
+// 11 ECU reset, 28 communication control, 2E writes, 2F actuators, 31
+// routines, 85 DTC setting. AT/ST commands configure the adapter, except
+// STPX, whose d: payload goes to the bus and is checked the same way.
+const READ_MODES = new Set(['01', '02', '03', '07', '09', '0A']);
+
 export function isReadOnly(command: string): boolean {
   const c = command.replace(/\s/g, '').toUpperCase();
-  return !/^(04|14|31|2E)/.test(c);
+  const stpx = /^STPX.*?D:([0-9A-F]+)/.exec(c);
+  if (stpx) return READ_MODES.has(stpx[1]!.slice(0, 2));
+  if (/^(AT|ST)/.test(c)) return true;
+  return /^[0-9A-F]+$/.test(c) && READ_MODES.has(c.slice(0, 2));
 }
 
 export type CaptureOutcome = 'ok' | 'no-data' | 'timeout' | 'reset' | 'lost';

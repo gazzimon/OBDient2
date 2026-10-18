@@ -51,7 +51,9 @@ sincronización cuando exista el login.
   VIN.
 - [ ] **M2.3 Sesión**: todos los PIDs soportados, `query` y `exclusive`, muestreo, `STPX` con `r:`/`t:`
   en diagnóstico, `STVR`/`STPRS` cuando es STN.
-- [ ] **M2.4 `VehicleToolAdapter`**: las 9 herramientas, error `rejected_by_car`.
+- [ ] **M2.4 `VehicleToolAdapter`**: las 9 herramientas, error `rejected_by_car` con el motivo del
+  código de respuesta negativa `7F xx NN` (ISO 14229-1 anexo A.1: `22` condiciones no correctas, p. ej.
+  borrar con el motor en marcha; `31` fuera de rango; `11`/`12` no soportado).
 - [ ] **M2.5 Histórico de fallas**: lecturas y borrados con fecha, códigos, freeze frame y km.
 - [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
   - [x] esperar hasta 5 s ante `7F xx 78` y reenviar si el adaptador vuelve al prompt (clones < v2.1);
@@ -91,7 +93,15 @@ de ABS, airbag, carrocería y caja.
 - UDS de solo lectura: **`19`** lee códigos con su estado (3 bytes: código + *Failure Type Byte*,
   apéndice F0 de J2012) y **`22`** lee datos del fabricante (temperatura de la caja, vida útil del
   aceite).
-- Necesita datos de cada marca: direcciones de módulos, identificadores de `22` y sus fórmulas.
+- Referencia: **ISO 14229-1:2013** (PDF entregado por el usuario, © ISO, no se versiona): §11.3 servicio
+  `19` y sus subfunciones, anexo D.2 byte de estado del código (bit 0 falla ahora, 2 pendiente,
+  3 confirmado, 7 pide la luz de falla), §10.2 servicio `22`, anexo C.1 identificadores estándar que
+  sirven en cualquier marca (`F190` VIN, `F187` número de repuesto, `F18C` serie, `F189`/`F195`
+  versión de software), anexo A.1 códigos de respuesta negativa.
+- Necesita datos de cada marca: direcciones de módulos, identificadores de `22` propios y sus fórmulas.
+- Lista de **permitidos**, no de prohibidos: solo `19`, `22`, `3E` y `10 01`. La norma tiene muchos
+  servicios que cambian el auto además de los obvios: `11` reinicia la ECU, `28` corta su comunicación,
+  `2F` acciona actuadores, `85` apaga el registro de códigos.
 - **Nunca** `2E` (escritura), `31` (rutinas), `14` (borrado del fabricante) ni `27` (acceso de
   seguridad). Si un dato pide sesión extendida (`10 03`), se decide aparte.
 

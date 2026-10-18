@@ -33,6 +33,12 @@ describe('diagnostic capture', () => {
     expect(isReadOnly('04')).toBe(false);
     expect(isReadOnly('14FFFFFF')).toBe(false);
     expect(isReadOnly('0 4')).toBe(false);
+    // Anything outside the OBD read modes, UDS included, never reaches the car.
+    for (const c of ['1101', '2803', '2EF190', '2F0101', '3101FF00', '8502', '1902FF', '22F190', '04'])
+      expect(isReadOnly(c)).toBe(false);
+    expect(isReadOnly('STPX d:04')).toBe(false);
+    expect(isReadOnly('STPX d:010D, r:1')).toBe(true);
+    expect(isReadOnly('ATH1')).toBe(true);
   });
 
   it('skips a forbidden command even if a round lists it', async () => {
