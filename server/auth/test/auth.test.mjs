@@ -187,3 +187,14 @@ test('new-api down → 502, logged without secrets', async () => {
     s.close();
   }
 });
+
+test('Magic: a valid DID token becomes an email account; an invalid one is refused', async () => {
+  const { magicVerifier } = await import('../src/magic.mjs');
+  const fake = {
+    token: { validate: (t) => { if (t !== 'did-ok') throw Object.assign(new Error('bad'), { code: 'ERROR_MALFORMED_TOKEN' }); } },
+    users: { getMetadataByToken: async () => ({ email: 'Ana@Example.com ', issuer: 'did:ethr:0x1' }) },
+  };
+  const verify = magicVerifier(null, { magic: fake });
+  assert.deepEqual(await verify('did-ok'), { uid: 'email:ana@example.com', email: 'ana@example.com', provider: 'magic' });
+  await assert.rejects(verify('did-bad'), { name: 'InvalidIdToken' });
+});

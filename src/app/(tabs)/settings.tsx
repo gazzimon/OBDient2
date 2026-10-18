@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
 import { DETECTOR_MODELS } from '@/data/perception/detector-model';
 import type { TripFileInfo } from '@/data/recording/trip-recorder';
+import { EmailSignIn } from '@/presentation/components/feedback/EmailSignIn';
 import { useAccount } from '@/presentation/hooks/useAccount';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
@@ -245,9 +246,9 @@ export default function SettingsScreen() {
   );
 }
 
-// ADR-0008: Google account for the assistant; sign out; delete account.
+// ADR-0008: email account for the assistant; sign out; delete account.
 function AccountSection() {
-  const { status, profile, busy, error, signIn, signOut, deleteAccount } = useAccount();
+  const { status, profile, busy, error, signOut, deleteAccount } = useAccount();
   const confirmDelete = () =>
     Alert.alert(
       'Borrar cuenta',
@@ -262,8 +263,7 @@ function AccountSection() {
       <SectionHeader title="Cuenta" />
       {status === 'signed-in' && profile ? (
         <>
-          <Text className="text-brand-text font-mono text-sm">{profile.name ?? 'Cuenta de Google'}</Text>
-          <Text className="text-brand-muted font-mono text-xs mb-3">{profile.email ?? ''}</Text>
+          <Text className="text-brand-text font-mono text-sm mb-3">{profile.email}</Text>
           <View className="flex-row gap-3 mb-2">
             <View className="flex-1">
               <PillButton label="Cerrar sesión" variant="secondary" loading={busy} onPress={() => void signOut()} />
@@ -276,12 +276,13 @@ function AccountSection() {
       ) : (
         <>
           <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
-            Con tu cuenta de Google usás el asistente. Sin cuenta, todo lo demás funciona igual.
+            Con tu cuenta usás el asistente. Entrás con un código que te llega por correo. Sin cuenta, todo lo demás
+            funciona igual.
           </Text>
-          <PillButton label="Continuar con Google" loading={busy} disabled={status === 'loading'} onPress={() => void signIn()} />
+          <EmailSignIn />
         </>
       )}
-      {error && <Text className="text-brand-red font-mono text-xs mt-2">{error}</Text>}
+      {status === 'signed-in' && error && <Text className="text-brand-red font-mono text-xs mt-2">{error}</Text>}
       <View className="mb-6" />
     </>
   );

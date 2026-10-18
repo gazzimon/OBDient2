@@ -15,6 +15,7 @@ import { AccountGate } from '@/presentation/components/feedback/AccountGate';
 import { DisclaimerGate } from '@/presentation/components/feedback/Disclaimer';
 import { restoreAccount } from '@/presentation/hooks/useAccount';
 import { container } from '@/data/container';
+import { MagicRelayer } from '@/data/auth/magic-identity';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -48,6 +49,8 @@ export default function RootLayout() {
       <DisclaimerGate />
       <AccountGate />
       <ClearDtcsModal />
+      {/* Magic's code and device-approval screens (email login, ADR-0008). Last, so it draws on top. */}
+      <MagicRelayer />
     </>
   );
 }

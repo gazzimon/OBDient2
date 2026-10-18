@@ -12,7 +12,7 @@ import type { ChatItem } from '@/domain/assistant/conversation';
 import { ChatBubble } from '@/presentation/components/assistant/ChatBubble';
 import { ErrorRow } from '@/presentation/components/assistant/ErrorRow';
 import { ToolRow } from '@/presentation/components/assistant/ToolRow';
-import { PillButton } from '@/presentation/components/layout/PillButton';
+import { EmailSignIn } from '@/presentation/components/feedback/EmailSignIn';
 import { useAccount } from '@/presentation/hooks/useAccount';
 import { useAssistant } from '@/presentation/hooks/useAssistant';
 import { pickPhoto, type Photo, type PhotoSource } from '@/presentation/services/photo';
@@ -31,7 +31,7 @@ const EXAMPLES = [
 ];
 
 export default function AssistantScreen() {
-  const { status, signIn, busy: accountBusy } = useAccount();
+  const { status } = useAccount();
   const conversation = useChatStore((s) => s.conversations.find((c) => c.id === s.activeId) ?? null);
   const runningId = useChatStore((s) => s.runningId);
   const connected = useOBDStore((s) => s.connectionState === 'connected');
@@ -102,10 +102,10 @@ export default function AssistantScreen() {
             <MaterialCommunityIcons name="account-lock-outline" size={36} color={COLORS.mint} style={{ alignSelf: 'center' }} />
             <Text className="text-brand-text font-mono-bold text-base text-center mt-3">Entrá para usar el asistente</Text>
             <Text className="text-brand-muted font-mono text-xs leading-5 text-center mt-2 mb-6">
-              El asistente lee tu auto con el adaptador y te explica lo que encuentra. Necesita tu cuenta de Google; la
-              navegación y el resto de la app funcionan sin cuenta.
+              El asistente lee tu auto con el adaptador y te explica lo que encuentra. Necesita tu cuenta: entrás con un
+              código que te llega por correo. La navegación y el resto de la app funcionan sin cuenta.
             </Text>
-            <PillButton label="Continuar con Google" loading={accountBusy} disabled={status === 'loading'} onPress={() => void signIn()} />
+            <EmailSignIn />
           </View>
         ) : items.length === 0 ? (
           <View className="flex-1 justify-center px-6">
