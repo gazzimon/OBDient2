@@ -16,8 +16,11 @@ La app detecta el chip con `STI`. Un ELM327 contesta `?` y la sesión sigue por 
 | Ajustes | `ATS0`, `ATAT1` (no `ATAT2`) | `stn.ts` |
 | Velocidad | `010D1` (sufijo de cantidad de respuestas, desde v1.3) y `010D` | `telemetry-poller.ts` |
 | Tensión | `ATRV` | `core/constants/pids.ts` |
-| Protocolo | `ATZ`, `ATE0`, `ATL0`, `ATSP0`, `ATDP` | `data/adapters/protocol-manager.ts` |
-| Errores | `NO DATA`, `CAN ERROR`, `BUFFER FULL`, `<DATA ERROR`, `<RX ERROR`, `LV RESET`… | `transport-command-port.ts` |
+| Protocolo | `ATWS` (con `ATZ` de respaldo), `ATE0`, `ATL0`, `ATFE`, `ATSP0`, `ATDP` | `data/adapters/protocol-manager.ts` |
+| Errores | `NO DATA`, `CAN ERROR`, `BUFFER FULL`, `<DATA ERROR`, `<RX ERROR`, `LV RESET`, `ERR94`, `ERRxx`… | `transport-command-port.ts` |
+| Respuesta pendiente | `7F xx 78`: espera 5 s y reenvía (máx. 2) | `transport-command-port.ts` |
+| Bytes nulos | se descartan | `data/adapters/prompt-framer.ts` |
+| Energía | `ATLP` al cerrar la sesión (solo si no es STN) | `data/obd/obd-session.ts` |
 
 Formato de las respuestas: el mismo que el STN. Varios cuadros con `014` / `0:` / `1:` (CAF1), o con
 encabezado y PCI con `ATH1` (§ *Multiline Responses*).
@@ -27,19 +30,23 @@ encabezado y PCI con `ATH1` (§ *Multiline Responses*).
 1. **Sin `STPX`**: la velocidad usa `010D1`. En el B35 dio el mismo rendimiento (el límite es BLE), así
    que no se espera pérdida.
 2. **Respuesta pendiente `7F xx 78`**: solo la maneja el ELM327 **v2.1 o superior** (PP 2A bit 2). Un clon
-   v1.5 devuelve `7F0478` y el prompt antes de la respuesta real: la app tiene que seguir esperando hasta
-   5 s (J1979). Afecta al borrado (`04`) y al freeze frame.
+   v1.5 devuelve `7F0478` y el prompt antes de la respuesta real: la app sigue esperando hasta 5 s
+   (J1979) y, si no llega, reenvía el pedido (máx. 2). Afecta al borrado (`04`) y al freeze frame.
 3. **Bytes nulos (`0x00`)**: el datasheet advierte que el chip puede intercalar alguno en la salida (§8,
-   nota de Microchip). El lector de respuestas tiene que descartarlos.
+   nota de Microchip). El lector de respuestas los descarta.
 4. **`ERR94`** (error fatal de CAN): bloquea la búsqueda de protocolos CAN hasta apagar o hasta `ATFE`
-   (PP 2A bit 5). `ATZ` no lo destraba. Hoy no está en la lista de errores.
-5. **`LV RESET`**: también bloquea la búsqueda CAN (PP 2A bit 4), pero `ATZ` lo destraba, y la
-   recuperación de la sesión ya hace `ATZ`.
+   (PP 2A bit 5). `ATZ` no lo destraba. La app lo trata como reinicio del adaptador y la inicialización
+   manda `ATFE`.
+5. **`LV RESET`**: también bloquea la búsqueda CAN (PP 2A bit 4); la reinicialización de la sesión lo
+   destraba.
 6. **Energía**: con los valores de fábrica (PP 0E = 9A, PP 0F = D5) **el ELM327 no se duerme solo**, ni
    por falta de comandos ni por bus quieto (~30 mA el chip y su circuito, más el módulo Bluetooth).
-   Enchufado de forma permanente descarga la batería. Opciones: `AT LP` al desconectar la app, o PP 0F
-   bit 5 (dormir tras 30 o 150 s sin actividad OBD) configurado en fábrica.
+   Enchufado de forma permanente descarga la batería. La app manda `ATLP` al cerrar la sesión. Si la app
+   se cierra de golpe no llega a mandarlo: para el producto, PP 0F bit 5 (dormir tras 30 o 150 s sin
+   actividad OBD) configurado en fábrica. Un ELM327 dormido descarta el primer comando: la
+   inicialización lo cubre con el `ATZ` de respaldo.
 7. **Reinicio**: `ATZ` tarda ~800 ms en el ELM327; `ATWS` hace lo mismo en ~2 ms sin la prueba de LEDs.
+   La app usa `ATWS` y cae a `ATZ` si no contesta en 1,5 s.
 8. **Búsqueda de protocolo**: `ATSP0` busca en cada conexión. Con el protocolo de cada auto guardado,
    `ATSP A7` (o `ATTP A7`) prueba primero ese y, si falla, busca. Sirve también para el STN.
 
