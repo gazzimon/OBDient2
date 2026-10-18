@@ -115,6 +115,12 @@ sin entrada, se abstiene (medido: [research/verificacion-de-respuestas.md](resea
   C0 76, U3 18) y el apéndice F0 de *Failure Type Byte*. La rev. APR2002 está escaneada (sin texto) y
   la de 2007 la reemplaza. Falta una revisión más nueva: la de 2007 deja casi vacíos P0D–P0F y P29–P2F,
   que los autos posteriores usan.
+- **OBDex** (github.com/foerbsnavi/OBDex, la base de obd.signalwelt.de; datos **CC0**, se pueden
+  distribuir): 9.533 códigos genéricos (P0, P2, P3, U0, U3, B0, C0) con descripción EN/DE, causas con
+  probabilidad, síntomas, dificultad y costo, fuentes; sin códigos de fabricante. Contiene los 4.277
+  de J2012 2007 y 5.256 más. Contra J2012: en P/U difieren mucho ~1–2 % (errores reales, p. ej.
+  P2231, P2415–P2417), en B0/C0 ~25 %. Propuesta: distribuir OBDex, usar J2012 solo para verificar
+  y marcar o excluir los códigos que no coinciden; B0/C0 con cautela.
 - **La base de OBDient no sirve como fuente**: de sus 580 descripciones, 96 difieren mucho de J2012 y
   35 tienen otro significado (P0518 "nivel de aceite bajo" es "control de ralentí intermitente";
   P2512–P2520 "bujías de precalentamiento" son A/C y registrador de eventos).
