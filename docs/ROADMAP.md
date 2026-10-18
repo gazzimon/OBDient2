@@ -59,9 +59,14 @@ sincronización cuando exista el login.
   `DIST_SINCE_CLEAR` existente · ⏳ verificar con un auto con códigos y freeze frame.
 - [ ] **M2.3 Sesión**: todos los PIDs soportados, `query` y `exclusive`, muestreo, `STPX` con `r:`/`t:`
   en diagnóstico, `STVR`/`STPRS` cuando es STN.
-- [ ] **M2.4 `VehicleToolAdapter`**: las 9 herramientas, error `rejected_by_car` con el motivo del
-  código de respuesta negativa `7F xx NN` (ISO 14229-1 anexo A.1: `22` condiciones no correctas, p. ej.
-  borrar con el motor en marcha; `31` fuera de rango; `11`/`12` no soportado).
+- [x] **M2.4 `VehicleToolAdapter`** (`data/obd/vehicle-tool-adapter.ts`, en `container.vehicleTools`):
+  las 9 herramientas sobre los parsers de M2.2. Valores en vivo por el canal compartido; diagnóstico con
+  `ATH1` en exclusiva (pausa ~0,5 s) y, en movimiento, sin encabezados ni pausa (ADR-0007 §5). Borrado
+  (`04`) solo tras la confirmación, con los km previos. `rejected_by_car` con el motivo del `7F xx NN`
+  (ISO 14229-1 A.1). Descripciones de códigos: interfaz `DtcDescriber`, vacía hasta el hito de base de
+  conocimiento; el prompt no deja adivinar códigos de fabricante · ⏳ probar con el modelo y el auto.
+  De M2.3 quedó hecho: `exclusive()`, todos los PIDs soportados. Falta: `STPX r:/t:` en diagnóstico,
+  `STVR`/`STPRS`.
 - [ ] **M2.5 Histórico de fallas**: lecturas y borrados con fecha, códigos, freeze frame y km.
 - [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
   - [x] esperar hasta 5 s ante `7F xx 78` y reenviar si el adaptador vuelve al prompt (clones < v2.1);

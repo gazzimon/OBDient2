@@ -19,11 +19,14 @@ import { SECONDARY_PIDS, TelemetryPoller, stylesFor, type RequestStyle, type Tel
 export interface SessionInfo {
   readonly protocol: OBDProtocol;
   readonly identity: AdapterIdentity;
+  // The telemetry PIDs this car answers (subset of SECONDARY_PIDS).
   readonly supportedPids: readonly PidId[];
+  // Every mode-01 PID number the car announced (0100, 0120, …).
+  readonly supportedPidNumbers: readonly number[];
 }
 
 const LOW_POWER_GRACE_MS = 150;
-const CAPTURE_SETTLE_MS = 300;
+const SETTLE_MS = 300;
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -38,6 +41,8 @@ export class ObdSession {
   private recovering: Promise<void> | null = null;
   private resetCount = 0;
   private capturing = false;
+  // Exclusive work (bench, capture, diagnostic reads) runs one at a time.
+  private lock: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly transport: ByteTransport) {}
 
@@ -79,49 +84,65 @@ export class ObdSession {
     return this.resetCount;
   }
 
-  // Pauses telemetry, measures, resumes. Navigation keeps GPS speed meanwhile.
-  async runBench(): Promise<BenchReport> {
-    if (!this.port || !this.info) throw new Error('Session not open');
-    this.poller?.stop();
-    try {
-      return await runAdapterBench(this.port, stylesFor(this.info.identity.stn != null, isCan(this.info.protocol)));
-    } finally {
-      if (this.listener) this.startTelemetry(this.listener);
-    }
+  get sessionInfo(): SessionInfo | null {
+    return this.info;
+  }
+
+  // A request that shares the link with the telemetry (queued between its
+  // requests). For quick reads that do not change the adapter's settings.
+  send(command: string, timeoutMs?: number): Promise<string> {
+    if (!this.port) return Promise.reject(new Error('Session not open'));
+    return this.port.send(command, timeoutMs);
+  }
+
+  // Pauses telemetry, runs `work` alone on the link, resumes. For anything
+  // that changes the adapter's settings (headers) or needs the bus to itself.
+  // Navigation keeps GPS speed meanwhile.
+  exclusive<T>(work: (port: TransportCommandPort, info: SessionInfo) => Promise<T>): Promise<T> {
+    const run = async (): Promise<T> => {
+      const port = this.port;
+      const info = this.info;
+      if (!port || !info) throw new Error('Session not open');
+      this.poller?.stop();
+      try {
+        await settle(port);
+        return await work(port, info);
+      } finally {
+        if (this.listener && this.port === port) this.startTelemetry(this.listener);
+      }
+    };
+    const result = this.lock.then(run, run);
+    this.lock = result.catch(() => undefined);
+    return result;
+  }
+
+  // Pauses telemetry, measures, resumes.
+  runBench(): Promise<BenchReport> {
+    return this.exclusive((port, info) => runAdapterBench(port, stylesFor(info.identity.stn != null, isCan(info.protocol))));
   }
 
   // Pauses telemetry, sends the read-only diagnostic requests in several
   // configurations (headers, STN reassembly, fixed protocol), then configures
   // the adapter from scratch so none of them stays on, and resumes.
-  async runCapture(): Promise<CaptureReport> {
-    const port = this.port;
-    const info = this.info;
-    if (!port || !info) throw new Error('Session not open');
-    this.poller?.stop();
-    this.capturing = true;
-    try {
-      // A telemetry request may still be in flight, and a late answer would
-      // land in the first captured command (seen on the B35: "411130" before
-      // ATH0's OK). Let it finish and soak up any leftover with a no-op.
-      await delay(CAPTURE_SETTLE_MS);
-      await port.send('ATE0').catch(() => undefined);
-      return await runDiagnosticCapture(port, {
-        adapter: info.identity.stn ?? (info.identity.elm || 'ELM327'),
-        protocol: info.protocol,
-        stn: info.identity.stn != null,
-        can: isCan(info.protocol),
-      });
-    } finally {
-      this.capturing = false;
-      if (this.port === port) {
+  runCapture(): Promise<CaptureReport> {
+    return this.exclusive(async (port, info) => {
+      this.capturing = true;
+      try {
+        return await runDiagnosticCapture(port, {
+          adapter: info.identity.stn ?? (info.identity.elm || 'ELM327'),
+          protocol: info.protocol,
+          stn: info.identity.stn != null,
+          can: isCan(info.protocol),
+        });
+      } finally {
+        this.capturing = false;
         try {
-          this.info = await configure(port);
+          if (this.port === port) this.info = await configure(port);
         } catch {
           // The link is gone or still browned out: the session ends or recovers upstream.
         }
-        if (this.listener && this.port === port) this.startTelemetry(this.listener);
       }
-    }
+    });
   }
 
   async close(): Promise<void> {
@@ -173,12 +194,21 @@ export class ObdSession {
   }
 }
 
+// After stopping the telemetry a request may still be in flight, and a late
+// answer would land in the next command (seen on the B35: "411130" before
+// ATH0's OK). Let it finish and soak up any leftover with a no-op.
+async function settle(port: CommandPort): Promise<void> {
+  await delay(SETTLE_MS);
+  await port.send('ATE0').catch(() => undefined);
+}
+
 async function configure(port: CommandPort): Promise<SessionInfo> {
   const { protocol } = await new ProtocolManager(port).initialize();
   const identity = await identifyAdapter(port);
   await applyFastSettings(port, identity);
-  const supportedPids = await discoverPids(port);
-  return { protocol, identity, supportedPids };
+  const supportedPidNumbers = await discoverPidNumbers(port);
+  const supportedPids = supportedPidNumbers.length ? filterSupportedPids(SECONDARY_PIDS, new Set(supportedPidNumbers)) : [];
+  return { protocol, identity, supportedPids, supportedPidNumbers };
 }
 
 function requestStyles(info: SessionInfo): RequestStyle[] {
@@ -193,7 +223,7 @@ function secondaryPids(info: SessionInfo): PidId[] {
 
 // Reads the supported-PID bitmasks (0100, 0120, …). An empty result means
 // "unknown" and the poller then tries everything.
-async function discoverPids(port: CommandPort): Promise<PidId[]> {
+async function discoverPidNumbers(port: CommandPort): Promise<number[]> {
   const numbers = new Set<number>();
   for (const { command, basePid } of SUPPORTED_PID_QUERIES) {
     if (basePid > MAX_QUERYABLE_PID_NUMBER) break;
@@ -206,5 +236,5 @@ async function discoverPids(port: CommandPort): Promise<PidId[]> {
       throw err;
     }
   }
-  return numbers.size ? filterSupportedPids(SECONDARY_PIDS, numbers) : [];
+  return [...numbers].sort((a, b) => a - b);
 }

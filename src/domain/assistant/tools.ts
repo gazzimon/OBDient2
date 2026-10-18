@@ -58,7 +58,9 @@ export type ToolErrorCode =
   | 'cancelled'
   | 'invalid_arguments'
   | 'unknown_tool'
-  | 'too_many_calls';
+  | 'too_many_calls'
+  // The car answered with a refusal (7F); the message carries the reason.
+  | 'rejected_by_car';
 
 export type ToolOutcome =
   | { readonly ok: true; readonly data: unknown; readonly summary: string }

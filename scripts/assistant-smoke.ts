@@ -30,12 +30,29 @@ function simulated(): VehicleToolsPort {
         return { ok: true, data: { RPM: { min: 760, max: 870, mean: 812, last: 805, n: 40 } }, summary: 'RPM 760–870' };
       case 'read_dtcs':
         return c.kind === 'stored'
-          ? { ok: true, data: { codes: [{ code: 'P0171', description: 'Sistema demasiado pobre (banco 1)' }] }, summary: 'P0171' }
-          : { ok: true, data: { codes: [] }, summary: `Sin códigos ${c.kind}` };
+          ? {
+              ok: true,
+              // The shape VehicleToolAdapter returns; no description source yet.
+              data: {
+                kind: 'stored',
+                codes: [
+                  { code: 'P0171', ecu: '18DAF111', system: 'powertrain', owner: 'standard', description: null },
+                  { code: 'P1101', ecu: '18DAF111', system: 'powertrain', owner: 'manufacturer', description: null },
+                ],
+                ecusAnswered: 1,
+                incomplete: false,
+              },
+              summary: 'Códigos guardados: P0171, P1101',
+            }
+          : { ok: true, data: { kind: c.kind, codes: [], ecusAnswered: 1, incomplete: false }, summary: `Sin códigos ${c.kind}` };
       case 'read_freeze_frame':
         return { ok: true, data: { dtc: 'P0171', RPM: 790, COOLANT_TEMP: 91, SPEED: 0, FUEL_TRIM_LONG: 18.8, FUEL_TRIM_SHORT: 7.0 }, summary: 'freeze frame' };
       case 'read_readiness':
-        return { ok: true, data: { mil: true, dtcCount: 1, incomplete: ['EVAP'], distSinceClearKm: 1420 }, summary: 'readiness' };
+        return {
+          ok: true,
+          data: { milOn: true, dtcCount: 2, ignition: 'spark', complete: ['misfire', 'fuel_system', 'components', 'catalyst'], incomplete: ['evap_system'], distSinceClear: { value: 1420, unit: 'km' } },
+          summary: 'Testigo encendido, 2 códigos, monitores incompletos: evap_system',
+        };
       case 'read_vehicle_info':
         return { ok: true, data: { vin: '8AGTB69C0KR000000', supported: 34 }, summary: 'VIN' };
       case 'read_adapter_info':

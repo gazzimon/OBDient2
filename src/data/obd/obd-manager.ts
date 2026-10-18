@@ -92,6 +92,11 @@ export class ObdManager {
     await this.connect(lastDeviceId, lastDeviceName).catch(() => useOBDStore.getState().setDisconnected(null));
   }
 
+  // The live session, for the assistant's tools (null when disconnected).
+  currentSession(): ObdSession | null {
+    return this.session;
+  }
+
   async runBench(): Promise<BenchReport> {
     if (!this.session) throw new Error('No hay adaptador conectado');
     return this.session.runBench();
