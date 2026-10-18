@@ -33,8 +33,7 @@
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
-      ],
-      "googleServicesFile": "./google-services.json"
+      ]
     },
     "plugins": [
       [
@@ -95,7 +94,6 @@
           "configureAndroidBackup": false
         }
       ],
-      "react-native-nitro-google-signin",
       [
         "expo-image-picker",
         {

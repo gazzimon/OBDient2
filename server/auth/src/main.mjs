@@ -5,6 +5,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { firebaseVerifier } from './firebase.mjs';
+import { magicVerifier } from './magic.mjs';
 import { newApiAccounts } from './newapi.mjs';
 import { createApp, listen } from './server.mjs';
 
@@ -23,7 +24,8 @@ const model = env.MODEL ?? 'obdient-chat';
 const log = (msg) => console.log(`${new Date().toISOString()} ${msg}`);
 
 const app = createApp({
-  verify: firebaseVerifier(env.FIREBASE_PROJECT_ID),
+  // Magic (email code) when configured; Firebase only until the app moves over.
+  verify: env.MAGIC_SECRET_KEY ? magicVerifier(env.MAGIC_SECRET_KEY) : firebaseVerifier(env.FIREBASE_PROJECT_ID),
   accounts: newApiAccounts({
     baseUrl: env.NEWAPI_URL ?? 'http://127.0.0.1:3000',
     userId: env.NEWAPI_APP_USER_ID,
@@ -38,4 +40,4 @@ const app = createApp({
 
 const port = Number(env.PORT ?? 8790);
 await listen(app, port);
-log(`obdient-auth on 127.0.0.1:${port} (project ${env.FIREBASE_PROJECT_ID})`);
+log(`obdient-auth on 127.0.0.1:${port} (${env.MAGIC_SECRET_KEY ? 'magic' : `firebase ${env.FIREBASE_PROJECT_ID}`})`);

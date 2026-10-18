@@ -5,8 +5,7 @@ import { fetch as expoFetch } from 'expo/fetch';
 import { AssistantService } from '@/data/assistant/assistant-service';
 import { OpenAiChatClient } from '@/data/llm/openai-chat-client';
 import { AccountService } from '@/data/auth/account-service';
-import { FirebaseRest } from '@/data/auth/firebase-rest';
-import { googleSignIn } from '@/data/auth/google-sign-in';
+import { magicIdentity } from '@/data/auth/magic-identity';
 import { secureStore } from '@/data/auth/secure-store';
 import { SensorHub } from '@/data/sensors/sensor-hub';
 import { ObdManager } from '@/data/obd/obd-manager';
@@ -40,14 +39,9 @@ const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
   moving: () => (useOBDStore.getState().parameters.SPEED?.value ?? 0) > MOVING_KMH,
 });
 
-// Accounts (ADR-0008): values from app.config.ts, read from google-services.json.
-const extra = Constants.expoConfig?.extra as { firebase: { apiKey: string }; authUrl: string };
-const account = new AccountService({
-  google: googleSignIn,
-  firebase: new FirebaseRest(extra.firebase.apiKey),
-  secrets: secureStore,
-  authUrl: extra.authUrl,
-});
+// Accounts (ADR-0008): email code login (Magic), model key from obdient-auth.
+const extra = Constants.expoConfig?.extra as { authUrl: string };
+const account = new AccountService({ identity: magicIdentity, secrets: secureStore, authUrl: extra.authUrl });
 
 // The assistant (M3): the account's key, the car through vehicleTools.
 const assistant = new AssistantService({

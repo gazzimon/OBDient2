@@ -5,6 +5,7 @@ import { container } from '@/data/container';
 import { useAccountStore } from '@/store/accountStore';
 
 const SIGN_IN_ERROR: Record<string, string> = {
+  invalid_email: 'Revisá el correo: no parece una dirección válida.',
   disabled: 'Tu cuenta está deshabilitada para el asistente. Escribinos para revisarla.',
   exhausted: 'Tu cuenta agotó su cupo del asistente.',
   network: 'Sin conexión. Probá de nuevo cuando tengas señal.',
@@ -31,9 +32,9 @@ export function useAccount() {
 
   return {
     ...state,
-    signIn: () =>
+    signIn: (email: string) =>
       run(async () => {
-        const r = await container.account.signIn();
+        const r = await container.account.signIn(email);
         if (r.ok) {
           useAccountStore.getState().setProfile(r.profile);
           return null;
@@ -53,7 +54,8 @@ export function useAccount() {
           useAccountStore.getState().setProfile(null);
           return null;
         }
-        return r.reason === 'cancelled' ? null : 'No se pudo borrar la cuenta. Probá de nuevo.';
+        if (r.reason === 'session_expired') return 'Tu sesión venció: entrá de nuevo con tu correo y volvé a intentar.';
+        return 'No se pudo borrar la cuenta. Probá de nuevo.';
       }),
   };
 }

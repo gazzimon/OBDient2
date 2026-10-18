@@ -77,6 +77,13 @@ sincronización cuando exista el login.
 
 ### E7 · Cuentas (ADR-0008, antes de M3)
 
+**2026-10-18: identidad cambiada a correo con código (Magic).** El login con Google funcionó hasta el
+servidor (el fallo era `obdient-auth` con el token viejo de new-api en memoria), pero se reemplaza por
+simplicidad: código por correo, aprobación de dispositivos nuevos, sin Firebase ni Google. Migración a
+Supabase Auth si se pasan los 1.000 usuarios activos por mes. Pendiente: `MAGIC_SECRET_KEY` en
+`auth.env`, reiniciar `obdient-auth`, build Dev y probar.
+
+
 - [x] Servicio `server/auth` (K16, `127.0.0.1:8790`, Caddy `/auth`): valida el ID token de Firebase y
   devuelve la clave de new-api de la cuenta (un token por cuenta bajo el usuario `obdient2app`, solo
   `obdient-chat`, cuota propia); borra la clave al borrar la cuenta. Caché de 10 min por los límites
@@ -159,6 +166,9 @@ de ABS, airbag, carrocería y caja.
 - **Banco de maestros con viajes propios**: un viaje con cuadros, `make_samples.py` y los tres modelos.
 - **AR**: anclar el comienzo de la línea al auto (hoy queda corrida ~2 m por el eje de la calle y ~4°
   de rumbo).
+- **Distribución (idea):** mini app en Lemon (1,2 M usuarios activos, apps web dentro de su billetera)
+  como canal de adquisición: vender el adaptador, ver historial y VIN, chatear con el asistente. El
+  núcleo (BLE, AR) no puede ser mini app: el WebView no tiene Bluetooth.
 - **Búsqueda de destinos**: priorizar resultados cercanos (Photon eligió un homónimo a 900 km).
 - **new-api**: el límite de 10 pedidos por minuto es bajo para el asistente (2–4 llamadas por turno).
 - **Calibración y primer viaje de AR** (postergados, ver *Decisión 2026-10-17*).
