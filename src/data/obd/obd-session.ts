@@ -145,6 +145,12 @@ export class ObdSession {
     });
   }
 
+  // Resolves once a recovery after an adapter reboot (LV RESET) has finished:
+  // a tool that failed with AdapterResetError waits here, then retries.
+  settled(): Promise<void> {
+    return this.recovering ?? Promise.resolve();
+  }
+
   async close(): Promise<void> {
     this.offReset?.();
     this.offReset = null;

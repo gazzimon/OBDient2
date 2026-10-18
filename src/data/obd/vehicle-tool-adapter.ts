@@ -58,8 +58,13 @@ export interface FaultHistorySink {
   record(event: FaultEventInput): void;
 }
 
+// The telemetry's latest value of a PID (the Dashboard), with its time.
+export type LiveValue = (pid: PidId) => { readonly value: number; readonly at: number } | null;
+
 export interface VehicleToolDeps {
   readonly describer?: DtcDescriber;
+  // read_pids answers from the telemetry when its value is fresh: no bus request.
+  readonly live?: LiveValue;
   readonly history?: FaultHistorySink;
   // Driving: diagnostic reads skip headers and never pause the telemetry.
   readonly moving?: () => boolean;
@@ -71,6 +76,18 @@ const DIAG_TIMEOUT_MS = 6000;
 const CLEAR_TIMEOUT_MS = 10_000;
 const SAMPLE_INTERVAL_MS = 250;
 const FREEZE_FRAME_PIDS_MAX = 12;
+// A telemetry value younger than this is as good as a new reading.
+const LIVE_MAX_AGE_MS = 2000;
+// Reads are retried once after the adapter rebooted; clearing and the bench are not.
+const RETRY_AFTER_RESET: ReadonlySet<ToolCall['name']> = new Set([
+  'read_pids',
+  'sample_pids',
+  'read_dtcs',
+  'read_freeze_frame',
+  'read_readiness',
+  'read_vehicle_info',
+  'read_adapter_info',
+]);
 
 const SERVICE: Record<DtcKind, DtcService> = { stored: 0x03, pending: 0x07, permanent: 0x0a };
 const KIND_LABEL: Record<DtcKind, string> = { stored: 'guardados', pending: 'pendientes', permanent: 'permanentes' };
@@ -115,7 +132,16 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     if (!s?.sessionInfo) return fail('not_connected', 'No hay un adaptador OBD conectado.');
     try {
       if (signal.aborted) throw new Cancelled();
-      return await this.run(s, call, signal);
+      try {
+        return await this.run(s, call, signal);
+      } catch (err) {
+        // The adapter rebooted mid-call (brown-out while cranking): once the
+        // session is configured again, a read is worth one more try.
+        if (!(err instanceof AdapterResetError) || !RETRY_AFTER_RESET.has(call.name)) throw err;
+        await s.settled();
+        if (signal.aborted) throw new Cancelled();
+        return await this.run(s, call, signal);
+      }
     } catch (err) {
       return failure(err);
     }
@@ -146,9 +172,13 @@ export class VehicleToolAdapter implements VehicleToolsPort {
 
   // ── Live values ────────────────────────────────────────────────────────────
 
-  private async readValue(s: ObdSession, pid: PidId): Promise<number | null> {
+  private async readValue(s: ObdSession, pid: PidId, useLive = false): Promise<number | null> {
+    const live = useLive ? this.deps.live?.(pid) : null;
+    if (live && this.now() - live.at < LIVE_MAX_AGE_MS) return live.value;
+    // STN chips measure the supply with STVR; ATRV is the ELM327 command.
+    const command = pid === 'VOLTAGE' && s.sessionInfo?.identity.stn ? 'STVR' : PID_DEFINITIONS[pid].command;
     try {
-      return parsePidResponse(pid, await s.send(PID_DEFINITIONS[pid].command));
+      return parsePidResponse(pid, await s.send(command));
     } catch (err) {
       if (isLinkFailure(err)) throw err;
       return null; // this PID did not answer; the others still count
@@ -157,7 +187,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
 
   private async readPids(s: ObdSession, pids: readonly PidId[]): Promise<ToolOutcome> {
     const data: Record<string, { value: number | null; unit: string }> = {};
-    for (const pid of pids) data[pid] = { value: await this.readValue(s, pid), unit: PID_DEFINITIONS[pid].unit };
+    for (const pid of pids) data[pid] = { value: await this.readValue(s, pid, true), unit: PID_DEFINITIONS[pid].unit };
     if (pids.every((p) => data[p]!.value == null)) return fail('not_supported', 'El auto no respondió a esos PIDs.');
     const summary = pids.map((p) => `${p} ${fmt(data[p]!.value)} ${data[p]!.unit}`).join(', ');
     return { ok: true, data, summary };
