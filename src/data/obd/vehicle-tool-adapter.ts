@@ -35,10 +35,22 @@ import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 
-// What a trouble code means, when a source for it exists (the knowledge-base
-// milestone); until then codes go out with their class only.
+// What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
+// codes the base leaves out go to the model with their class only.
+export interface DtcInfo {
+  readonly title: string;
+  readonly summary: string;
+  // Most likely first.
+  readonly causes: readonly { likelihood: 'high' | 'medium' | 'low'; cause: string }[];
+  readonly symptoms: readonly string[];
+  readonly repair: { difficulty: string; costEur: readonly [number, number] | null } | null;
+  // checked: agrees with SAE J2012 · unchecked: newer than the 2007 standard ·
+  // low: body/chassis code the standard could not confirm.
+  readonly reliability: 'checked' | 'unchecked' | 'low';
+}
+
 export interface DtcDescriber {
-  describe(code: string): string | null;
+  describe(code: string): Promise<DtcInfo | null>;
 }
 
 // Where reads and clears are written down (FaultHistory on the phone).
@@ -242,13 +254,15 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     }
   }
 
-  private describe(d: Dtc) {
+  private async describe(d: Dtc) {
+    const info = (await this.deps.describer?.describe(d.code).catch(() => null)) ?? null;
     return {
       code: d.code,
       ecu: d.ecu,
       system: d.system,
       owner: d.owner,
-      description: this.deps.describer?.describe(d.code) ?? null,
+      description: info ? `${info.title}. ${info.summary}` : null,
+      ...(info ? { causes: info.causes, symptoms: info.symptoms, repair: info.repair, reliability: info.reliability } : {}),
     };
   }
 
@@ -264,7 +278,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       }
       return r;
     });
-    const codes = report.codes.map((d) => this.describe(d));
+    const codes = await Promise.all(report.codes.map((d) => this.describe(d)));
     const summary = codes.length
       ? `Códigos ${KIND_LABEL[kind]}: ${codes.map((c) => c.code).join(', ')}`
       : `Sin códigos ${KIND_LABEL[kind]}`;
@@ -308,7 +322,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       }
       return {
         ok: true,
-        data: { stored: true, dtc: this.describe(dtc), values },
+        data: { stored: true, dtc: await this.describe(dtc), values },
         summary: `Freeze frame de ${dtc.code}`,
       } as const;
     });

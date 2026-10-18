@@ -236,7 +236,8 @@ export default function SettingsScreen() {
 
         <SectionHeader title="Acerca de" />
         <Text className="text-brand-muted font-mono text-[10px] leading-4">
-          OBDient2 · mapas © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap · rutas OSRM · búsqueda Photon.
+          OBDient2 · mapas © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap · rutas OSRM · búsqueda Photon ·
+          códigos de falla: OBDex (github.com/foerbsnavi/OBDex, CC0).
           {'\n'}Asistencia a la conducción: no reemplaza tu atención ni las señales de tránsito.
         </Text>
       </ScrollView>
