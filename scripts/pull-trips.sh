@@ -3,7 +3,8 @@
 # into ./trips/, with their camera frames (trip-…/ folders) when there are.
 # Uses run-as, so it only works on debuggable builds.
 set -euo pipefail
-PKG=com.obdient.obdient2
+# Only debuggable builds can be read with run-as: the "OBDient2 Dev" variant.
+PKG=${PKG:-com.obdient.obdient2.dev}
 DEST="$(dirname "$0")/../trips"
 mkdir -p "$DEST"
 names=$(adb exec-out run-as "$PKG" ls files/trips 2>/dev/null | tr -d '\r' || true)

@@ -7,7 +7,7 @@
 // Local only: the log holds the driver's positions and never leaves the phone
 // unless the person exports it — Settings → Viajes grabados → share (any
 // build), or on a development build:
-//   adb exec-out run-as com.obdient.obdient2 cat files/trips/<name>
+//   adb exec-out run-as com.obdient.obdient2.dev cat files/trips/<name>
 // (Paths.document is the app's files dir on Android; run-as needs a
 // debuggable build, so preview/production builds rely on sharing).
 
@@ -48,6 +48,8 @@ export class TripRecorder {
   // Frames of the current trip: <documents>/trips/<trip>/<t>.jpg
   private frames: Directory | null = null;
   private savingFrames = 0;
+  // Frame errors already written to the log (a few are enough to diagnose).
+  private frameErrors = 0;
 
   get active(): boolean {
     return this.file != null;
@@ -62,6 +64,7 @@ export class TripRecorder {
     file.create();
     this.file = file;
     this.frames = new Directory(dir, stem(name));
+    this.frameErrors = 0;
     this.buffer = new TripLogBuffer();
     this.buffer.push({ k: 'hdr', v: TRIP_LOG_VERSION, startedAt: new Date().toISOString(), meta });
     this.flush();
@@ -87,8 +90,12 @@ export class TripRecorder {
     void (async () => {
       try {
         if (!dir.exists) dir.create({ intermediates: true });
-        const image = Images.loadFromRawPixelData({
-          buffer: f.buffer,
+        // A buffer of this runtime, alive for the whole call: the one that
+        // arrives from the camera thread is reported "detached" by Nitro. The
+        // async loader copies it before leaving the JS thread and decodes off it.
+        const pixels = f.buffer.slice(0);
+        const image = await Images.loadFromRawPixelDataAsync({
+          buffer: pixels,
           width: f.width,
           height: f.height,
           pixelFormat: f.pixelFormat,
@@ -106,6 +113,11 @@ export class TripRecorder {
         });
       } catch (err) {
         console.warn('[TripRecorder] frame not saved:', err);
+        // Release builds show no console: leave the first errors in the log itself.
+        if (this.frameErrors < 3) {
+          this.frameErrors += 1;
+          this.event('frame-error', { message: String(err).slice(0, 300) });
+        }
       } finally {
         this.savingFrames -= 1;
       }

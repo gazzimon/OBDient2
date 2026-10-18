@@ -86,7 +86,8 @@
           "enableAndroidGpuLibraries": true
         }
       ],
-      "react-native-zip-archive"
+      "react-native-zip-archive",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

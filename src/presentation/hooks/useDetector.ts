@@ -8,8 +8,9 @@
 // processed are dropped by the camera (dropFramesWhileBusy) — never queued, so
 // alerts are never about the past.
 
-import { useCallback, useEffect, useMemo } from 'react';
-import { useTensorflowModel, type TensorflowModelDelegate } from 'react-native-fast-tflite';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Asset } from 'expo-asset';
+import { useTensorflowModel, type ModelSource, type TensorflowModelDelegate } from 'react-native-fast-tflite';
 import { useFrameOutput, type Frame } from 'react-native-vision-camera';
 import { createSynchronizable, scheduleOnRN } from 'react-native-worklets';
 import { allocateInput, outputToFloat, type DetectorManifest } from '@/data/perception/detector-model';
@@ -29,8 +30,37 @@ export type DetectorDelegate = TensorflowModelDelegate | 'cpu';
 const FRAME_RESOLUTION = { width: 1280, height: 720 };
 
 // `capture`: keep frames for the trip log (only lands while a trip is recorded).
+// Bundled models as a file:// URL. fast-tflite resolves require() itself, but
+// in a release APK that yields a resource name ("assets_models_…") its loader
+// cannot open (MalformedURLException); in development Metro serves http and
+// hides the problem. expo-asset copies the file out and gives a real URL.
+function useModelFile(source: DetectorManifest['source']): ModelSource | null {
+  // Kept as one object: useTensorflowModel reloads whenever the source identity changes.
+  const [resolved, setResolved] = useState<{ from: number; source: ModelSource } | null>(null);
+  useEffect(() => {
+    if (typeof source !== 'number') return;
+    let alive = true;
+    Asset.fromModule(source)
+      .downloadAsync()
+      .then((a) => {
+        if (alive && a.localUri) setResolved({ from: source, source: { url: a.localUri } });
+      })
+      .catch((err: unknown) => console.warn('[useDetector] model not resolved:', err));
+    return () => {
+      alive = false;
+    };
+  }, [source]);
+  if (typeof source !== 'number') return source;
+  return resolved?.from === source ? resolved.source : null;
+}
+
+// Placeholder while the model file is being resolved: an empty URL fails fast
+// and is replaced as soon as the real one arrives.
+const PENDING: ModelSource = { url: '' };
+
 export function useDetector(manifest: DetectorManifest, delegate: DetectorDelegate, enabled: boolean, capture = false) {
-  const plugin = useTensorflowModel(manifest.source, delegate === 'cpu' ? [] : [delegate]);
+  const file = useModelFile(manifest.source);
+  const plugin = useTensorflowModel(file ?? PENDING, delegate === 'cpu' ? [] : [delegate]);
   const model = plugin.state === 'loaded' ? plugin.model : undefined;
   const frameIndex = useMemo(() => createSynchronizable(0), []);
   const captureState = useMemo(() => createSynchronizable(initialCaptureState()), []);
@@ -39,11 +69,11 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
   useEffect(() => {
     const store = usePerceptionStore.getState();
     if (!enabled) return;
-    if (plugin.state === 'loading') store.setStatus('loading');
+    if (plugin.state === 'loading' || file == null) store.setStatus('loading');
     else if (plugin.state === 'error') store.setStatus('error', String(plugin.error));
     else if (plugin.state === 'loaded') perception.start(delegate);
     return () => perception.stop();
-  }, [enabled, plugin.state, delegate, plugin]);
+  }, [enabled, plugin.state, delegate, plugin, file]);
 
   const decode: DecodeOptions = useMemo(
     () => ({
