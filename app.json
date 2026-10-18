@@ -95,7 +95,15 @@
           "configureAndroidBackup": false
         }
       ],
-      "react-native-nitro-google-signin"
+      "react-native-nitro-google-signin",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "OBDient2 usa la cámara para sacar fotos del tablero y mandarlas al asistente.",
+          "microphonePermission": false,
+          "photosPermission": "OBDient2 usa tus fotos solo si elegís una para mandarla al asistente."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
