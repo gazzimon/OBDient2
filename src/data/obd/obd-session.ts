@@ -23,6 +23,7 @@ export interface SessionInfo {
 }
 
 const LOW_POWER_GRACE_MS = 150;
+const CAPTURE_SETTLE_MS = 300;
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -99,6 +100,11 @@ export class ObdSession {
     this.poller?.stop();
     this.capturing = true;
     try {
+      // A telemetry request may still be in flight, and a late answer would
+      // land in the first captured command (seen on the B35: "411130" before
+      // ATH0's OK). Let it finish and soak up any leftover with a no-op.
+      await delay(CAPTURE_SETTLE_MS);
+      await port.send('ATE0').catch(() => undefined);
       return await runDiagnosticCapture(port, {
         adapter: info.identity.stn ?? (info.identity.elm || 'ELM327'),
         protocol: info.protocol,

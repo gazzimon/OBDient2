@@ -32,6 +32,7 @@ const OBD_REQUESTS = [
   '07', // pending codes
   '0A', // permanent codes
   '0200', // freeze frame: supported PIDs
+  '020000', // the same with the frame number (the B35 car answers only so)
   '0202', // freeze frame: code that stored it
   '020200',
   '020C00', // freeze frame RPM, coolant, speed

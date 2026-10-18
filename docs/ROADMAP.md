@@ -43,7 +43,8 @@ traducidas para el modo sin conexión en M4; **histórico de fallas en el teléf
 sincronización cuando exista el login.
 
 - [ ] **M2.0 Captura con el auto**: ✅ botón *Capturar diagnóstico* en Vehículo (respuestas crudas,
-  solo lectura, reconfigura al terminar) · ⏳ correrlo en el auto (B35 y B14); `0101`, `0131`, `03`, `07`, `0A`, `0200`, `0202`, `0900`, `0902`, `ATDP`, con `ATH0` y
+  solo lectura, reconfigura al terminar) · ✅ B35 (2026-10-18, sin códigos; ver hardware/adaptador-stn.md) ·
+  ⏳ B14, y un auto con códigos y freeze frame; `0101`, `0131`, `03`, `07`, `0A`, `0200`, `0202`, `0900`, `0902`, `ATDP`, con `ATH0` y
   `ATH1`; además prueba `STCSEGR 1`, `STVR 2`, `STDICES`, `STDITPO`, `STSLLT`, `STP 34`, y en ELM327
   `ATAMC`/`ATCTM1` (genuino o clon).
 - [x] **M2.1 Lectura de tramas** (`core/utils/obdFrames.ts`): varios cuadros y varias ECUs, con y sin

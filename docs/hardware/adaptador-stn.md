@@ -70,6 +70,24 @@ Preguntas que responde en el primer uso:
 | Velocidad `010D1` | 23,8 Hz (42 ms/pet, 20/20) |
 | Velocidad `010D` | 15,0 Hz (66 ms/pet, 20/20) |
 
+### Captura de diagnóstico, B35, 2026-10-18 (mismo auto, motor en marcha, sin códigos)
+
+| Pedido | Respuesta | Lectura |
+|---|---|---|
+| ECU que responde | `18DAF111` (una sola) | El motor está en la dirección **11**, no en 10. La caja no contesta pedidos OBD |
+| `0101` | `41 01 00 07 E1 00` | Luz de falla apagada, 0 códigos; monitores soportados: fallo de encendido, combustible, componentes, catalizador, sonda, calefactor de sonda, EGR/VVT; **todos completos** |
+| `0131` | `41 31 08 95` | 2.197 km desde el último borrado |
+| `03` / `07` / `0A` | `43 00` / `47 00` / `4A 00` | En CAN la respuesta trae **la cantidad de códigos** antes de la lista (aquí 0) |
+| `0200`, `0202` | `NO DATA` | El freeze frame exige el **número de cuadro**: `020200` → `42 02 00 00 00` (sin freeze frame guardado) |
+| `0900` | `49 00 55 40 02 00` | Soporta VIN (02), calibración (04), CVN (06), desempeño en uso (08), nombre de la ECU (0A) |
+| `0902` | 3 cuadros (`10 14` + `21` + `22`) | VIN de 17 caracteres, armado bien con y sin encabezados |
+| `STCSEGR 1` + `0902` (ATH0) | una sola línea con los 20 bytes | El STN arma el mensaje: sin línea de largo ni segmentos. El lector lo toma como cuadro único |
+| `STP 34` + `0100` | `41 00 BE 1F B8 13` | El protocolo fijo funciona: base para guardar el protocolo por vehículo |
+| `STVR` / `STDICES` / `STDITPO` / `STSLLT` | 14,32 V / 0 / 46007 / sin evento | `STDICES` no cuenta arranques en este adaptador |
+
+El lector de tramas (M2.1) armó correctamente todas las respuestas. Falta verificar con códigos
+guardados, con un freeze frame y con el B14.
+
 Conclusiones:
 - **El STN1040 no es un chip OBDLink** (no figura en la familia del manual): es firmware compatible
   del fabricante. Implementa lo que usamos (`STI`, `STPX`, `STSLCS`, `STVR`).
