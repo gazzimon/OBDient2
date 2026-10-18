@@ -88,7 +88,9 @@ sincronización cuando exista el login.
   web de Google). `obdient-auth` corriendo (systemd --user) y publicado en
   `https://obdient.duckdns.org/auth` (2026-10-18): clave por cuenta probada contra el modelo (solo
   `obdient-chat`, otro modelo → 403), token inválido → 401.
-- [ ] App: pantalla de login, canje por la clave, guardarla en el almacén seguro; build Dev nuevo.
+- [x] App: login con Google (Credential Manager), Firebase por REST, clave del modelo en
+  `expo-secure-store`; oferta en el primer arranque con "Ahora no"; Ajustes → Cuenta (cerrar sesión,
+  borrar cuenta) · ⏳ probar en el teléfono con el build Dev nuevo (2026-10-18).
 - [ ] Firestore: historial de fallas y VIN por cuenta.
 - [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
   - [x] esperar hasta 5 s ante `7F xx 78` y reenviar si el adaptador vuelve al prompt (clones < v2.1);
