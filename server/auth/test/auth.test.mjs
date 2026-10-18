@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { firebaseVerifier } from '../src/firebase.mjs';
-import { CACHE_MS, newApiAccounts, tokenName } from '../src/newapi.mjs';
+import { CACHE_MS, legacyTokenName, newApiAccounts, tokenName } from '../src/newapi.mjs';
 import { createApp, listen } from '../src/server.mjs';
 
 const PROJECT = 'obdient2-test';
@@ -45,6 +45,13 @@ function fakeNewApi() {
     }
     const keyMatch = /^\/api\/token\/(\d+)\/key$/.exec(u.pathname);
     if (method === 'POST' && keyMatch) return json({ key: tokens.find((t) => t.id === Number(keyMatch[1])).key });
+    if (method === 'PUT' && u.pathname === '/api/token/') {
+      const b = JSON.parse(body);
+      const t = tokens.find((x) => x.id === b.id);
+      assert.equal(b.key, undefined, 'the key is never sent back');
+      Object.assign(t, { name: b.name, remain_quota: b.remain_quota, model_limits: b.model_limits });
+      return json(null);
+    }
     const del = /^\/api\/token\/(\d+)$/.exec(u.pathname);
     if (method === 'DELETE' && del) {
       tokens.splice(tokens.findIndex((t) => t.id === Number(del[1])), 1);
@@ -197,4 +204,15 @@ test('Magic: a valid DID token becomes an email account; an invalid one is refus
   const verify = magicVerifier(null, { magic: fake });
   assert.deepEqual(await verify('did-ok'), { uid: 'email:ana@example.com', email: 'ana@example.com', provider: 'magic' });
   await assert.rejects(verify('did-bad'), { name: 'InvalidIdToken' });
+});
+
+test('accounts are named by their email; an old hash-named one is renamed, same key and quota', async () => {
+  const api = fakeNewApi();
+  const accounts = newApiAccounts({ baseUrl: 'http://newapi', userId: 7, accessToken: 'svc', model: 'obdient-chat', quota: 1000, fetch: api.fetch });
+  api.tokens.push({ id: 41, name: legacyTokenName('email:ana@example.com'), key: 'oldsecret', status: 1, remain_quota: 777, model_limits: 'obdient-chat' });
+  const key = await accounts.tokenFor('email:ana@example.com');
+  assert.equal(key, 'sk-oldsecret');
+  assert.equal(api.tokens.length, 1);
+  assert.deepEqual({ name: api.tokens[0].name, quota: api.tokens[0].remain_quota }, { name: 'ana@example.com', quota: 777 });
+  assert.equal(tokenName('email:' + 'x'.repeat(60) + '@a.com').length, 50);
 });

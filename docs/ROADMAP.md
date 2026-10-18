@@ -105,7 +105,13 @@ código por correo → `obdient-auth` (modo Magic) → clave de la cuenta en new
 - [x] App: login con Google (Credential Manager), Firebase por REST, clave del modelo en
   `expo-secure-store`; oferta en el primer arranque con "Ahora no"; Ajustes → Cuenta (cerrar sesión,
   borrar cuenta) · ⏳ probar en el teléfono con el build Dev nuevo (2026-10-18).
-- [ ] Firestore: historial de fallas y VIN por cuenta.
+- [x] Claves de new-api nombradas con el correo de la cuenta (los logs de uso muestran quién es); las
+  viejas `fb-…` se renombran solas en el próximo login, misma clave y cuota (2026-10-18).
+- [ ] **Después del MVP: migrar de new-api a LiteLLM Proxy.** new-api identifica claves, no personas
+  (todo cuelga de `obdient2app`) y su límite de pedidos por minuto es por usuario, o sea compartido
+  por toda la app. LiteLLM tiene claves virtuales con `user_id`, límites y presupuesto por clave o
+  usuario, y gasto por usuario. Cambia `server/auth/src/newapi.mjs` y la ruta `/llm` de Caddy; la app no.
+- [ ] Sincronizar historial de fallas y VIN por cuenta (destino a definir: Supabase o servicio propio).
 - [ ] **Adaptadores ELM327 sin STN (B14)**, ver [hardware/adaptador-elm327.md](hardware/adaptador-elm327.md):
   - [x] esperar hasta 5 s ante `7F xx 78` y reenviar si el adaptador vuelve al prompt (clones < v2.1);
   - [x] descartar bytes nulos (`0x00`) en el lector de respuestas;
