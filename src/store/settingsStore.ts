@@ -66,6 +66,8 @@ interface SettingsState {
   // Camera frames in the trip log (bursts, ~1.7 GB/h) for the teacher models.
   recordFrames: boolean;
   disclaimerAccepted: boolean;
+  // "Not now" on the first-run sign-in: the app works without an account.
+  accountPromptDismissed: boolean;
   // Shows pose/heading/rates over the AR view — a field-testing aid.
   debugOverlay: boolean;
   // On-device detector (E4): alerts for vehicles, pedestrians, cyclists.
@@ -82,6 +84,7 @@ interface SettingsState {
   setRecordTrips: (on: boolean) => void;
   setRecordFrames: (on: boolean) => void;
   setDisclaimerAccepted: (on: boolean) => void;
+  setAccountPromptDismissed: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
   setDetector: (patch: Partial<Pick<SettingsState, 'detectorEnabled' | 'detectorDelegate' | 'detectorModelId'>>) => void;
 }
@@ -97,6 +100,7 @@ export const useSettingsStore = create<SettingsState>()(
       recordTrips: true,
       recordFrames: true,
       disclaimerAccepted: false,
+      accountPromptDismissed: false,
       debugOverlay: false,
       detectorEnabled: true,
       detectorDelegate: 'android-gpu',
@@ -110,6 +114,7 @@ export const useSettingsStore = create<SettingsState>()(
       setRecordTrips: (on) => set({ recordTrips: on }),
       setRecordFrames: (on) => set({ recordFrames: on }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
+      setAccountPromptDismissed: (on) => set({ accountPromptDismissed: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
       setDetector: (patch) => set(patch),
     }),
@@ -127,6 +132,7 @@ export const useSettingsStore = create<SettingsState>()(
         recordTrips: s.recordTrips,
         recordFrames: s.recordFrames,
         disclaimerAccepted: s.disclaimerAccepted,
+        accountPromptDismissed: s.accountPromptDismissed,
         debugOverlay: s.debugOverlay,
         detectorEnabled: s.detectorEnabled,
         detectorDelegate: s.detectorDelegate,

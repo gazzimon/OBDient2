@@ -10,7 +10,9 @@ import {
   IBMPlexMono_500Medium,
   IBMPlexMono_700Bold,
 } from '@expo-google-fonts/ibm-plex-mono';
+import { AccountGate } from '@/presentation/components/feedback/AccountGate';
 import { DisclaimerGate } from '@/presentation/components/feedback/Disclaimer';
+import { restoreAccount } from '@/presentation/hooks/useAccount';
 import { container } from '@/data/container';
 
 export default function RootLayout() {
@@ -25,6 +27,8 @@ export default function RootLayout() {
     void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     // The remembered adapter reconnects quietly; navigation never waits for it.
     void container.obd.reconnectLast();
+    // Who was signed in, from SecureStore; no network.
+    void restoreAccount();
   }, []);
 
   if (!fontsLoaded) {
@@ -41,6 +45,7 @@ export default function RootLayout() {
         }}
       />
       <DisclaimerGate />
+      <AccountGate />
     </>
   );
 }
