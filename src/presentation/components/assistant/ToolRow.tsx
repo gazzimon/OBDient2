@@ -18,6 +18,8 @@ const TOOLS: Record<string, { label: string; icon: IconName }> = {
   read_adapter_info: { label: 'Datos del adaptador', icon: 'bluetooth-connect' },
   run_adapter_bench: { label: 'Probando el adaptador', icon: 'speedometer' },
   clear_dtcs: { label: 'Borrando códigos', icon: 'delete-sweep-outline' },
+  read_fault_history: { label: 'Leyendo el historial de fallas', icon: 'history' },
+  calculate: { label: 'Calculando', icon: 'calculator-variant-outline' },
 };
 
 const STATUS: Record<Exclude<ToolStatus, 'running'>, { icon: IconName; color: string }> = {

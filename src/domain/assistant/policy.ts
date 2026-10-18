@@ -18,6 +18,8 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   read_adapter_info: 'read',
   run_adapter_bench: 'exclusive',
   clear_dtcs: 'destructive',
+  read_fault_history: 'read',
+  calculate: 'read',
 };
 
 // While moving, a sample keeps polling secondary PIDs instead of the dashboard's:
@@ -43,6 +45,12 @@ export function evaluatePolicy(call: ToolCall, ctx: PolicyContext): PolicyDecisi
     case 'sample_pids':
       if (ctx.moving && call.seconds > SAMPLE_SECONDS_WHILE_MOVING) {
         return deny('not_allowed_while_moving', `En movimiento, como máximo ${SAMPLE_SECONDS_WHILE_MOVING} s de muestreo.`);
+      }
+      return ALLOW;
+    case 'read_adapter_info':
+      // The full check needs the link alone for a moment (headers on).
+      if (call.fullCheck && ctx.moving) {
+        return deny('not_allowed_while_moving', 'La prueba completa del adaptador se hace con el auto detenido.');
       }
       return ALLOW;
     case 'run_adapter_bench':

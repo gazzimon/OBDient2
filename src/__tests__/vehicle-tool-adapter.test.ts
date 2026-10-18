@@ -157,7 +157,6 @@ describe('VehicleToolAdapter', () => {
     expect(data).toEqual({
       vin: '8AGEA76C0RR117525',
       vinWellFormed: true,
-      vinCheckDigitOk: false,
       supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP', 'DIST_SINCE_CLEAR'],
     });
   });
@@ -198,7 +197,7 @@ describe('VehicleToolAdapter', () => {
   it('adapter info, with the voltage the STN measures', async () => {
     const { session } = fakeSession({});
     (session as unknown as { send: (c: string) => Promise<string> }).send = async (c) => (c === 'STVR' ? '14.32' : 'OK');
-    const data = ok(await new VehicleToolAdapter(() => session).execute({ name: 'read_adapter_info', includePower: true }, signal));
+    const data = ok(await new VehicleToolAdapter(() => session).execute({ name: 'read_adapter_info', includePower: true, fullCheck: false }, signal));
     expect(data).toEqual({
       chip: 'STN1040 v1.3.6',
       stn: true,
@@ -289,6 +288,42 @@ describe('VehicleToolAdapter', () => {
     };
     expect(await new VehicleToolAdapter(() => session).execute({ name: 'clear_dtcs' }, signal)).toMatchObject({ ok: false, error: 'adapter_reset' });
     expect(sent).not.toContain('04');
+  });
+
+  it('MAF readings come with the fuel estimate the app computes', async () => {
+    const { session } = fakeSession({ '0110': '411000FC' }); // 2.52 g/s
+    const data = ok(await new VehicleToolAdapter(() => session).execute({ name: 'read_pids', pids: ['MAF'] }, signal));
+    expect(data.fuelEstimate).toMatchObject({ litersPerHour: 0.83, litersPer100Km: null });
+  });
+
+  it('the VIN check digit is only reported for North American VINs', async () => {
+    const { session } = fakeSession(B35);
+    const data = ok(await new VehicleToolAdapter(() => session).execute({ name: 'read_vehicle_info' }, signal));
+    expect(data).not.toHaveProperty('vinCheckDigitOk');
+  });
+
+  it('calculate and the fault history work without the adapter', async () => {
+    let json: string | null = null;
+    const history = new FaultHistory({ load: () => json, save: (j) => void (json = j) });
+    history.record({ type: 'cleared', vin: 'X', ecus: [], distSinceClearBeforeKm: 2204, codesBefore: [] });
+    const tools = new VehicleToolAdapter(() => null, { history });
+    expect(await tools.execute({ name: 'calculate', expression: '2204 * 0.621371' }, signal)).toMatchObject({
+      ok: true,
+      data: { result: 1369.501684 },
+    });
+    expect(await tools.execute({ name: 'calculate', expression: '1/0' }, signal)).toMatchObject({ ok: false, error: 'invalid_arguments' });
+    const hist = ok(await tools.execute({ name: 'read_fault_history' }, signal));
+    expect(hist.events).toEqual([expect.objectContaining({ type: 'cleared', distSinceClearBeforeKm: 2204 })]);
+  });
+
+  it('full adapter check: modules that answer, and a genuine ELM327', async () => {
+    const elm = fakeSession(
+      { '0100': { h0: '4100BE1FB813', h1: '7E8064100BE1FB813\n7E906410080000001' } },
+      { identity: { elm: 'ELM327 v2.2', stn: null }, protocol: 'ISO_15765_4_CAN_11BIT_500K' },
+    );
+    const data = ok(await new VehicleToolAdapter(() => elm.session).execute({ name: 'read_adapter_info', includePower: false, fullCheck: true }, signal));
+    expect(data).toMatchObject({ modules: ['7E8', '7E9'], genuine: 'yes', sleepsByItself: false });
+    expect(elm.sent).toEqual(expect.arrayContaining(['ATH1', '0100', 'ATH0', 'ATAMC', 'ATCTM1']));
   });
 
   it('maps failures to tool errors', async () => {

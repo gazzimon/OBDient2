@@ -28,9 +28,11 @@ import {
 import { answersTo, readMessages, type EcuMessage } from '@/core/utils/obdFrames';
 import { parsePidBytes, parsePidResponse } from '@/core/utils/obdParser';
 import { pidNumberFor } from '@/core/utils/supportedPids';
+import { calculate, CalcError } from '@/core/utils/calculator';
+import { fuelFromMaf } from '@/core/utils/fuel';
 import { isCan } from '@/data/adapters/elm-protocol';
 import type { DtcKind, ToolCall, ToolErrorCode, ToolOutcome } from '@/domain/assistant/tools';
-import type { FaultEventInput } from '@/domain/faults/fault-history';
+import type { FaultEvent, FaultEventInput } from '@/domain/faults/fault-history';
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
@@ -56,6 +58,8 @@ export interface DtcDescriber {
 // Where reads and clears are written down (FaultHistory on the phone).
 export interface FaultHistorySink {
   record(event: FaultEventInput): void;
+  // Newest first; one car or all.
+  list(vin?: string | null): readonly FaultEvent[];
 }
 
 // The telemetry's latest value of a PID (the Dashboard), with its time.
@@ -76,6 +80,7 @@ const DIAG_TIMEOUT_MS = 6000;
 const CLEAR_TIMEOUT_MS = 10_000;
 const SAMPLE_INTERVAL_MS = 250;
 const FREEZE_FRAME_PIDS_MAX = 12;
+const HISTORY_MAX_EVENTS = 20;
 // A telemetry value younger than this is as good as a new reading.
 const LIVE_MAX_AGE_MS = 2000;
 // Reads are retried once after the adapter rebooted; clearing and the bench are not.
@@ -128,6 +133,9 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   }
 
   async execute(call: ToolCall, signal: AbortSignal): Promise<ToolOutcome> {
+    // These two do not need the car.
+    if (call.name === 'calculate') return this.calculate(call.expression);
+    if (call.name === 'read_fault_history') return this.readFaultHistory();
     const s = this.session();
     if (!s?.sessionInfo) return fail('not_connected', 'No hay un adaptador OBD conectado.');
     try {
@@ -162,12 +170,63 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'read_vehicle_info':
         return this.readVehicleInfo(s);
       case 'read_adapter_info':
-        return this.readAdapterInfo(s, call.includePower);
+        return call.fullCheck ? this.checkAdapter(s, call.includePower) : this.readAdapterInfo(s, call.includePower);
       case 'run_adapter_bench':
         return this.runBench(s);
       case 'clear_dtcs':
         return this.clearDtcs(s);
+      case 'read_fault_history':
+      case 'calculate':
+        throw new Error('handled before the session'); // see execute()
     }
+  }
+
+  // ── Without the car ────────────────────────────────────────────────────────
+
+  private calculate(expression: string): ToolOutcome {
+    try {
+      const result = calculate(expression);
+      return { ok: true, data: { expression, result }, summary: `${expression} = ${result}` };
+    } catch (err) {
+      if (err instanceof CalcError) return fail('invalid_arguments', err.message);
+      throw err;
+    }
+  }
+
+  // The car's history on this phone (FaultHistory). The VIN read this session
+  // picks the car; before any read, every car on the phone.
+  private readFaultHistory(): ToolOutcome {
+    const s = this.session();
+    const vin = s ? (this.vins.get(s) ?? undefined) : undefined;
+    const events = this.deps.history?.list(vin) ?? [];
+    const day = (ms: number) => new Date(ms).toISOString().slice(0, 16).replace('T', ' ');
+    const data = events.slice(0, HISTORY_MAX_EVENTS).map((e) => {
+      switch (e.type) {
+        case 'codes':
+          return {
+            type: 'codes',
+            kind: e.kind,
+            codes: e.codes.map((c) => c.code),
+            firstSeen: day(e.at),
+            lastSeen: day(e.lastSeenAt),
+            distSinceClearKm: e.distSinceClearKm,
+          };
+        case 'freeze_frame':
+          return { type: 'freeze_frame', code: e.dtc.code, at: day(e.at), values: e.values };
+        case 'cleared':
+          return {
+            type: 'cleared',
+            at: day(e.at),
+            codesBefore: e.codesBefore.map((c) => c.code),
+            distSinceClearBeforeKm: e.distSinceClearBeforeKm,
+          };
+      }
+    });
+    return {
+      ok: true,
+      data: { vin: vin ?? null, events: data, more: Math.max(0, events.length - HISTORY_MAX_EVENTS) },
+      summary: events.length ? `${events.length} eventos en el historial` : 'Historial vacío',
+    };
   }
 
   // ── Live values ────────────────────────────────────────────────────────────
@@ -190,7 +249,10 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     for (const pid of pids) data[pid] = { value: await this.readValue(s, pid, true), unit: PID_DEFINITIONS[pid].unit };
     if (pids.every((p) => data[p]!.value == null)) return fail('not_supported', 'El auto no respondió a esos PIDs.');
     const summary = pids.map((p) => `${p} ${fmt(data[p]!.value)} ${data[p]!.unit}`).join(', ');
-    return { ok: true, data, summary };
+    const maf = data.MAF?.value;
+    if (maf == null) return { ok: true, data, summary };
+    const speed = data.SPEED?.value ?? this.deps.live?.('SPEED')?.value ?? null;
+    return { ok: true, data: { ...data, fuelEstimate: fuelFromMaf(maf, speed) }, summary };
   }
 
   private async samplePids(
@@ -223,6 +285,12 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         : null;
     }
     if ([...values.values()].every((l) => l.length === 0)) return fail('not_supported', 'El auto no respondió a esos PIDs.');
+    const mafs = values.get('MAF');
+    if (mafs?.length) {
+      const speeds = values.get('SPEED');
+      const meanSpeed = speeds?.length ? speeds.reduce((x, y) => x + y, 0) / speeds.length : null;
+      data.fuelEstimate = fuelFromMaf(mafs.reduce((x, y) => x + y, 0) / mafs.length, meanSpeed);
+    }
     const summary = pids
       .map((p) => {
         const l = values.get(p)!;
@@ -412,7 +480,9 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       data: {
         vin: vin?.vin ?? null,
         vinWellFormed: vin?.wellFormed ?? false,
-        vinCheckDigitOk: vin?.checkDigitOk ?? false,
+        // The check digit is only mandatory on North American VINs (1–5);
+        // elsewhere a mismatch is normal and says nothing about the read.
+        ...(vin && /^[1-5]/.test(vin.vin) ? { vinCheckDigitOk: vin.checkDigitOk } : {}),
         supportedPids: pids,
       },
       summary: `VIN ${vin?.vin ?? 'no disponible'}, ${pids.length} PIDs soportados`,
@@ -442,6 +512,49 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       ...(includePower ? { volts } : {}),
     };
     return { ok: true, data, summary: `${data.chip}, ${data.speedHz} Hz${volts != null ? `, ${volts} V` : ''}` };
+  }
+
+  // "Does my adapter work well?": which modules answer, whether a plain ELM327
+  // is genuine (it answers the commands of the version it claims), and whether
+  // it powers down by itself. Read-only; the link is paused for a moment.
+  private async checkAdapter(s: ObdSession, includePower: boolean): Promise<ToolOutcome> {
+    const base = await this.readAdapterInfo(s, includePower);
+    if (!base.ok) return base;
+    const info = s.sessionInfo!;
+    const can = isCan(info.protocol);
+    const check = await s.exclusive(async (port) => {
+      const headers = (await quiet(port, 'ATH1')) != null;
+      let modules: string[] = [];
+      try {
+        modules = [...new Set(answersTo(readMessages(await port.send('0100', DIAG_TIMEOUT_MS), { headers, can }), 0x01).positive.map((m) => m.ecu ?? '?'))];
+      } catch (err) {
+        if (isLinkFailure(err)) throw err;
+      } finally {
+        if (headers) await port.send('ATH0').catch(() => undefined);
+      }
+      let genuine: 'yes' | 'clone' | 'unknown' | null = null;
+      let sleepsByItself: boolean | null;
+      if (info.identity.stn) {
+        const power = await quiet(port, 'STSLCS');
+        sleepsByItself = power == null ? null : /UART SLEEP:\s*ON/i.test(power);
+      } else {
+        const version = Number(/v(\d+\.\d+)/i.exec(info.identity.elm)?.[1] ?? NaN);
+        const needs = [version >= 2.0 ? 'ATAMC' : null, version >= 2.1 ? 'ATCTM1' : null].filter((c): c is string => c != null);
+        if (Number.isNaN(version)) genuine = 'unknown';
+        else {
+          const answers = await Promise.all(needs.map((c) => quiet(port, c)));
+          genuine = answers.every((a) => a != null) ? 'yes' : 'clone';
+        }
+        // ELM327 factory defaults never sleep; the app sends ATLP when it disconnects.
+        sleepsByItself = false;
+      }
+      return { modules, genuine, sleepsByItself };
+    });
+    return {
+      ok: true,
+      data: { ...(base.data as object), ...check },
+      summary: `${(base.data as { chip: string }).chip}: ${check.modules.length} módulos responden`,
+    };
   }
 
   private async runBench(s: ObdSession): Promise<ToolOutcome> {

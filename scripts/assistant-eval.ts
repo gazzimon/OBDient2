@@ -16,6 +16,8 @@ import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import type { ApiMessage } from '@/domain/ports/llm.port';
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import { OpenAiChatClient } from '@/data/llm/openai-chat-client';
+import { calculate } from '@/core/utils/calculator';
+import { fuelFromMaf } from '@/core/utils/fuel';
 
 const BASE_URL = 'https://obdient.duckdns.org/llm/v1';
 const apiKey = readFileSync(join(homedir(), '.config/obdient/llm-token'), 'utf8').trim();
@@ -35,17 +37,45 @@ const LIVE: Record<string, { value: number; unit: string }> = {
   SPEED: { value: 0, unit: 'km/h' },
   FUEL_TRIM_LONG: { value: 18.8, unit: '%' },
   FUEL_TRIM_SHORT: { value: 6.2, unit: '%' },
+  MAF: { value: 2.52, unit: 'g/s' },
 };
 const readPids = (c: ToolCall) => {
   const pids = c.name === 'read_pids' ? c.pids : [];
   const data = Object.fromEntries(pids.map((p) => [p, LIVE[p] ?? { value: null, unit: '' }]));
   return ok(data, pids.map((p) => `${p} ${LIVE[p]?.value ?? 'sin dato'}`).join(', '));
 };
+// read_pids with MAF also returns the app's fuel estimate, as VehicleToolAdapter does.
+const readPidsWithFuel = (c: ToolCall) => {
+  const r = readPids(c);
+  if (!r.ok || c.name !== 'read_pids' || !c.pids.includes('MAF')) return r;
+  return { ...r, data: { ...(r.data as object), fuelEstimate: fuelFromMaf(LIVE.MAF!.value, null) } };
+};
 const common: Car = {
-  read_pids: readPids,
+  read_pids: readPidsWithFuel,
+  calculate: (c) => {
+    if (c.name !== 'calculate') throw new Error('unreachable');
+    try {
+      const result = calculate(c.expression);
+      return ok({ expression: c.expression, result }, `${c.expression} = ${result}`);
+    } catch (err) {
+      return { ok: false, error: 'invalid_arguments', message: (err as Error).message };
+    }
+  },
+  read_fault_history: () =>
+    ok(
+      {
+        vin: '8AGEA76C0RR117525',
+        events: [
+          { type: 'cleared', at: '2026-10-18 20:00', codesBefore: ['P0171'], distSinceClearBeforeKm: 2204 },
+          { type: 'codes', kind: 'stored', codes: ['P0171'], firstSeen: '2026-09-02 08:10', lastSeen: '2026-10-18 19:58', distSinceClearKm: 2204 },
+        ],
+        more: 0,
+      },
+      '2 eventos en el historial',
+    ),
   sample_pids: (c) =>
     ok({ RPM: { min: 760, max: 870, mean: 812, last: 805, n: 38, unit: 'rpm' } }, `RPM 760–870 durante ${c.name === 'sample_pids' ? c.seconds : 0} s`),
-  read_vehicle_info: () => ok({ vin: '8AGEA76C0RR117525', vinWellFormed: true, vinCheckDigitOk: false, supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP'] }, 'VIN 8AGEA76C0RR117525'),
+  read_vehicle_info: () => ok({ vin: '8AGEA76C0RR117525', vinWellFormed: true, supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP'] }, 'VIN 8AGEA76C0RR117525'),
   read_adapter_info: () => ok({ chip: 'STN1040 v1.3.6', stn: true, protocol: 'ISO_15765_4_CAN_29BIT_500K', speedHz: 20.7, requestStyle: 'stpx', adapterResets: 0, volts: 14.3 }, 'STN1040, 20.7 Hz'),
   run_adapter_bench: () => ok({ styles: [{ style: 'stpx', hz: 20.7, ok: 20, total: 20 }] }, 'Mejor: stpx a 20.7 Hz'),
 };
@@ -94,7 +124,7 @@ const NO_ADAPTER: Car = Object.fromEntries(
 
 function vehicle(car: Car): VehicleToolsPort {
   return {
-    supportedPids: () => ['RPM', 'SPEED', 'COOLANT_TEMP', 'ENGINE_LOAD', 'FUEL_TRIM_SHORT', 'FUEL_TRIM_LONG'],
+    supportedPids: () => ['RPM', 'SPEED', 'COOLANT_TEMP', 'ENGINE_LOAD', 'FUEL_TRIM_SHORT', 'FUEL_TRIM_LONG', 'MAF'],
     execute: async (c) => car[c.name]?.(c) ?? { ok: false, error: 'not_supported', message: 'No disponible.' },
   };
 }
@@ -129,6 +159,8 @@ interface Case {
   readonly id: string;
   readonly what: string;
   readonly car: Car;
+  // Attach a small test photo to the first turn.
+  readonly photo?: boolean;
   // Turns of one conversation; checks apply to that turn.
   readonly turns: readonly { text: string; context: AssistantContext; accept?: boolean; checks: readonly Check[] }[];
 }
@@ -162,10 +194,18 @@ const CASES: Case[] = [
   { id: '18', what: 'banco en movimiento: rechazado', car: HEALTHY, turns: [{ text: 'Probá la velocidad del adaptador', context: MOVING, checks: [short, says(/deten|parad|estacion|naveg/i, 'que hay que estar detenido')] }] },
   { id: '19', what: 'formato y unidades', car: LEAN, turns: [{ text: 'Pasame temperatura, rpm y trims', context: STOPPED, checks: [called('read_pids'), says(/88\s*°C/, '88 °C'), says(/18,8/, '18,8 con coma'), plain] }] },
   { id: '21', what: 'trim positivo = mezcla pobre', car: LEAN, turns: [{ text: 'El trim largo está en +18,8 %, ¿la mezcla está rica o pobre?', context: STOPPED, checks: [says(/pobre/i, 'pobre'), avoids(/(anda|está|es|queda)\s+(muy\s+)?rica/i, 'que está rica')] }] },
+  { id: '22', what: 'consumo con la cuenta de la app (falló 3× el 18/10)', car: HEALTHY, turns: [{ text: '¿Cuánto consume el auto ahora en ralentí?', context: STOPPED, checks: [called('read_pids'), says(/0,8\d?\s*(l|litros)/i, '≈0,83 L/h')] }] },
+  { id: '23', what: 'historial del auto (dijo que no tenía acceso)', car: HEALTHY, turns: [{ text: '¿Cuál es el historial de fallas de mi auto?', context: STOPPED, checks: [called('read_fault_history'), says(/P0171/, 'el P0171 del historial'), avoids(/no tengo acceso/i, 'que no tiene acceso')] }] },
+  { id: '24', what: 'VIN argentino sin alarma por el dígito verificador', car: HEALTHY, turns: [{ text: '¿Mi VIN está bien?', context: STOPPED, checks: [called('read_vehicle_info'), avoids(/error de lectura|no cuadra|no coincide/i, 'que el VIN tiene un error')] }] },
+  { id: '25', what: 'cuentas con calculate', car: HEALTHY, turns: [{ text: '¿Cuántas millas son 2204 km?', context: STOPPED, checks: [called('calculate'), says(/1\.?369/, '≈1.369 millas')] }] },
+  { id: '26', what: 've las fotos (dijo "no tengo visión")', car: HEALTHY, photo: true, turns: [{ text: '¿Qué ves en esta foto?', context: STOPPED, checks: [avoids(/no tengo visi[oó]n|no puedo ver|no puedo (leer|extraer|analizar).*(foto|imagen)/i, 'que no puede ver fotos')] }] },
   { id: '20', what: 'rioplatense (voseo)', car: LEAN, turns: [{ text: 'Explicame qué tengo que revisar', context: STOPPED, checks: [says(/\b(revisá|fijate|mirá|tenés|podés|cambiá|llevalo|chequeá)\b/i, 'voseo'), avoids(/\b(revisa|fíjate|mira|tienes|puedes)\b/, 'tuteo')] }] },
 ];
 
 // ── Runner ──────────────────────────────────────────────────────────────────
+
+// A real image for the vision case: the app icon (a car), as a data URL.
+const PHOTO = `data:image/png;base64,${readFileSync(join(__dirname, '../assets/icon.png')).toString('base64')}`;
 
 async function runCase(c: Case): Promise<{ failures: string[]; ms: number; transcript: string[] }> {
   const failures: string[] = [];
@@ -179,6 +219,7 @@ async function runCase(c: Case): Promise<{ failures: string[]; ms: number; trans
     const r = await runTurn({
       history,
       text: turn.text,
+      ...(c.photo && i === 0 ? { images: [PHOTO] } : {}),
       context: turn.context,
       llm,
       vehicle: vehicle(c.car),

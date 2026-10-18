@@ -14,8 +14,10 @@ interface Props {
   readonly streaming?: boolean;
 }
 
-export function ChatBubble({ role, text, at, photos = 0, cancelled = false, streaming = false }: Props) {
+export function ChatBubble({ role, text: raw, at, photos = 0, cancelled = false, streaming = false }: Props) {
   const isUser = role === 'user';
+  // A preamble before a tool ("Voy a chequear…") can end in empty lines.
+  const text = raw.replace(/\n{3,}/g, '\n\n').trim();
   return (
     <View className={`mb-3 ${isUser ? 'items-end' : 'items-start'}`}>
       <View
