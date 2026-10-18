@@ -134,6 +134,13 @@ intermitentes: 03 (en el turno 2 usa los códigos leídos segundos antes en vez 
 (26 palabras en movimiento, máximo 25). **Probado en el auto con el B35 el 2026-10-18: todas las pruebas
 de aceptación OK** (batería y códigos, monitores, VIN, muestreo, adaptador, borrado cancelado, foto).
 
+**Después de la prueba en el auto (2026-10-18):** se leyeron las 5 conversaciones del teléfono (MMKV vía
+`run-as`) y salieron 4 errores: decía "no tengo visión" con una foto, calculó el consumo 3× bajo, alarmó
+por el dígito verificador de un VIN argentino y no tenía acceso al historial. Arreglados con prompt,
+`calculate`, `fuelEstimate` calculado por la app, el dígito solo para VIN norteamericanos y
+`read_fault_history`; más `read_adapter_info` con `full_check` (test de conexión en el chat). La
+evaluación pasó a 26 casos: 24/26 (las dos fallas, de forma e intermitentes).
+
 ## 4. Decisiones (2026-10-18)
 
 1. **Pestaña "Asistente"**, la quinta. En M5 se suma el micrófono flotante en la AR.

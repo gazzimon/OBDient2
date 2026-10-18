@@ -196,6 +196,11 @@ bajo, VIN "mal leído", "no tengo historial").
   como canal de adquisición: vender el adaptador, ver historial y VIN, chatear con el asistente. El
   núcleo (BLE, AR) no puede ser mini app: el WebView no tiene Bluetooth.
 - **Búsqueda de destinos**: priorizar resultados cercanos (Photon eligió un homónimo a 900 km).
+- **Asistente: herramientas en el servidor o un modelo router** (decidido 2026-10-18: todavía no). Las
+  herramientas corren en el teléfono (ADR-0007) y un solo modelo elige bien con 11 herramientas (cero
+  llamadas inválidas en el auto, 24–26/26 en la evaluación). Revisar si se superan ~25 herramientas o
+  si entran modelos especializados (visión, diagnóstico): ahí un router en el gateway puede valer su
+  latencia.
 - **Build local** (sin EAS): guía en [dev/build-local.md](dev/build-local.md), pendiente de instalar.
 - **Calibración y primer viaje de AR** (postergados, ver *Decisión 2026-10-17*).
 
