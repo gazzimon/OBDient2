@@ -203,6 +203,7 @@ def main() -> None:
                 "key": key, "source": source, "frames": frames,
                 "front_2hz": frames["front_history"], "front_10hz": hz10,
                 "history": np.round(np.asarray(scene.history, dtype=float), 4).tolist(),
+                "nav": int(scene.nav_command),
                 "gt": None if gt is None else np.round(gt.astype(float), 3).tolist(),
             }) + "\n")
             scenes_fh.flush()

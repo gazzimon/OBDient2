@@ -62,7 +62,7 @@ def main(out_dir: str, html_path: str) -> None:
         ],
         "results": [
             {k: r.get(k) for k in ("model", "key", "variant", "plan_s", "vram_gb", "load_s", "metrics",
-                                   "metrics_best_of", "reasoning", "qa", "trajectories", "plan_raw")}
+                                   "metrics_best_of", "reasoning", "qa", "trajectories", "plan_raw", "nav_text")}
             for r in results
         ],
     }

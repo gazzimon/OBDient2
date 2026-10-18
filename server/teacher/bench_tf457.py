@@ -53,6 +53,30 @@ def as_text(x) -> str:
     return x
 
 
+NAV_VERB = {0: None, 1: "Turn left", 2: "Turn right"}
+
+
+def nav_text(sc: dict) -> str | None:
+    """Alpamayo's navigation input ("Turn left in 11m"), as the app would get it from the route.
+
+    The distance is where the driven path's heading has turned 20°: what OSRM would
+    give as the distance to the maneuver.
+    """
+    nav = sc.get("nav")
+    if nav is None:
+        return None
+    verb = NAV_VERB.get(int(nav))
+    if verb is None:
+        return "Continue straight"
+    gt = np.asarray(sc["gt"] or [])
+    if len(gt) == 0:
+        return verb
+    turned = np.nonzero(np.abs(gt[:, 2]) > np.radians(20))[0]
+    end = turned[0] if len(turned) else len(gt) - 1
+    dist = float(np.sum(np.linalg.norm(np.diff(np.vstack([[0, 0], gt[: end + 1, :2]]), axis=0), axis=1)))
+    return f"{verb} in {max(1, round(dist))}m"
+
+
 def speed_now(history: list) -> float:
     h = np.asarray(history)
     return float(np.linalg.norm(h[-1, :2] - h[-2, :2]) / 0.1)
@@ -143,7 +167,8 @@ def bench_alpamayo(args, scenes, out: Path):
         rot[:, 0, 0], rot[:, 0, 1], rot[:, 1, 0], rot[:, 1, 1], rot[:, 2, 2] = c, -s, s, c, 1
         return torch.from_numpy(xyz)[None, None], torch.from_numpy(rot)[None, None]
 
-    with (out / "alpamayo-1.5-10b.jsonl").open("w") as fh:
+    # --nav appends next to the run without navigation.
+    with (out / "alpamayo-1.5-10b.jsonl").open("a" if args.nav else "w") as fh:
         for sc in scenes:
             # 10 Hz history when the trip has it (OBDient2 bursts); the demo scenes only have 2 Hz.
             paths = sc["front_10hz"] or sc["front_2hz"]
@@ -151,7 +176,9 @@ def bench_alpamayo(args, scenes, out: Path):
             xyz, rot = ego_history(sc["history"])
             torch.cuda.reset_peak_memory_stats()
 
-            msgs = helper.create_message(frames, camera_indices=front_wide)
+            nav = nav_text(sc) if args.nav else None
+            msgs = helper.create_message(frames, camera_indices=front_wide, nav_text=nav,
+                                         use_nav_prompt=args.nav)
             inputs = processor.apply_chat_template(msgs, tokenize=True, add_generation_prompt=False,
                                                    continue_final_message=True, return_dict=True,
                                                    return_tensors="pt")
@@ -172,7 +199,7 @@ def bench_alpamayo(args, scenes, out: Path):
             best = min(range(len(trajs)), key=lambda k: (scores[k] or {"ade": 0})["ade"])
 
             qa = []
-            for q in QUESTIONS:
+            for q in ([] if args.nav else QUESTIONS):  # answers do not depend on navigation
                 m = helper.create_vqa_message(frames, question=q, camera_indices=front_wide)
                 vin = processor.apply_chat_template(m, tokenize=True, add_generation_prompt=False,
                                                     continue_final_message=True, return_dict=True,
@@ -186,10 +213,11 @@ def bench_alpamayo(args, scenes, out: Path):
 
             row = {
                 "model": "alpamayo-1.5-10b", "key": sc["key"], "source": sc["source"],
-                "variant": "mono-10hz" if sc["front_10hz"] else "mono-2hz",
+                "variant": ("mono-10hz" if sc["front_10hz"] else "mono-2hz") + ("-nav" if args.nav else ""),
+                "nav_text": nav,
                 "reasoning": as_text(extra["cot"]),
                 "plan_s": round(plan_s, 2), "trajectories": np.round(trajs, 2).tolist(),
-                "metrics": scores[0], "metrics_best_of": scores[best], "qa": qa,
+                "metrics": scores[0], "metrics_best_of": scores[best], "qa": qa or None,
                 "vram_gb": round(torch.cuda.max_memory_allocated() / 2**30, 2), "load_s": round(load_s, 1),
             }
             fh.write(json.dumps(row, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o)) + "\n")
@@ -203,6 +231,7 @@ def main():
     ap.add_argument("which", choices=["mimo", "alpamayo"])
     ap.add_argument("--model", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--nav", action="store_true", help="Alpamayo: give the navigation instruction")
     args = ap.parse_args()
     out = Path(args.out)
     scenes = [json.loads(line) for line in (out / "scenes.jsonl").read_text().splitlines()]

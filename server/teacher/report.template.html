@@ -108,8 +108,9 @@ const COLOR = { 'qwen-drive-1.0-4b': 'var(--mint)', 'mimo-embodied-7b': 'var(--a
 const VARIANT = {
   'tri': '3 cámaras reales', 'mono-dup': '1 cámara (copiada)', 'mono-crop': '1 cámara (recortes)',
   'mono': '1 cámara', 'mono-2hz': '1 cámara · 2 Hz', 'mono-10hz': '1 cámara · 10 Hz',
+  'mono-2hz-nav': '1 cámara · 2 Hz · nav', 'mono-10hz-nav': '1 cámara · 10 Hz · nav',
 };
-const DASH = { 'tri': '', 'mono-dup': '6 3', 'mono-crop': '2 3', 'mono': '6 3', 'mono-2hz': '6 3', 'mono-10hz': '' };
+const DASH = { 'tri': '', 'mono-dup': '6 3', 'mono-crop': '2 3', 'mono': '6 3', 'mono-2hz': '6 3', 'mono-10hz': '', 'mono-2hz-nav': '1 2', 'mono-10hz-nav': '1 2' };
 const SOURCE = { 'waymo-demo': 'Waymo (demo Qwen-Drive)', 'obdient2': 'Viaje OBDient2' };
 const visible = new Set(Object.keys(DATA.models));
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -199,10 +200,11 @@ function runDetails(r) {
     <span class="k">${esc(VARIANT[r.variant] || r.variant)}</span>
     <span>ADE ${fmt(m?.ade)} m</span><span class="k">mejor de 6 ${fmt(b?.ade)} m</span>
     <span class="k">${fmt(r.plan_s, 1)} s · ${fmt(r.vram_gb, 1)} GB</span>`;
+  const nav = r.nav_text ? `<div class="caption">Navegación: ${esc(r.nav_text)}</div>` : '';
   const reason = r.reasoning ? `<div class="reason">${esc(r.reasoning)}</div>` :
     r.plan_raw ? `<div class="reason">${esc(r.plan_raw)}</div>` : '';
   const qa = (r.qa || []).map((q) => `<div class="q">${esc(q.q)}</div><div class="a">${esc(q.a)} <span class="s">${fmt(q.s, 1)} s</span></div>`).join('');
-  return `<details><summary>${head}</summary><div class="body">${reason}${qa ? `<div class="qa">${qa}</div>` : ''}</div></details>`;
+  return `<details><summary>${head}</summary><div class="body">${nav}${reason}${qa ? `<div class="qa">${qa}</div>` : ''}</div></details>`;
 }
 
 function scenes() {
