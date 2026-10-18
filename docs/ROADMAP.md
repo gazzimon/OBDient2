@@ -183,7 +183,9 @@ bajo, VIN "mal leído", "no tengo historial").
   elige bien (0 llamadas inválidas en el auto). Revisar si se pasan ~25 herramientas o si se suman
   modelos especializados (visión, diagnóstico); un router suma latencia y otra pieza.
 - **Herramientas en el servidor: no.** Corren en el teléfono, junto al adaptador (ADR-0007).
-- Siguiente: navegación por chat (`search_place`, `set_destination`, estado de la ruta).
+- **Antes del APK para probar en movimiento (decisión 2026-10-18):** navegación por chat → M4 (sin
+  conexión y errores, resumen de conversaciones largas) → M5 (modo manejo: voz de salida, árbitro con
+  alertas y guía, chips) → M6 (micrófono). Recién entonces el standalone y la prueba todo junto.
 
 ### Otros pendientes
 
