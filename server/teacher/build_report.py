@@ -36,7 +36,18 @@ def main(out_dir: str, html_path: str) -> None:
         f = out / f"{model}.jsonl"
         if f.exists():
             results += [json.loads(line) for line in f.read_text().splitlines() if line.strip()]
+    for r in results:
+        # Text plans that are all zeros say "stand still" while the car moved: not a prediction.
+        trajs = r.get("trajectories") or []
+        # A plan cut off mid-thought (<think> never closed) only has scratch numbers.
+        truncated = "<think>" in (r.get("plan_raw") or "")
+        if r["model"] == "mimo-embodied-7b" and (truncated or all(
+                max((abs(v) for p in t for v in p), default=0) < 0.5 for t in trajs)):
+            r["trajectories"] = None
+            r["metrics"] = r["metrics_best_of"] = None
+    notes = out / "notes.txt"
     data = {
+        "notes": notes.read_text().strip().split("\n\n") if notes.exists() else [],
         "models": MODELS,
         "scenes": [
             {

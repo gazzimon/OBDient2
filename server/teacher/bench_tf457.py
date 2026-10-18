@@ -85,11 +85,12 @@ def bench_mimo(args, scenes, out: Path):
             for q in QUESTIONS:
                 a, s = ask(img, q)
                 qa.append({"q": q, "a": a, "s": round(s, 2)})
-            raw, plan_s = ask(img, PLAN_PROMPT.format(v=speed_now(sc["history"])), max_new=256)
+            raw, plan_s = ask(img, PLAN_PROMPT.format(v=speed_now(sc["history"])), max_new=1024)
             pts = [(float(x), float(y)) for x, y in re.findall(r"\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)", raw)]
             traj = None
             metrics = None
-            if len(pts) >= 2:
+            # All zeros (= "stand still" while the car moved) or no list: not a prediction.
+            if len(pts) >= 2 and max(abs(v) for p in pts for v in p) >= 0.5:
                 # 2 Hz waypoints → 10 Hz by linear interpolation from the origin.
                 wp = np.array([(0.0, 0.0)] + pts)
                 tt = np.arange(len(wp)) * 0.5

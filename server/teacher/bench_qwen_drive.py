@@ -196,7 +196,7 @@ def main() -> None:
 
     # The same scenes, model-neutral, for bench_tf457.py (MiMo, Alpamayo).
     scenes_fh = (out / "scenes.jsonl").open("w")
-    with (out / "qwen-drive.jsonl").open("w") as fh:
+    with (out / "qwen-drive-1.0-4b.jsonl").open("w") as fh:
         for key, source, scene, gt, variants, hz10 in jobs:
             frames = save_frames(scene, out, key)
             scenes_fh.write(json.dumps({

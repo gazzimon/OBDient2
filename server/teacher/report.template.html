@@ -31,6 +31,8 @@ h2 { font: 600 13px/1 var(--mono); letter-spacing: .08em; text-transform: upperc
 p { margin: 0; max-width: 72ch; }
 .lede { color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
 .mono { font-family: var(--mono); }
+.notes { display: flex; flex-direction: column; gap: 8px; }
+.notes p { color: var(--fg); border-left: 2px solid var(--amber); padding-left: 12px; }
 .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 table { border-collapse: collapse; width: 100%; font: 13px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
 th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -85,6 +87,7 @@ summary .k { color: var(--muted); }
     <p>Trayectorias en el marco del auto: hacia arriba es adelante, a la izquierda es la izquierda.
       ADE es el error medio contra el camino que el auto hizo de verdad; "mejor de 6" toma la trayectoria
       más cercana de las 6 que propone el modelo.</p>
+    <div id="notes" class="notes"></div>
   </section>
 
   <section style="display:flex;flex-direction:column;gap:12px">
@@ -228,5 +231,6 @@ function scenes() {
   }).join('');
 }
 
+document.getElementById('notes').innerHTML = (DATA.notes || []).map((n) => `<p>${esc(n)}</p>`).join('');
 intro(); summary(); filters(); scenes();
 </script>
