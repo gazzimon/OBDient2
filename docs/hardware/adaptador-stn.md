@@ -79,11 +79,38 @@ Conclusiones:
   objetivo del MVP.
 - No drena la batería si queda enchufado.
 
-## Ideas para más adelante
+## Funciones del manual que todavía no usamos
 
-- **Ángulo de volante por escucha del bus CAN** (`STM` + `STFPA`, en modo silencioso `STCMM 0`). En
-  autos sin gateway, el volante, la velocidad de ruedas y el freno circulan por el HS-CAN a 50–100 Hz.
-  Requiere decodificación propia de cada marca y filtrar 2–3 IDs por el límite de BLE.
-- `STVR` en lugar de `ATRV` para leer el voltaje de batería (ambos funcionan).
-- `STSN` como identificador estable del adaptador, mejor que la dirección BLE.
-- J1939 (`STP 42`) para camiones de 24 V: el B33 lo anuncia.
+Revisión completa del FRPM, 2026-10-18. El B35 es un STN1040 que no figura en el manual: **cada comando
+nuevo se prueba en el adaptador antes de depender de él** (captura del M2.0).
+
+**Para el diagnóstico (M2):**
+- **`ATH1` + `ATCAF1`**, la configuración que el manual recomienda (§7.2): muestra qué ECU responde
+  (con CAN 29 bits, `18DAF110` motor, `18DAF118` caja). Las respuestas en varios cuadros pasan a traer
+  el byte PCI (`10 14 …`, `21 …`): el parser tiene que entender ambos formatos.
+- **`STCSEGR 1`**: el adaptador arma solo las respuestas en varios cuadros (§8.8). A probar.
+- **`STPX` con `r:` y `t:`** también en diagnóstico: `r:` con la cantidad de ECUs medida, `t:` largo para
+  `04` y freeze frame.
+- **Respuesta pendiente `7F xx 78`**: PP 2A bit 2 (por defecto activo) hace que el adaptador espere.
+  No es un rechazo.
+- **`STVR`** (y `STVR 2`) en lugar de `ATRV`, y **`STPRS`** en lugar de `ATDP`: los dos AT están obsoletos
+  en esta familia.
+
+**Para el producto:**
+- **Protocolo guardado por vehículo** con `STP 34` (ISO 15765, 29 bits, 500 k) en vez de buscar cada vez.
+- **Energía (§15)**: fijarla en la preparación de fábrica, no desde la app (`STSLVG on`, `STSLVLS`).
+  `STSLLT` dice por qué durmió o despertó.
+- **`STDICES`** (arranques del motor) y **`STDITPO`** (tiempo encendido): a probar.
+- **`STBTDN`**: nombre Bluetooth propio del producto. Requiere reiniciar el adaptador.
+
+**Para más adelante:**
+- **Diagnóstico del fabricante**: direccionamiento físico (`ATSH 18DA28F1`, `STCFCPA`) y UDS de solo
+  lectura (`19`, `22`) para ABS, airbag, carrocería y caja. Nunca `2E`, `31` ni `14`.
+- **Escucha pasiva del bus** (`STM` + `STFPA`, `STCMM 0`): volante, ruedas y freno a 50–100 Hz. Requiere
+  decodificar cada marca y filtrar 2–3 IDs por el límite de BLE.
+- **J1939** (`STP 42`) para camiones de 24 V.
+
+**No usar:** `STSAVCAL`, `AT@3` y `STSDI` (una sola escritura), `STRSTNVM` (borra la configuración),
+`STBR`/`STSBR`/`STWBR` (el puerto serie en Bluetooth es fijo), `STPPMA` (mensajes periódicos al bus).
+
+Para adaptadores ELM327 sin STN: [adaptador-elm327.md](adaptador-elm327.md).
