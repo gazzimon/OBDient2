@@ -9,6 +9,7 @@
 # Prueba:
 #   curl "https://obdient.duckdns.org/osrm/route/v1/driving/-58.3816,-34.6037;-58.4370,-34.6070?overview=false"
 #   curl "https://obdient.duckdns.org/photon/api?q=obelisco&limit=1"
+#   curl -H "Authorization: Bearer $(cat ~/.config/obdient/llm-token)" https://obdient.duckdns.org/llm/v1/models
 
 obdient.duckdns.org {
 	# OBDient2: rutas (OSRM) y búsqueda (Photon) en la Z440.
@@ -17,6 +18,19 @@ obdient.duckdns.org {
 	}
 	handle_path /photon/* {
 		reverse_proxy 192.168.100.210:2322
+	}
+
+	# OBDient2: asistente (ADR-0007/0008). new-api en la K16 -> Qwen3.8 en la Z440.
+	# Solo la API compatible con OpenAI: el panel y el registro de new-api no se exponen.
+	handle /llm/v1/* {
+		uri strip_prefix /llm
+		reverse_proxy 127.0.0.1:3000 {
+			# Respuestas en streaming (SSE): cada fragmento sale apenas llega.
+			flush_interval -1
+		}
+	}
+	handle /llm/* {
+		respond 404
 	}
 
 	# OBDient: proxy senior, como hasta ahora.
