@@ -85,7 +85,8 @@
         {
           "enableAndroidGpuLibraries": true
         }
-      ]
+      ],
+      "react-native-zip-archive"
     ],
     "experiments": {
       "typedRoutes": true

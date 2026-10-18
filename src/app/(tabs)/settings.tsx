@@ -1,7 +1,7 @@
 // Preferences, AR calibration entry point and service endpoints.
 
 import { useCallback, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
@@ -31,6 +31,24 @@ export default function SettingsScreen() {
     mapStyleUrl: s.mapStyleUrl,
   });
   const [trips, setTrips] = useState<TripFileInfo[]>([]);
+  // Trip being packed into a .zip for sharing (frames make it take a moment).
+  const [packing, setPacking] = useState<string | null>(null);
+  const shareTrip = async (t: TripFileInfo) => {
+    try {
+      if (t.frames === 0) {
+        await Sharing.shareAsync(container.trips.uri(t.name), { mimeType: 'text/plain', dialogTitle: t.name });
+        return;
+      }
+      setPacking(t.name);
+      const uri = await container.trips.archive(t.name);
+      setPacking(null);
+      await Sharing.shareAsync(uri, { mimeType: 'application/zip', dialogTitle: t.name });
+    } catch (err) {
+      console.warn('[Settings] trip not shared:', err);
+    } finally {
+      setPacking(null);
+    }
+  };
   const refreshTrips = useCallback(() => {
     try {
       setTrips(container.trips.list());
@@ -157,20 +175,22 @@ export default function SettingsScreen() {
                 <MaterialCommunityIcons name="map-marker-path" size={16} color={COLORS.mint} />
                 <View className="ml-3 flex-1">
                   <Text className="text-brand-text font-mono text-xs">{t.name}</Text>
-                  <Text className="text-brand-muted font-mono text-[10px]">{(t.sizeBytes / 1e6).toFixed(1)} MB</Text>
+                  <Text className="text-brand-muted font-mono text-[10px]">
+                    {(t.sizeBytes / 1e6).toFixed(1)} MB{t.frames > 0 ? ` · ${t.frames} cuadros` : ''}
+                  </Text>
                 </View>
                 <Pressable
                   hitSlop={8}
                   accessibilityLabel={`Compartir ${t.name}`}
-                  onPress={() =>
-                    void Sharing.shareAsync(container.trips.uri(t.name), {
-                      mimeType: 'text/plain',
-                      dialogTitle: t.name,
-                    }).catch(() => undefined)
-                  }
+                  disabled={packing != null}
+                  onPress={() => void shareTrip(t)}
                   className="mr-4 active:opacity-60"
                 >
-                  <MaterialCommunityIcons name="share-variant-outline" size={18} color={COLORS.text} />
+                  {packing === t.name ? (
+                    <ActivityIndicator size="small" color={COLORS.mint} />
+                  ) : (
+                    <MaterialCommunityIcons name="share-variant-outline" size={18} color={COLORS.text} />
+                  )}
                 </Pressable>
                 <Pressable
                   hitSlop={8}

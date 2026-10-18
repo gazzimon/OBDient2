@@ -13,6 +13,7 @@
 
 import { Directory, File, Paths } from 'expo-file-system';
 import { Images, type PixelFormat } from 'react-native-nitro-image';
+import { NO_COMPRESSION, zip } from 'react-native-zip-archive';
 import { TRIP_LOG_VERSION, TripLogBuffer, type TripRecord } from '@/domain/recording/trip-log';
 
 const FLUSH_MS = 2000;
@@ -36,6 +37,8 @@ export interface TripFileInfo {
   readonly name: string;
   readonly sizeBytes: number;
   readonly modifiedMs: number | null;
+  // Camera frames kept with the trip (0 when frame capture was off).
+  readonly frames: number;
 }
 
 export class TripRecorder {
@@ -125,7 +128,13 @@ export class TripRecorder {
       .filter((e): e is File => e instanceof File && e.name.endsWith('.jsonl'))
       .map((f) => {
         const info = f.info();
-        return { name: f.name, sizeBytes: info.size ?? 0, modifiedMs: info.modificationTime ?? null };
+        const frames = new Directory(tripsDir(), stem(f.name));
+        return {
+          name: f.name,
+          sizeBytes: info.size ?? 0,
+          modifiedMs: info.modificationTime ?? null,
+          frames: frames.exists ? frames.list().length : 0,
+        };
       })
       .sort((a, b) => b.name.localeCompare(a.name));
   }
@@ -133,6 +142,19 @@ export class TripRecorder {
   // file:// URI for the share sheet.
   uri(name: string): string {
     return new File(tripsDir(), name).uri;
+  }
+
+  // The log and its frames in one .zip (in the cache dir), for the share sheet:
+  // release builds cannot be read with adb run-as, so this is how a trip with
+  // frames leaves the phone. Stored without compression: the frames are JPEGs
+  // already, and zipping is then just a copy.
+  async archive(name: string): Promise<string> {
+    const target = new File(Paths.cache, `${stem(name)}.zip`);
+    if (target.exists) target.delete();
+    const frames = new Directory(tripsDir(), stem(name));
+    const sources = [new File(tripsDir(), name).uri, ...(frames.exists ? [frames.uri] : [])].map(toPath);
+    await zip(sources, toPath(target.uri), NO_COMPRESSION);
+    return target.uri;
   }
 
   remove(name: string): void {
@@ -159,6 +181,11 @@ export class TripRecorder {
 
 function tripsDir(): Directory {
   return new Directory(Paths.document, 'trips');
+}
+
+// file:///data/…/x/ → /data/…/x (the zip module takes plain paths).
+function toPath(uri: string): string {
+  return decodeURIComponent(uri.replace(/^file:\/\//, '')).replace(/\/$/, '');
 }
 
 function stem(name: string): string {
