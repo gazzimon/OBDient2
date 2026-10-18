@@ -35,7 +35,9 @@ Se avanza con **E4 (detector en el teléfono)**.
 
 ## Próximos pasos (2026-10-18)
 
-### E7 · M2 — herramientas OBD reales (en curso)
+### E7 · M2 — herramientas OBD reales (código completo; falta el auto)
+
+Plan de M3 y flujo del agente: [plans/m3-chat-y-flujo-del-agente.md](plans/m3-chat-y-flujo-del-agente.md).
 
 Decisiones tomadas: códigos leídos **con encabezados** (`ATH1`, para saber qué módulo los tiene, con
 ~0,5 s de pausa de la telemetría); descripciones **en inglés** ahora (el modelo explica en español) y
