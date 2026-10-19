@@ -79,6 +79,6 @@ test('web_search: auth, validation, results, errors; queries never logged', asyn
 test('rate limit per key', async () => {
   const app = createApp({ search: async () => [], isValidKey: async () => true });
   let last;
-  for (let i = 0; i < 21; i++) last = await call(app);
+  for (let i = 0; i < 31; i++) last = await call(app);
   assert.equal(last.status, 429);
 });

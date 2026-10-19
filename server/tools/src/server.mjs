@@ -1,23 +1,29 @@
 // HTTP front of obdient-tools, behind Caddy at /tools (127.0.0.1 only).
+// Every call: POST, Authorization: Bearer <account's model key>, JSON body.
 //
-//   POST /tools/v1/web_search   Authorization: Bearer <account's model key>
-//        { "query": "taller mecánico Posadas" }
-//        → 200 { results: [{ title, domain, snippet, addresses? }] }
-//   GET  /tools/healthz          → 200
+//   /tools/v1/web_search  { query }                  → { results: [{ title, domain, snippet, addresses?, prices? }] }
+//   /tools/v1/fuel        { lat, lng, product? }     → { nearest, cheapest, updated, source }
+//   /tools/v1/dollar      {}                         → { rates, updated, source }
+//   /tools/v1/weather     { lat, lng }               → { now, nextHours, maxRainChance, source }
+//   /tools/v1/car_price   { query, year? }           → { results, month, unit, source }
+//   GET /tools/healthz                               → 200
 //
-// Errors: 400 bad query, 401 bad key, 429 too many, 502 search or new-api down.
-// Keys and queries are never logged (a query can say where someone is).
+// Errors: 400 bad input, 401 bad key, 429 too many, 502 a source is down,
+// 503 no data yet. Keys, queries and positions are never logged.
 
 import { createServer } from 'node:http';
 import { toToolResults } from './results.mjs';
+import { findCars } from './queries/cars.mjs';
+import { FUEL_PRODUCTS, nearestStations } from './queries/fuel.mjs';
+import { validPoint } from './queries/geo.mjs';
 
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 20;
+const MAX_PER_WINDOW = 30;
 const MAX_BODY = 4_096;
-const QUERY_MIN = 2;
-const QUERY_MAX = 200;
 
-export function createApp({ search, isValidKey, log = () => {}, now = () => Date.now() }) {
+class BadInput extends Error {}
+
+export function createApp({ search, isValidKey, data = () => null, weather = null, log = () => {}, now = () => Date.now() }) {
   const hits = new Map(); // key prefix → { start, count }
 
   function limited(who) {
@@ -32,6 +38,45 @@ export function createApp({ search, isValidKey, log = () => {}, now = () => Date
     return h.count > MAX_PER_WINDOW;
   }
 
+  const point = (b) => {
+    const p = { lat: Number(b.lat), lng: Number(b.lng) };
+    if (!validPoint(p)) throw new BadInput('bad_position');
+    return p;
+  };
+  const needData = (name) => {
+    const d = data(name);
+    if (!d) throw Object.assign(new Error(`no ${name} data`), { status: 503 });
+    return d;
+  };
+
+  const routes = {
+    async web_search(b) {
+      const query = typeof b.query === 'string' ? b.query.trim() : '';
+      if (query.length < 2 || query.length > 200) throw new BadInput('bad_query');
+      return { results: toToolResults(await search(query)) };
+    },
+    async fuel(b) {
+      const product = b.product ?? null;
+      if (product !== null && !FUEL_PRODUCTS.includes(product)) throw new BadInput('bad_product');
+      return nearestStations(needData('fuel'), point(b), product, now());
+    },
+    async dollar() {
+      const d = needData('dollar');
+      return { rates: d.rates, updated: d.updated, source: d.source };
+    },
+    async weather(b) {
+      if (!weather) throw Object.assign(new Error('no weather'), { status: 503 });
+      return weather(point(b));
+    },
+    async car_price(b) {
+      const query = typeof b.query === 'string' ? b.query.trim() : '';
+      if (query.length < 2 || query.length > 100) throw new BadInput('bad_query');
+      const year = b.year == null ? null : String(b.year);
+      if (year !== null && !/^(19|20)\d\d$/.test(year)) throw new BadInput('bad_year');
+      return findCars(needData('cars'), query, year);
+    },
+  };
+
   async function readJson(req) {
     let size = 0;
     const chunks = [];
@@ -41,7 +86,8 @@ export function createApp({ search, isValidKey, log = () => {}, now = () => Date
       chunks.push(c);
     }
     try {
-      return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      const v = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+      return v && typeof v === 'object' && !Array.isArray(v) ? v : null;
     } catch {
       return null;
     }
@@ -50,7 +96,9 @@ export function createApp({ search, isValidKey, log = () => {}, now = () => Date
   async function handle(req) {
     const url = new URL(req.url, 'http://local');
     if (req.method === 'GET' && url.pathname === '/tools/healthz') return [200, { ok: true }];
-    if (!(req.method === 'POST' && url.pathname === '/tools/v1/web_search')) return [404, { error: 'not_found' }];
+    const name = /^\/tools\/v1\/([a-z_]+)$/.exec(url.pathname)?.[1];
+    const route = name && Object.hasOwn(routes, name) ? routes[name] : null;
+    if (req.method !== 'POST' || !route) return [404, { error: 'not_found' }];
 
     const auth = String(req.headers.authorization ?? '');
     const key = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
@@ -66,17 +114,16 @@ export function createApp({ search, isValidKey, log = () => {}, now = () => Date
     if (!valid) return [401, { error: 'invalid_key' }];
 
     const body = await readJson(req);
-    const query = typeof body?.query === 'string' ? body.query.trim() : '';
-    if (query.length < QUERY_MIN || query.length > QUERY_MAX) return [400, { error: 'bad_query' }];
-
+    if (!body) return [400, { error: 'bad_body' }];
+    const started = now();
     try {
-      const started = now();
-      const results = toToolResults(await search(query));
-      log(`web_search ok: ${results.length} results in ${now() - started} ms`);
-      return [200, { results }];
+      const result = await route(body);
+      log(`${name} ok in ${now() - started} ms`);
+      return [200, result];
     } catch (err) {
-      log(`search failed: ${err.message}`);
-      return [502, { error: 'search_unavailable' }];
+      if (err instanceof BadInput) return [400, { error: err.message }];
+      log(`${name} failed: ${err.message}`);
+      return [err.status ?? 502, { error: err.status === 503 ? 'no_data' : 'source_unavailable' }];
     }
   }
 

@@ -5,7 +5,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { readData } from './data.mjs';
 import { newApiKeyCheck } from './keys.mjs';
+import { weatherFromApi, weatherUrl } from './queries/weather.mjs';
 import { searxng } from './searxng.mjs';
 import { createApp, listen } from './server.mjs';
 
@@ -25,6 +27,12 @@ const log = (msg) => console.log(`${new Date().toISOString()} ${msg}`);
 const app = createApp({
   search: searxng({ baseUrl: env.SEARXNG_URL ?? 'http://127.0.0.1:8888' }),
   isValidKey: newApiKeyCheck({ baseUrl: env.NEWAPI_URL ?? 'http://127.0.0.1:3000' }),
+  data: (name) => readData(name),
+  weather: async (p) => {
+    const res = await fetch(weatherUrl(p), { signal: AbortSignal.timeout(8_000) });
+    if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
+    return weatherFromApi(await res.json());
+  },
   log,
 });
 

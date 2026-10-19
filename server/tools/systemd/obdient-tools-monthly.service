@@ -1,0 +1,10 @@
+# Monthly data for obdient-tools: the CCA car price list (needs pdftotext).
+[Unit]
+Description=OBDient2 tools: monthly data (CCA car prices)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/src/OBDient2/server/tools
+ExecStart=/usr/bin/env node src/jobs.mjs monthly
+NoNewPrivileges=yes

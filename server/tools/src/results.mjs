@@ -44,6 +44,18 @@ export function extractAddresses(text) {
   return found.slice(0, 3);
 }
 
+// "$ 12.500", "$12.500,50", "ARS 8.900": prices in a snippet (Mercado Libre and shops).
+const PRICE = /(?:\$|ARS|AR\$)\s?\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|(?:\$|ARS|AR\$)\s?\d{3,7}(?:,\d{1,2})?/g;
+
+export function extractPrices(text) {
+  const found = [];
+  for (const m of String(text ?? '').matchAll(PRICE)) {
+    const p = m[0].replace(/^(?:ARS|AR\$)\s?/, '$ ').replace(/^\$(?=\d)/, '$ ');
+    if (!found.includes(p)) found.push(p);
+  }
+  return found.slice(0, 3);
+}
+
 export function toToolResults(raw, max = MAX_RESULTS) {
   const seen = new Set();
   const results = [];
@@ -53,11 +65,13 @@ export function toToolResults(raw, max = MAX_RESULTS) {
     seen.add(r.url);
     const snippet = plain(r.content, SNIPPET_CHARS);
     const addresses = extractAddresses(r.content);
+    const prices = extractPrices(`${r.title ?? ''} ${r.content ?? ''}`);
     results.push({
       title: plain(r.title, TITLE_CHARS),
       domain,
       snippet,
       ...(addresses.length ? { addresses } : {}),
+      ...(prices.length ? { prices } : {}),
     });
     if (results.length >= max) break;
   }
