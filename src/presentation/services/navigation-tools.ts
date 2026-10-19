@@ -4,6 +4,7 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { container } from '@/data/container';
+import { followLink } from '@/data/routing/follow-link';
 import { NavigationTools } from '@/domain/navigation/navigation-tools';
 import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
@@ -27,4 +28,5 @@ export const navigationTools = new NavigationTools({
   // The Ruta tab shows the planned route with its "Iniciar" button.
   openMap: () => router.navigate('/'),
   state: () => useNavStore.getState(),
+  followLink: (url, signal) => followLink(url, signal),
 });

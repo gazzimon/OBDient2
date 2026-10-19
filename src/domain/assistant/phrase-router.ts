@@ -65,3 +65,14 @@ export function routePhrase(text: string): PhraseIntent | null {
   }
   return null;
 }
+
+// "Leé las notas", "pasale las notas al asistente": the driver asks for the
+// notes taken offline. The screen sends them, as with its button.
+const NOTES = /\b(?:lee|leer|leelas|lei|pasale|pasales|pasa|pasar|manda|mandale|mandar|envia|enviale|enviar|revisa|revisar|revisalas|mira|mirar|ver)\b.{0,16}\bnotas?\b/;
+
+export const asksForNotes = (text: string): boolean => NOTES.test(normalise(text));
+
+// A greeting or a thanks on its own: answered, never kept as a note.
+const SMALL_TALK = /^(?:hola|holi|buenas|buen dia|buenos dias|buenas tardes|buenas noches|gracias|muchas gracias|chau|ok|okey|dale|genial|perfecto)(?: [a-z]+){0,2}[!.]*$/;
+
+export const isSmallTalk = (text: string): boolean => SMALL_TALK.test(normalise(text));

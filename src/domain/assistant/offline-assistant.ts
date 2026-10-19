@@ -4,7 +4,7 @@
 
 import type { PidId } from '@/core/constants/pids';
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
-import { INTENT_CALL, routePhrase, type PhraseIntent } from './phrase-router';
+import { INTENT_CALL, isSmallTalk, routePhrase, type PhraseIntent } from './phrase-router';
 import { intentAnswer, makeNote, NOTE_PIDS, snapshotCodes, snapshotValues, type CarSnapshot, type OfflineNote } from './offline';
 import type { AssistantContext } from './prompt';
 import type { ToolCall, ToolOutcome } from './tools';
@@ -12,10 +12,13 @@ import type { ToolCall, ToolOutcome } from './tools';
 // A read that does not answer in this time is left out of the note.
 export const OFFLINE_READ_MS = 8_000;
 
+export const SMALL_TALK_REPLY =
+  'Ahora no me puedo comunicar con el asistente. Puedo leerte los códigos, la batería o los monitores; lo demás lo anoto para cuando vuelva.';
+
 const CAR_INTENTS: ReadonlySet<PhraseIntent> = new Set(['codes', 'battery', 'readiness', 'freeze_frame', 'vehicle_info']);
 
 export type OfflineReply =
-  | { readonly kind: 'answer'; readonly intent: PhraseIntent; readonly text: string }
+  | { readonly kind: 'answer'; readonly intent: PhraseIntent | 'small_talk'; readonly text: string }
   | { readonly kind: 'note'; readonly note: OfflineNote };
 
 export class OfflineAssistant {
@@ -25,6 +28,9 @@ export class OfflineAssistant {
     input: { readonly id: string; readonly at: number; readonly text: string; readonly photos: number },
     ctx: AssistantContext,
   ): Promise<OfflineReply> {
+    if (input.photos === 0 && isSmallTalk(input.text)) {
+      return { kind: 'answer', intent: 'small_talk', text: SMALL_TALK_REPLY };
+    }
     const intent = input.photos === 0 ? routePhrase(input.text) : null;
     if (intent) {
       if (CAR_INTENTS.has(intent) && !ctx.connected) {
