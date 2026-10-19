@@ -26,6 +26,9 @@ import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
 import { ensurePermission } from '@/presentation/services/permissions';
 
+// Above this OBD speed the chat is only the microphone (Modo manejo).
+const MOVING_KMH = 8;
+
 // Each photo costs ~1.5k tokens of the 16k context.
 const MAX_PHOTOS = 2;
 
@@ -47,6 +50,8 @@ export default function AssistantScreen() {
   const net = useNetInfo();
   const online = net.isConnected !== false && net.isInternetReachable !== false;
   const navigating = useNavStore((s) => s.status === 'navigating');
+  // Without the adapter there is no speed: the chat stays as it is.
+  const moving = useOBDStore((s) => (s.parameters.SPEED?.value ?? 0) > MOVING_KMH);
 
   const items = conversation?.items ?? [];
   const streamingId = runningId != null && runningId === conversation?.id ? items[items.length - 1]?.id : null;
@@ -125,14 +130,14 @@ export default function AssistantScreen() {
   return (
     <SafeAreaView className="flex-1 bg-brand-bg" edges={['top']}>
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-brand-border">
-        <Pressable onPress={() => setListOpen(true)} hitSlop={8} className="flex-row items-center gap-2 flex-1 active:opacity-60">
-          <MaterialCommunityIcons name="forum-outline" size={18} color={COLORS.muted} />
-          <Text className="text-brand-text font-mono text-sm flex-1" numberOfLines={1}>
-            {conversation?.title ?? 'Asistente'}
-          </Text>
-        </Pressable>
+        <Text className="text-brand-text font-mono text-sm flex-1 mr-3" numberOfLines={1}>
+          {conversation?.title ?? 'Asistente'}
+        </Text>
         <View className="flex-row items-center gap-4">
           {!connected && <Text className="text-brand-amber font-mono text-[10px]">sin adaptador</Text>}
+          <Pressable onPress={() => setListOpen(true)} hitSlop={8} accessibilityLabel="Conversaciones" className="active:opacity-60">
+            <MaterialCommunityIcons name="history" size={22} color={COLORS.mint} />
+          </Pressable>
           <Pressable onPress={newConversation} hitSlop={8} disabled={running} className="active:opacity-60">
             <MaterialCommunityIcons name="plus-circle-outline" size={22} color={running ? COLORS.border : COLORS.mint} />
           </Pressable>
@@ -168,7 +173,7 @@ export default function AssistantScreen() {
             data={items as ChatItem[]}
             // With the position: conversations saved before 2026-10-19 repeat ids.
             keyExtractor={(i, index) => `${index}:${i.id}`}
-            ListFooterComponent={showSuggestions ? <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} mapFirst={destinationShown} /> : null}
+            ListFooterComponent={showSuggestions && !moving ? <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} mapFirst={destinationShown} /> : null}
             renderItem={({ item }) => {
               switch (item.kind) {
                 case 'user':
@@ -233,7 +238,16 @@ export default function AssistantScreen() {
             <Text className="text-brand-amber font-mono text-[11px] leading-4">{mic.error}</Text>
           </Pressable>
         )}
-        {status === 'signed-in' && (
+        {status === 'signed-in' && moving && (
+          <DrivingMic
+            listening={listening}
+            partial={mic.partial}
+            running={running}
+            onStop={running ? stop : mic.stop}
+            onTalk={() => void ensurePermission('microphone').then((ok) => (ok ? mic.start() : undefined))}
+          />
+        )}
+        {status === 'signed-in' && !moving && (
           <View className="flex-row items-end gap-2 px-4 py-3 border-t border-brand-border">
             <Pressable onPress={choosePhoto} disabled={running} hitSlop={8} className="w-9 h-11 items-center justify-center active:opacity-60">
               <MaterialCommunityIcons name="camera-outline" size={22} color={running ? COLORS.border : COLORS.muted} />
@@ -289,6 +303,39 @@ export default function AssistantScreen() {
 
       <ConversationList visible={listOpen} onClose={() => setListOpen(false)} />
     </SafeAreaView>
+  );
+}
+
+// Moving: no keyboard, no buttons to read — one big microphone (or stop).
+function DrivingMic({
+  listening,
+  partial,
+  running,
+  onTalk,
+  onStop,
+}: {
+  listening: boolean;
+  partial: string;
+  running: boolean;
+  onTalk: () => void;
+  onStop: () => void;
+}) {
+  const busy = listening || running;
+  return (
+    <View className="items-center px-4 pt-3 pb-5 border-t border-brand-border">
+      <Text className="text-brand-muted font-mono text-xs mb-3 text-center" numberOfLines={2}>
+        {listening ? partial || 'Escuchando…' : running ? 'Respondiendo…' : 'En movimiento: tocá y hablá'}
+      </Text>
+      <Pressable
+        onPress={busy ? onStop : onTalk}
+        disabled={!busy && !voiceInputAvailable}
+        accessibilityLabel={listening ? 'Terminar de hablar' : running ? 'Detener' : 'Hablar'}
+        className="w-20 h-20 rounded-full items-center justify-center active:opacity-60"
+        style={{ backgroundColor: busy ? COLORS.red : COLORS.mint }}
+      >
+        <MaterialCommunityIcons name={running ? 'stop' : 'microphone'} size={40} color={busy ? COLORS.text : COLORS.bg} />
+      </Pressable>
+    </View>
   );
 }
 

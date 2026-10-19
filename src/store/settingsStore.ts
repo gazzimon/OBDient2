@@ -73,6 +73,8 @@ interface SettingsState {
   accountPromptDismissed: boolean;
   // Shows pose/heading/rates over the AR view — a field-testing aid.
   debugOverlay: boolean;
+  // Modo manejo: the 3D map is the main view; true puts the AR camera first.
+  driveAr: boolean;
   // On-device detector (E4): alerts for vehicles, pedestrians, cyclists.
   detectorEnabled: boolean;
   // Accelerator for the detector; the bench says which one is fastest.
@@ -90,6 +92,7 @@ interface SettingsState {
   setDisclaimerAccepted: (on: boolean) => void;
   setAccountPromptDismissed: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
+  setDriveAr: (on: boolean) => void;
   setDetector: (patch: Partial<Pick<SettingsState, 'detectorEnabled' | 'detectorDelegate' | 'detectorModelId'>>) => void;
 }
 
@@ -107,6 +110,7 @@ export const useSettingsStore = create<SettingsState>()(
       disclaimerAccepted: false,
       accountPromptDismissed: false,
       debugOverlay: false,
+      driveAr: false,
       detectorEnabled: true,
       detectorDelegate: 'android-gpu',
       detectorModelId: 'yolo11n-fp16',
@@ -122,6 +126,7 @@ export const useSettingsStore = create<SettingsState>()(
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setAccountPromptDismissed: (on) => set({ accountPromptDismissed: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
+      setDriveAr: (on) => set({ driveAr: on }),
       setDetector: (patch) => set(patch),
     }),
     {
@@ -141,6 +146,7 @@ export const useSettingsStore = create<SettingsState>()(
         disclaimerAccepted: s.disclaimerAccepted,
         accountPromptDismissed: s.accountPromptDismissed,
         debugOverlay: s.debugOverlay,
+        driveAr: s.driveAr,
         detectorEnabled: s.detectorEnabled,
         detectorDelegate: s.detectorDelegate,
         detectorModelId: s.detectorModelId,

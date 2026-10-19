@@ -46,10 +46,12 @@ Se avanza con **E4 (detector en el teléfono)**.
 | Navegación | Direcciones, esquinas, enlaces de mapas, destino confirmado en el chat | ✅ probado en el teléfono |
 | M4 | Sin conexión (router de frases, notas), resumen de conversaciones largas | ✅ |
 | M5 | Una sola voz: alertas > maniobras; nivel de alertas | ✅ código · ⏳ probar manejando |
-| **M6** | **Voz al chat**: Voxtral Mini 4B Realtime en la GPU1 (en vivo, por `obdient-tools`), reconocedor de Android sin conexión | ✅ código y puente en la K16 (2026-10-19) · falta: desplegar `stt` en la Z440, `STT_API_KEY` en la K16, build Dev con `expo-audio`, probar en el auto |
-| — | APK standalone y prueba todo junto manejando | después de M6 |
+| **M6** | **Voz al chat**: Voxtral Mini 4B Realtime en la GPU1 (en vivo, por `obdient-tools`), reconocedor de Android sin conexión | ✅ código, puente en la K16 y `stt` en la Z440, probado de punta a punta (2026-10-19) · falta: build Dev con `expo-audio` y micrófono en el teléfono; en movimiento solo el botón de voz; probar en el auto |
+| **Manejo** | **Modo manejo** (2026-10-19): mapa 3D como vista principal (inclinado 60°, auto fijo abajo, zoom según la velocidad, edificios del estilo, solo la ruta que falta), la cámara en una ventana con el detector; la AR sobre la calle queda como opción en Ajustes. Manejo libre sin destino (botón *Manejar*). Detector siempre activo en la vista, con o sin ruta, e indicador en Dev. Chat en movimiento (OBD > 8 km/h): solo un micrófono grande | 🔧 código · ⏳ probar en el teléfono y en el escritorio con un video de tránsito |
+| — | APK standalone y prueba todo junto manejando | después del Modo manejo |
+| Historial | Conversaciones: botón junto a "nueva" ✅, lista agrupada por fecha, buscador, una línea por conversación. **Mis viajes**: automático con la app abierta y el OBD conectado (sin OBD no graba); vista tipo historial de Google Maps (lista por día, recorrido en el mapa, km, tiempo, consumo, códigos) | después de la prueba manejando |
 | M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
-| M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM | ✅ código y servicio en la K16 (2026-10-19) · falta la ruta `/tools` en Caddy y probar en el teléfono |
+| M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM | ✅ código, servicio y ruta `/tools` en la K16 (2026-10-19) · falta probar en el teléfono |
 | M9 | Diagnóstico del fabricante (UDS solo lectura) | pendiente |
 | Después | Modo manejo sin chat (voz de ida y vuelta, palabra "OBDient"), animaciones de espera, base de conocimiento ampliada | ideas |
 

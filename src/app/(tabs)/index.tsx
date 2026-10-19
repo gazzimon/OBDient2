@@ -229,6 +229,18 @@ export default function RouteScreen() {
         </Pressable>
       )}
 
+      {/* Free driving: the driving view without a destination. */}
+      {!destination && (
+        <Pressable
+          onPress={() => router.push('/drive')}
+          className="absolute bottom-6 self-center flex-row items-center gap-2 bg-brand-surface border border-brand-teal rounded-full px-5 py-3 active:opacity-60"
+          accessibilityRole="button"
+        >
+          <MaterialCommunityIcons name="steering" size={18} color={COLORS.mint} />
+          <Text className="text-brand-mint font-mono-bold text-sm">Manejar</Text>
+        </Pressable>
+      )}
+
       {/* Route card */}
       {destination && (
         <View className="absolute bottom-4 left-4 right-4 bg-brand-surface border border-brand-border rounded-2xl p-4">
@@ -264,7 +276,7 @@ export default function RouteScreen() {
               <PillButton label="Cancelar" variant="secondary" onPress={() => navigation.stop()} />
             </View>
             <View className="flex-1">
-              <PillButton label="Iniciar AR" onPress={startDriving} disabled={!route} />
+              <PillButton label="Iniciar" onPress={startDriving} disabled={!route} />
             </View>
           </View>
         </View>
