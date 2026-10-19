@@ -68,9 +68,9 @@ const AFTER_LIVE: readonly Suggestion[] = [
   text('¿Qué tensión es normal en la batería?'),
 ];
 
-// Not a question: the screen opens the Ruta tab.
+// Not a question: the fixed button opens the Ruta tab after a destination is shown.
 export const SEE_ON_MAP = 'Ver en el mapa';
-const DESTINATION_SHOWN: readonly Suggestion[] = [nav('Sí, vamos'), text('No, es otro lugar'), nav(SEE_ON_MAP)];
+const DESTINATION_SHOWN: readonly Suggestion[] = [nav('Sí, vamos'), text('No, es otro lugar'), nav('¿Cuánto tardo?')];
 
 const NAVIGATING: readonly Suggestion[] = [nav('¿Cuánto falta?'), nav('Terminá la navegación'), car('¿Cómo está la batería?')];
 

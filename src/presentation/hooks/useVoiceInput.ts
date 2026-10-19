@@ -35,12 +35,27 @@ const ERROR_TEXT: Record<string, string> = {
   'audio-capture': 'No se pudo usar el micrófono.',
 };
 
+// Starts listening; `offline` asks for recognition on the phone.
+function begin(lang: string, offline: boolean): void {
+  if (!Recognizer) return;
+  Recognizer.start({
+    lang,
+    interimResults: true,
+    continuous: false,
+    maxAlternatives: 1,
+    requiresOnDeviceRecognition: offline && Recognizer.supportsOnDeviceRecognition(),
+    androidIntentOptions: { EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: END_SILENCE_MS },
+  });
+}
+
 export function useVoiceInput(onFinal: (text: string) => void) {
   const [state, setState] = useState<VoiceInputState>('idle');
   const [partial, setPartial] = useState('');
   const [error, setError] = useState<string | null>(null);
   const finalRef = useRef(onFinal);
-  finalRef.current = onFinal;
+  useEffect(() => {
+    finalRef.current = onFinal;
+  }, [onFinal]);
   const triedFallback = useRef(false);
   const lastOptions = useRef<{ offline: boolean }>({ offline: false });
 
@@ -98,21 +113,10 @@ export function useVoiceInput(onFinal: (text: string) => void) {
     const net = await NetInfo.fetch().catch(() => null);
     const offline = net?.isConnected === false || net?.isInternetReachable === false;
     triedFallback.current = false;
+    lastOptions.current = { offline };
     begin(LANG, offline);
   }, []);
 
-  function begin(lang: string, offline: boolean) {
-    if (!Recognizer) return;
-    lastOptions.current = { offline };
-    Recognizer.start({
-      lang,
-      interimResults: true,
-      continuous: false,
-      maxAlternatives: 1,
-      requiresOnDeviceRecognition: offline && Recognizer.supportsOnDeviceRecognition(),
-      androidIntentOptions: { EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: END_SILENCE_MS },
-    });
-  }
 
   // Ends now; what was heard so far comes as the final result.
   const stop = useCallback(() => Recognizer?.stop(), []);
