@@ -16,6 +16,7 @@ import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-
 import { estimateTokens, trimHistory } from './history';
 import { evaluatePolicy, TOOL_LEVEL } from './policy';
 import { maxTokensFor, SYSTEM_PROMPT, userMessage, type AssistantContext } from './prompt';
+import { INTERNAL_MARKER, MarkerFilter } from './stream-filter';
 import { summaryMessages } from './summary';
 import { parseToolCall, toolSchemas, type ToolCall, type ToolOutcome } from './tools';
 
@@ -118,6 +119,7 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
     if (signal.aborted) return finish(true);
     const last = round === MAX_MODEL_CALLS - 1;
     let result;
+    const filter = new MarkerFilter();
     try {
       result = await opts.llm.complete(
         {
@@ -127,8 +129,16 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
           maxTokens: maxTokensFor(opts.context),
           thinking: opts.thinking ?? false,
         },
-        { signal, onText: (delta) => emit({ type: 'text', delta }) },
+        {
+          signal,
+          onText: (delta) => {
+            const shown = filter.push(delta);
+            if (shown) emit({ type: 'text', delta: shown });
+          },
+        },
       );
+      const rest = filter.flush();
+      if (rest) emit({ type: 'text', delta: rest });
     } catch (err) {
       if (signal.aborted) return finish(true);
       throw err;
@@ -203,7 +213,8 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
 }
 
 // Calls that act or whose answer changes by the second are never reused.
-const NOT_REUSED: ReadonlySet<ToolCall['name']> = new Set(['sample_pids', 'set_destination', 'start_navigation', 'route_status', 'stop_navigation']);
+// read_fault_history changes with every read_dtcs/freeze frame (they record).
+const NOT_REUSED: ReadonlySet<ToolCall['name']> = new Set(['sample_pids', 'read_fault_history', 'set_destination', 'start_navigation', 'route_status', 'stop_navigation']);
 
 // Only one-shot reads are reused; a sample measures over time.
 function memoKey(call: ToolCall): string | null {
@@ -221,9 +232,8 @@ function forModel(outcome: ToolOutcome): string {
 }
 
 // When the model gives no text: the measurements, as they are.
-// Bracketed planning tags the model sometimes leaks into the visible text.
-// Seen: "[INTENT: tool_call]", "[INTENT]", "[tool: run_adapter_bench]".
-const INTERNAL_MARKER = /\[(?:INTENT|PLAN|THOUGHT|TOOL(?:_CALL)?)\b[^\]\n]*\]/gi;
+// Bracketed planning tags the model sometimes leaks into the visible text
+// (stream-filter.ts): "[INTENT: tool_call]", "[INTENT]", "[tool: run_adapter_bench]".
 
 function withoutMarkers(text: string): string {
   return text.replace(INTERNAL_MARKER, '').trim();
