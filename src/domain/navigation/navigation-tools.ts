@@ -6,7 +6,7 @@
 // instance (presentation/services/navigation-tools.ts) wires the real
 // geocoder, GPS and navigation controller.
 
-import type { LatLng } from '@/domain/geo/geo';
+import { distanceM, type LatLng } from '@/domain/geo/geo';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import { instructionEs } from '@/domain/navigation/guidance';
 import { findMapLink, isShortLink, parseMapLink } from '@/domain/navigation/map-links';
@@ -40,7 +40,10 @@ export type LinkResult =
   | { readonly ok: true; readonly name: string; readonly detail: string; readonly approximate: boolean; readonly distanceKm: number | null }
   | { readonly ok: false; readonly reason: string };
 
-type NavCall = Extract<ToolCall, { name: 'search_place' | 'set_destination' | 'start_navigation' | 'route_status' | 'stop_navigation' }>;
+type NavCall = Extract<
+  ToolCall,
+  { name: 'search_place' | 'set_destination' | 'start_navigation' | 'route_status' | 'stop_navigation' | 'where_am_i' }
+>;
 
 export const NAVIGATION_TOOL_NAMES: ReadonlySet<ToolCall['name']> = new Set([
   'search_place',
@@ -48,11 +51,18 @@ export const NAVIGATION_TOOL_NAMES: ReadonlySet<ToolCall['name']> = new Set([
   'start_navigation',
   'route_status',
   'stop_navigation',
+  'where_am_i',
 ]);
+
+const LOCALITY_MS = 10 * 60_000;
+const LOCALITY_KM = 3;
 
 export class NavigationTools {
   // The last search's results: set_destination picks one by number.
   private results: FoundPlace[] = [];
+  // The town, for the state block of each message: refreshed when the car
+  // moved more than LOCALITY_KM or it is older than LOCALITY_MS.
+  private town: { at: number; where: LatLng; name: string } | null = null;
 
   constructor(private readonly deps: NavigationToolDeps) {}
 
@@ -69,6 +79,8 @@ export class NavigationTools {
           return this.status();
         case 'stop_navigation':
           return this.stopNavigation();
+        case 'where_am_i':
+          return await this.whereAmI(signal);
         default:
           return fail('not_supported', 'No es una herramienta de navegación.');
       }
@@ -107,6 +119,37 @@ export class NavigationTools {
       if (signal?.aborted) return { ok: false, reason: 'cancelado' };
       return { ok: false, reason: `sin respuesta (${err instanceof Error ? err.message : String(err)})` };
     }
+  }
+
+  private async whereAmI(signal: AbortSignal): Promise<ToolOutcome> {
+    const here = await this.deps.position();
+    if (!here) return fail('not_supported', 'No hay posición del GPS todavía.');
+    const w = await this.deps.geocoder().reverse?.(here, signal);
+    if (!w) return fail('not_supported', 'No sé qué hay en este punto del mapa.');
+    const place = [w.street, w.city, w.state].filter(Boolean).join(', ');
+    return { ok: true, data: { street: w.street, city: w.city, state: w.state }, summary: place || 'Sin dirección' };
+  }
+
+  // "Posadas, Misiones", or null. Never throws; at most a short wait.
+  async locality(signal?: AbortSignal): Promise<string | null> {
+    const here = await this.deps.position().catch(() => null);
+    if (!here) return this.town?.name ?? null;
+    const now = (this.deps.now ?? Date.now)();
+    const t = this.town;
+    if (t && now - t.at < LOCALITY_MS && distanceM(t.where, here) < LOCALITY_KM * 1000) return t.name;
+    try {
+      const w = await this.deps.geocoder().reverse?.(here, signal);
+      const name = [w?.city, w?.state].filter(Boolean).join(', ');
+      if (name) this.town = { at: now, where: here, name };
+    } catch {
+      // Offline or slow: keep the last one.
+    }
+    return this.town?.name ?? null;
+  }
+
+  // The last known town, without waiting.
+  lastLocality(): string | null {
+    return this.town?.name ?? null;
   }
 
   private async search(call: Extract<NavCall, { name: 'search_place' }>, signal: AbortSignal): Promise<ToolOutcome> {

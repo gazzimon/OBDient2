@@ -28,6 +28,7 @@ export const TOOL_NAMES = [
   'start_navigation',
   'route_status',
   'stop_navigation',
+  'where_am_i',
   'web_search',
 ] as const;
 
@@ -56,6 +57,8 @@ export type ToolCall =
   | { readonly name: 'start_navigation' }
   | { readonly name: 'route_status' }
   | { readonly name: 'stop_navigation' }
+  // Street and town where the car is (GPS), for "¿dónde estoy?".
+  | { readonly name: 'where_am_i' }
   // The web, through obdient-tools (SearXNG): short results, never whole pages.
   | { readonly name: 'web_search'; readonly query: string };
 
@@ -217,6 +220,7 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     fn('start_navigation', 'Arranca la guía al destino ya mostrado, cuando el usuario confirmó. Abre la vista de manejo.', NO_ARGS),
     fn('route_status', 'Estado de la navegación: destino, distancia y tiempo que faltan, hora de llegada y próxima maniobra.', NO_ARGS),
     fn('stop_navigation', 'Termina la navegación en curso.', NO_ARGS),
+    fn('where_am_i', 'Dónde está ahora el auto según el GPS: calle, altura y ciudad.', NO_ARGS),
     fn(
       'web_search',
       'Busca en internet. Devuelve hasta 5 resultados con título, sitio y un fragmento corto, y las direcciones ' +
@@ -335,7 +339,8 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
     case 'read_fault_history':
     case 'start_navigation':
     case 'route_status':
-    case 'stop_navigation': {
+    case 'stop_navigation':
+    case 'where_am_i': {
       const extra = only();
       return extra ? bad(extra) : { ok: true, call: { name } };
     }

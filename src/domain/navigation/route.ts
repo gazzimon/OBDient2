@@ -76,4 +76,13 @@ export interface SearchOptions {
 
 export interface GeocodingPort {
   search(query: string, near: LatLng | null, signal?: AbortSignal, options?: SearchOptions): Promise<Place[]>;
+  // What is at a point: street and town ("¿dónde estoy?").
+  reverse?(point: LatLng, signal?: AbortSignal): Promise<Whereabouts | null>;
+}
+
+export interface Whereabouts {
+  // "Avenida Mitre 1850"; null when only the town is known.
+  readonly street: string | null;
+  readonly city: string | null;
+  readonly state: string | null;
 }

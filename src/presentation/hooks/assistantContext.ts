@@ -5,6 +5,7 @@
 // OBD > 5 km/h or GPS > 7 km/h). Hysteresis comes with driving mode (M5).
 
 import { container } from '@/data/container';
+import { navigationTools } from '@/presentation/services/navigation-tools';
 import type { AssistantContext } from '@/domain/assistant/prompt';
 import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
@@ -27,5 +28,6 @@ export function assistantContext(): AssistantContext {
     moving,
     speedKmh,
     navigating: useNavStore.getState().status === 'navigating',
+    place: navigationTools.lastLocality(),
   };
 }
