@@ -65,14 +65,19 @@ export default function DriveScreen() {
   const detectorModelId = useSettingsStore((s) => s.detectorModelId);
   const manifest = useMemo(() => detectorModel(detectorModelId), [detectorModelId]);
   // Frames for the teacher models ride on the same output, detector or not.
-  const captureFrames = useSettingsStore((s) => s.recordTrips && s.recordFrames) && route != null;
+  // Off for now: handing whole frames (~3.6 MB) from the camera thread to JS
+  // made the preview stutter and crashed natively in worklets (2026-10-19).
+  // Back when frames are encoded on the camera thread itself.
+  const captureFrames = false;
   const { frameOutput } = useDetector(manifest, detectorDelegate, detectorEnabled, captureFrames);
   const useOutput = detectorEnabled || captureFrames;
   const outputs = useMemo(() => (useOutput ? [frameOutput] : []), [useOutput, frameOutput]);
 
   const exit = () => {
     if (route) navigation.stop();
-    router.back();
+    // After a reload the drive screen may be the only one: back to the map.
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
   };
 
   return (
