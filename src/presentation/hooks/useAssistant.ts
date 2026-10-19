@@ -25,11 +25,8 @@ import {
   type Conversation,
 } from '@/domain/assistant/conversation';
 import { noteReply, notesBrief } from '@/domain/assistant/offline';
-import { asksForNotes, routeVoiceControl } from '@/domain/assistant/phrase-router';
-import { forSpeech } from '@/domain/voice/voice-arbiter';
+import { asksForNotes } from '@/domain/assistant/phrase-router';
 import { navigationTools } from '@/presentation/services/navigation-tools';
-import { voice } from '@/presentation/services/voice';
-import { useNavStore } from '@/store/navStore';
 import { useChatStore } from '@/store/chatStore';
 import { screenConfirmation } from '@/store/confirmStore';
 import { assistantContext } from './assistantContext';
@@ -116,13 +113,6 @@ async function run({ text, images, forModel, noteIds = undefined }: Message): Pr
   const canGoOffline = noteIds == null;
   let modelText = (forModel ?? text).trim();
   try {
-    // "Silencio" acts at once, without the model and without a connection.
-    const control = images.length === 0 && canGoOffline ? routeVoiceControl(text) : null;
-    if (control) {
-      voice.setMuted(control === 'mute');
-      conv = addOfflineAnswer(conv, newId('a'), control === 'mute' ? 'Listo, me quedo en silencio. Las alertas críticas suenan igual.' : 'Listo, vuelvo a hablar.', Date.now());
-      return;
-    }
     if (canGoOffline && (await knownOffline())) {
       conv = await offlineTurn(conv, text, images.length, startedAt);
       return;
@@ -182,17 +172,7 @@ async function run({ text, images, forModel, noteIds = undefined }: Message): Pr
     controller = null;
     useChatStore.getState().save(conv);
     useChatStore.getState().setRunning(null);
-    speakAnswer(conv, startedAt);
   }
-}
-
-// Driving or navigating, the answer is also spoken (M5), at the assistant's
-// priority: an alert or a maneuver goes first.
-function speakAnswer(conv: Conversation, since: number): void {
-  if (!assistantContext().moving && useNavStore.getState().status !== 'navigating') return;
-  const last = conv.items[conv.items.length - 1];
-  if (last?.kind !== 'assistant' || last.cancelled || last.at < since) return;
-  voice.say(forSpeech(last.text), 'assistant');
 }
 
 // What the model is told about a link the app read.

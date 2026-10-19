@@ -14,7 +14,7 @@ import { ClearDtcsModal } from '@/presentation/components/assistant/ClearDtcsMod
 import { AccountGate } from '@/presentation/components/feedback/AccountGate';
 import { DisclaimerGate } from '@/presentation/components/feedback/Disclaimer';
 import { restoreAccount } from '@/presentation/hooks/useAccount';
-import { APP_TOOL_NAMES, appTools } from '@/presentation/services/app-tools';
+import { NAVIGATION_TOOL_NAMES, navigationTools } from '@/presentation/services/navigation-tools';
 import { container } from '@/data/container';
 import { MagicRelayer } from '@/data/auth/magic-identity';
 
@@ -33,7 +33,7 @@ export default function RootLayout() {
     // Who was signed in, from SecureStore; no network.
     void restoreAccount();
     // "Llevame a…" from the assistant drives the navigation.
-    container.setNavigationTools(APP_TOOL_NAMES, appTools);
+    container.setNavigationTools(NAVIGATION_TOOL_NAMES, navigationTools);
   }, []);
 
   if (!fontsLoaded) {

@@ -15,6 +15,7 @@ interface PhotonFeature {
     city?: string;
     state?: string;
     country?: string;
+    extent?: [number, number, number, number];
   };
 }
 
@@ -47,5 +48,5 @@ export function toPlace(f: PhotonFeature): Place {
   const name = p.name ?? (street || p.city || 'Sin nombre');
   const detail = [p.name ? street : '', p.city, p.state, p.country].filter(Boolean).join(', ');
   const [lng, lat] = f.geometry.coordinates;
-  return { name, detail, location: { lat, lng } };
+  return { name, detail, location: { lat, lng }, ...(p.extent ? { bounds: p.extent } : {}) };
 }

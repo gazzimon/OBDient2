@@ -33,6 +33,8 @@ export const PLACE_CATEGORY_IDS = Object.keys(PLACE_CATEGORIES) as PlaceCategory
 export interface FoundPlace extends Place {
   // From the car; null when the position is unknown.
   readonly distanceKm: number | null;
+  // Where two streets cross ("Uruguay y Blas Parera").
+  readonly corner?: true;
 }
 
 const MAX_RESULTS = 5;
@@ -65,6 +67,9 @@ export async function findByText(
   near: LatLng | null,
   signal?: AbortSignal,
 ): Promise<FoundPlace[]> {
+  // "Uruguay y Blas Parera": a corner, found from the two streets.
+  const corner = parseCorner(query);
+  const corners = corner && near ? await findCorner(geocoder, corner[0], corner[1], near, signal).catch(() => []) : [];
   const places = dedupe(await geocoder.search(query, near, signal, { limit: 8 })).map((p) => withDistance(p, near));
   const isNear = (p: FoundPlace) => p.distanceKm == null || p.distanceKm <= NEAR_KM;
   const nearOnes = places.filter(isNear);
@@ -72,8 +77,63 @@ export async function findByText(
   // meant (Buenos Aires: CABA at 1.2 km before Adrogué at 24). A name keeps
   // the geocoder's relevance. Another town is reached by naming it.
   if (/\d/.test(query) && near) nearOnes.sort((a, b) => a.distanceKm! - b.distanceKm!);
-  return [...nearOnes, ...places.filter((p) => !isNear(p))].slice(0, MAX_RESULTS);
+  return [...corners, ...nearOnes, ...places.filter((p) => !isNear(p))].slice(0, MAX_RESULTS);
 }
+
+// "A y B", "A esquina B", "A e B": two street names, no house number.
+export function parseCorner(query: string): [string, string] | null {
+  const m = /^(.+?)\s+(?:y|e|esq\.?|esquina)\s+(.+)$/i.exec(query.trim());
+  if (!m || /\d/.test(query)) return null;
+  const a = m[1]!.trim();
+  const b = m[2]!.trim();
+  return a.length >= 3 && b.length >= 3 ? [a, b] : null;
+}
+
+// Where two streets cross, within ~15 km. Photon gives each street piece a
+// box; a piece of one touching a piece of the other is the corner (checked
+// in Buenos Aires and Posadas). Each name is also tried as "Avenida …", which
+// is how OSM names many of them.
+const CORNER_BOX_DEG = 0.14;
+const TOUCH_DEG = 0.0002; // ~20 m
+const SAME_CORNER_KM = 0.1;
+
+export async function findCorner(
+  geocoder: GeocodingPort,
+  a: string,
+  b: string,
+  near: LatLng,
+  signal?: AbortSignal,
+): Promise<FoundPlace[]> {
+  const d = CORNER_BOX_DEG;
+  const bbox = [near.lng - d, near.lat - d, near.lng + d, near.lat + d] as const;
+  const pieces = async (name: string) => {
+    const names = /^av(enida|\.)?\s/i.test(name) ? [name] : [name, `Avenida ${name}`];
+    const lists = await Promise.all(names.map((n) => geocoder.search(n, near, signal, { osmTag: 'highway', bbox, limit: 50 })));
+    const wanted = fold(name.replace(/^av(enida|\.)?\s+/i, ''));
+    return lists.flat().filter((p) => p.bounds && fold(p.name).includes(wanted));
+  };
+  const [pa, pb] = await Promise.all([pieces(a), pieces(b)]);
+  const found: FoundPlace[] = [];
+  for (const x of pa) {
+    for (const y of pb) {
+      const [xw, xn, xe, xs] = x.bounds!;
+      const [yw, yn, ye, ys] = y.bounds!;
+      const w = Math.max(xw, yw);
+      const e = Math.min(xe, ye);
+      const n = Math.min(xn, yn);
+      const s = Math.max(xs, ys);
+      if (w > e + TOUCH_DEG || s > n + TOUCH_DEG) continue;
+      const place: FoundPlace = {
+        ...withDistance({ name: `${x.name} y ${y.name}`, detail: x.detail, location: { lat: (n + s) / 2, lng: (w + e) / 2 } }, near),
+        corner: true,
+      };
+      if (!found.some((f) => distanceM(f.location, place.location) < SAME_CORNER_KM * 1000)) found.push(place);
+    }
+  }
+  return found.sort((p, q) => p.distanceKm! - q.distanceKm!).slice(0, 2);
+}
+
+const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 export function withDistance(p: Place, near: LatLng | null): FoundPlace {
   return { ...p, distanceKm: near ? Math.round(distanceM(near, p.location) / 100) / 10 : null };

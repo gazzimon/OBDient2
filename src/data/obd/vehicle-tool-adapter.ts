@@ -184,8 +184,6 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'route_status':
       case 'stop_navigation':
         return fail('not_supported', 'La navegación no la maneja el adaptador.'); // NavigationTools
-      case 'set_audio':
-        return fail('not_supported', 'La voz no la maneja el adaptador.'); // presentation/services/voice
     }
   }
 

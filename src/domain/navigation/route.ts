@@ -61,6 +61,9 @@ export interface Place {
   readonly name: string;
   readonly detail: string;
   readonly location: LatLng;
+  // A street's box [west, north, east, south], when the geocoder gives it:
+  // two crossing streets' boxes meet at the corner.
+  readonly bounds?: readonly [number, number, number, number];
 }
 
 export interface SearchOptions {

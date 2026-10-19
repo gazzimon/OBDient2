@@ -85,10 +85,13 @@ export function applyEvent(c: Conversation, e: AgentEvent, now: number, answerId
   switch (e.type) {
     case 'text': {
       const last = c.items[c.items.length - 1];
-      if (last?.kind === 'assistant' && last.id === answerId) {
+      if (last?.kind === 'assistant' && isAnswerPart(last.id, answerId)) {
         return { ...c, items: [...c.items.slice(0, -1), { ...last, text: last.text + e.delta }] };
       }
-      return { ...c, items: [...c.items, { kind: 'assistant', id: answerId, at: now, text: e.delta, cancelled: false }] };
+      // Text again after a tool row: a new bubble, with its own id (list keys).
+      const parts = c.items.filter((i) => isAnswerPart(i.id, answerId)).length;
+      const id = parts === 0 ? answerId : `${answerId}.${parts}`;
+      return { ...c, items: [...c.items, { kind: 'assistant', id, at: now, text: e.delta, cancelled: false }] };
     }
     case 'tool_start':
       return { ...c, items: [...c.items, { kind: 'tool', id: e.id, at: now, name: e.call.name, status: 'running', detail: null }] };
@@ -108,7 +111,7 @@ export function finishTurn(c: Conversation, r: TurnResult, answerId: string, sta
   const items = c.items.map((i) => (i.kind === 'tool' && i.status === 'running' ? { ...i, status: 'failed' as const, detail: 'Cancelado.' } : i));
   const last = items[items.length - 1];
   let finalItems = items;
-  if (last?.kind === 'assistant' && last.id === answerId) {
+  if (last?.kind === 'assistant' && isAnswerPart(last.id, answerId)) {
     finalItems = [...items.slice(0, -1), { ...last, text: r.text || last.text, cancelled: r.cancelled }];
   } else if (r.text || r.cancelled) {
     finalItems = [...items, { kind: 'assistant', id: answerId, at: now, text: r.text, cancelled: r.cancelled }];
@@ -161,6 +164,9 @@ export function upsertConversation(list: readonly Conversation[], c: Conversatio
   const rest = list.filter((x) => x.id !== c.id);
   return [c, ...rest].filter((x, i) => i === 0 || x.items.length > 0).slice(0, MAX_CONVERSATIONS);
 }
+
+// The answer's bubbles: answerId, then answerId.1, answerId.2… after tool rows.
+const isAnswerPart = (id: string, answerId: string) => id === answerId || id.startsWith(`${answerId}.`);
 
 function updateTool(c: Conversation, id: string, status: ToolStatus, detail: string | null): Conversation {
   return { ...c, items: c.items.map((i) => (i.kind === 'tool' && i.id === id ? { ...i, status, detail } : i)) };

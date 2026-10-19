@@ -216,3 +216,21 @@ describe('screen confirmation', () => {
     await expect(declined).resolves.toBe(false);
   });
 });
+
+describe('answer split by tool rows', () => {
+  it('each bubble gets its own id (no duplicate list keys)', () => {
+    let c = addUserMessage(newConversation('c', 0), 'u', 'llevame', 0, 1);
+    const call = { name: 'search_place' as const, query: 'x' };
+    c = applyEvent(c, { type: 'text', delta: 'Busco.' }, 2, 'a1');
+    c = applyEvent(c, { type: 'tool_start', id: 't1', call }, 3, 'a1');
+    c = applyEvent(c, { type: 'text', delta: 'Te muestro' }, 4, 'a1');
+    c = applyEvent(c, { type: 'text', delta: ' la más cercana.' }, 5, 'a1');
+    c = applyEvent(c, { type: 'tool_start', id: 't2', call }, 6, 'a1');
+    c = applyEvent(c, { type: 'text', delta: '¿Es ahí?' }, 7, 'a1');
+    const ids = c.items.map((i) => i.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(['u', 'a1', 't1', 'a1.1', 't2', 'a1.2']);
+    c = finishTurn(c, result({ text: '¿Es ahí? (final)' }), 'a1', 1, 8);
+    expect(c.items.at(-1)).toMatchObject({ id: 'a1.2', text: '¿Es ahí? (final)' });
+  });
+});

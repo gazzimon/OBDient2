@@ -88,7 +88,6 @@ describe('NavigationTools.loadLink', () => {
       start: async () => undefined,
       stop: () => undefined,
       openDrive: () => undefined,
-      openMap: () => undefined,
       state: () => state,
       followLink: follow,
     });
