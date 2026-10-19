@@ -1,7 +1,8 @@
 # OBDient2 — servicios en la Z440 (ADR-0006).
 #
 #   GPU0 · en línea   llm-chat: Qwen3.8-27B INT4, siempre cargado, una sola GPU.
-#   GPU1 · lotes      (próximo) worker del maestro, Qwen-Drive diferido, entrenamiento.
+#   GPU1 · voz + lotes  stt: Voxtral Mini 4B Realtime (perfil `stt`, ~16 GB); lo que
+#                     quede, lotes (worker del maestro, Qwen-Drive diferido).
 #   CPU               (próximo) OSRM + Photon, ingesta de fotos.
 #
 # Perfiles: `docker compose --profile online up -d` levanta lo de GPU0.
@@ -21,6 +22,15 @@ x-gpu0: &gpu0
         devices:
           - driver: nvidia
             device_ids: ["GPU-8e2f7908-bea0-9010-5bae-78a82a3ca503"]
+            capabilities: [gpu]
+
+x-gpu1: &gpu1
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: ["GPU-f7440548-72f4-8d46-7eed-6ceffb58fe4a"]
             capabilities: [gpu]
 
 services:
@@ -65,6 +75,47 @@ services:
       timeout: 10s
       retries: 3
       start_period: 600s
+    logging:
+      driver: json-file
+      options: {max-size: "50m", max-file: "3"}
+
+  # Voz a texto en vivo (M6): Voxtral Mini 4B Realtime, WebSocket /v1/realtime.
+  # Audio PCM16 a 16 kHz en base64; devuelve transcription.delta / .done. La app
+  # llega por obdient-tools en la K16 (/tools/v1/stt), nunca directo.
+  # Pesos: hf download mistralai/Voxtral-Mini-4B-Realtime-2602 --local-dir ~/models/voxtral-mini-4b-realtime-2602
+  # Retardo de transcripción: transcription_delay_ms en tekken.json (480 ms por defecto).
+  stt:
+    profiles: [stt]
+    <<: *gpu1
+    # La misma imagen que llm-chat (vLLM 0.31.0; la receta pide >= 0.20).
+    image: vllm/vllm-openai@sha256:c1c9f6fd5c109ba7f0546a59f5b2f15fb87f64c77782e90a27b648b42a8e67c3
+    container_name: stt
+    network_mode: host
+    ipc: host
+    restart: unless-stopped # si la guardia térmica lo para, NO se reinicia solo
+    environment:
+      - VLLM_API_KEY=${VLLM_API_KEY}
+      - VLLM_DISABLE_COMPILE_CACHE=1
+    volumes:
+      - /home/fiui-pss/models:/models:ro
+    command:
+      - /models/voxtral-mini-4b-realtime-2602
+      - --served-model-name=voxtral-realtime
+      - --host=192.168.100.210
+      - --port=8002
+      - --tokenizer-mode=mistral
+      - --enforce-eager
+      # Frases cortas: 8k tokens de audio (80 ms cada uno) son ~10 min por sesión.
+      - --max-model-len=8192
+      # ~16 GB de 24: lo demás queda para lotes chicos en la misma GPU.
+      - --gpu-memory-utilization=0.70
+      - --max-num-seqs=4
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://192.168.100.210:8002/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
     logging:
       driver: json-file
       options: {max-size: "50m", max-file: "3"}

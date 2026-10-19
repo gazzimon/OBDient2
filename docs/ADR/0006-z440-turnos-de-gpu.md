@@ -43,6 +43,13 @@ Restricciones medidas:
 7. **Un solo punto de entrada** (gateway) cuando haya más de un servicio: la app habla con una
    dirección y no sabe qué contenedor responde.
 
+8. **Actualización 2026-10-19: la voz vive en la GPU1.** `stt` (Voxtral Mini 4B Realtime, vLLM
+   0.31.0, la misma imagen que `llm-chat`, perfil `stt`, puerto 8002, guardia `stt-guard`) ocupa ~16 GB
+   (70 %) de la GPU1 en forma permanente; los lotes usan lo que queda o paran `stt` mientras corren.
+   La GPU0 está llena con el chat. La app nunca le habla directo: pasa por `obdient-tools` en la K16.
+   Incidente del mismo día: la GPU0 se cayó del bus (`NV_ERR_GPU_IS_LOST`) al desconectar la red por
+   obras; volvió con un apagado completo. Si se repite: conectores PCIe, fuente, UPS.
+
 ## Consecuencias
 
 - `server/docker-compose.yml` es la fuente de verdad del stack, con perfiles: `online` hoy, `batch`

@@ -1,0 +1,11 @@
+# Guardia térmica de la voz (stt) (copia del patrón de ~/.config/systemd/user/vllm-guard.service).
+# Instalar: cp server/stt-guard.service ~/.config/systemd/user/ &&
+#           systemctl --user daemon-reload && systemctl --user enable --now stt-guard
+[Unit]
+Description=Guardia térmica de stt (OBDient2)
+[Service]
+ExecStart=%h/serve/guard.sh stt
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=default.target

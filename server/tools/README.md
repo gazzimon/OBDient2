@@ -29,3 +29,18 @@ journalctl --user -u obdient-tools-daily -n 20
 
 Datos en `~/.local/share/obdient/tools/{fuel,dollar,cars}.json`. Si una fuente falla, queda el
 archivo anterior. La mensual necesita `pdftotext` (poppler-utils).
+
+## Voz a texto (M6): `/tools/v1/stt` (WebSocket)
+
+El teléfono manda PCM16 a 16 kHz en base64 y recibe texto parcial y final. `obdient-tools` hace el
+saludo con vLLM, agrega su clave y solo deja pasar audio y el cierre. Límites: la clave de la cuenta,
+2 sesiones a la vez por cuenta, 90 s por sesión, 64 KB por mensaje.
+
+```bash
+# K16: dónde está Voxtral y su clave (la de vLLM, VLLM_API_KEY de ~/obdient-stack/.env en la Z440)
+cat >> ~/.config/obdient/tools.env <<'X'
+STT_URL=ws://192.168.100.210:8002/v1/realtime
+STT_API_KEY=<pegar la clave acá>
+X
+chmod 600 ~/.config/obdient/tools.env && systemctl --user restart obdient-tools
+```

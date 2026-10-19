@@ -1,30 +1,43 @@
-// Speaking to the assistant (M6): the phone's own speech recognizer (Android)
-// turns the voice into text, which goes through the same send() as typing
-// (ADR-0007 §3: the model always gets text).
+// Speaking to the assistant (M6). The text goes through the same send() as
+// typing (ADR-0007 §3: the model always gets text). Two engines, never both
+// (the microphone is one):
 //
-// Push to talk: a tap starts, silence ends it (or a second tap). The words
-// show in the input box as they are heard; the final text is handed to
-// onFinal. With no connection it asks for on-device recognition, which needs
-// the Spanish offline pack installed on the phone.
+// - Online: the microphone streams PCM to Voxtral Realtime on the Z440
+//   (expo-audio → /tools/v1/stt), with partial text as it is heard. The phrase
+//   ends after a second of silence, or with a second tap.
+// - Offline, or if the speech server does not answer at the start: Android's
+//   own recognizer (expo-speech-recognition), on the phone if the Spanish
+//   offline pack is installed.
 //
-// The native module is optional: a build without it (older Dev APKs) keeps
-// the chat working, without the microphone. Only types come from the package,
-// so nothing of it loads unless the module is there.
+// Both native modules are optional: an older Dev APK keeps the chat, with
+// whatever engine it has (or no microphone). Only types come from the
+// packages unless the module is there.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { requireOptionalNativeModule } from 'expo';
 import NetInfo from '@react-native-community/netinfo';
 import type { ExpoSpeechRecognitionModuleType } from 'expo-speech-recognition/build/ExpoSpeechRecognitionModule.types';
+import type { AudioStreamBuffer, AudioStreamOptions, AudioStreamResult } from 'expo-audio';
+import { container } from '@/data/container';
+import { nativeSocket, RealtimeSttSession } from '@/data/stt/realtime-stt';
+import { bytesToBase64, pcm16Bytes, resample, rms, SilenceDetector, STT_RATE, toMono } from '@/domain/voice/pcm';
 
 const Recognizer = requireOptionalNativeModule<ExpoSpeechRecognitionModuleType>('ExpoSpeechRecognition');
-export const voiceInputAvailable = Recognizer != null;
+const hasAudioStream = requireOptionalNativeModule('ExpoAudio') != null;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ExpoAudio = hasAudioStream ? (require('expo-audio') as typeof import('expo-audio')) : null;
+const noStream = (_o?: AudioStreamOptions): AudioStreamResult => ({ stream: null as never, isStreaming: false });
+const useStream: (o?: AudioStreamOptions) => AudioStreamResult = ExpoAudio ? ExpoAudio.useAudioStream : noStream;
 
-export type VoiceInputState = 'idle' | 'listening';
+export const voiceInputAvailable = Recognizer != null || hasAudioStream;
+
+export type VoiceInputState = 'idle' | 'listening' | 'finishing';
 
 const LANG = 'es-AR';
 const FALLBACK_LANG = 'es-ES';
-// Silence that ends the phrase.
 const END_SILENCE_MS = 1500;
+// The server must say "ready" this soon, or the phone's recognizer takes over.
+const READY_TIMEOUT_MS = 2_500;
 
 const ERROR_TEXT: Record<string, string> = {
   'not-allowed': 'Sin permiso para el micrófono. Habilitalo en los ajustes de Android.',
@@ -35,8 +48,8 @@ const ERROR_TEXT: Record<string, string> = {
   'audio-capture': 'No se pudo usar el micrófono.',
 };
 
-// Starts listening; `offline` asks for recognition on the phone.
-function begin(lang: string, offline: boolean): void {
+// Android's recognizer; `offline` asks for recognition on the phone.
+function beginRecognizer(lang: string, offline: boolean): void {
   if (!Recognizer) return;
   Recognizer.start({
     lang,
@@ -48,6 +61,11 @@ function begin(lang: string, offline: boolean): void {
   });
 }
 
+async function isOffline(): Promise<boolean> {
+  const net = await NetInfo.fetch().catch(() => null);
+  return net?.isConnected === false || net?.isInternetReachable === false;
+}
+
 export function useVoiceInput(onFinal: (text: string) => void) {
   const [state, setState] = useState<VoiceInputState>('idle');
   const [partial, setPartial] = useState('');
@@ -56,8 +74,118 @@ export function useVoiceInput(onFinal: (text: string) => void) {
   useEffect(() => {
     finalRef.current = onFinal;
   }, [onFinal]);
+
+  // ── Server engine (Voxtral) ────────────────────────────────────────────────
+  const session = useRef<RealtimeSttSession | null>(null);
+  const detector = useRef<SilenceDetector | null>(null);
+  const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finishing = useRef(false);
+
+  const onBuffer = useCallback((buf: AudioStreamBuffer) => {
+    const s = session.current;
+    const d = detector.current;
+    if (!s || !d || finishing.current) return;
+    const mono = toMono(new Int16Array(buf.data), buf.channels);
+    const samples = resample(mono, buf.sampleRate, STT_RATE);
+    s.sendAudio(bytesToBase64(pcm16Bytes(samples)));
+    const phase = d.push(rms(samples), (samples.length / STT_RATE) * 1000);
+    if (phase === 'ended') void finishServer();
+    else if (phase === 'no_speech') cancelServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const { stream } = useStream({ sampleRate: STT_RATE, channels: 1, encoding: 'int16', onBuffer });
+  const streamRef = useRef(stream);
+  useEffect(() => {
+    streamRef.current = stream;
+  }, [stream]);
+
+  function stopMic(): void {
+    if (readyTimer.current) clearTimeout(readyTimer.current);
+    readyTimer.current = null;
+    try {
+      streamRef.current?.stop();
+    } catch {
+      // not started
+    }
+  }
+
+  function cancelServer(): void {
+    stopMic();
+    session.current?.cancel();
+    session.current = null;
+    detector.current = null;
+    setPartial('');
+    setState('idle');
+  }
+
+  async function finishServer(): Promise<void> {
+    const s = session.current;
+    if (!s || finishing.current) return;
+    finishing.current = true;
+    stopMic();
+    setState('finishing');
+    try {
+      const text = await s.finish();
+      if (text) finalRef.current(text);
+    } catch {
+      setError('No se pudo reconocer la voz. Probá de nuevo o escribí.');
+    } finally {
+      finishing.current = false;
+      session.current = null;
+      detector.current = null;
+      setPartial('');
+      setState('idle');
+    }
+  }
+
+  // The server failed before hearing anything: the phone's recognizer listens instead.
+  function fallBackToRecognizer(): void {
+    cancelServer();
+    if (!Recognizer) {
+      setError('El reconocimiento de voz no está disponible ahora. Escribí tu pregunta.');
+      return;
+    }
+    triedFallback.current = false;
+    lastOffline.current = false;
+    beginRecognizer(LANG, false);
+  }
+
+  async function startServer(key: string): Promise<boolean> {
+    if (!ExpoAudio || !stream) return false;
+    const perm = await ExpoAudio.requestRecordingPermissionsAsync();
+    if (!perm.granted) {
+      setError(ERROR_TEXT['not-allowed']!);
+      return true;
+    }
+    const url = `${container.toolsUrl.replace(/^http/, 'ws').replace(/\/$/, '')}/v1/stt`;
+    let heard = false;
+    session.current = new RealtimeSttSession(
+      url,
+      key,
+      (e) => {
+        if (e.type === 'ready' && readyTimer.current) {
+          clearTimeout(readyTimer.current);
+          readyTimer.current = null;
+        } else if (e.type === 'partial') {
+          heard = true;
+          setPartial(e.text);
+        } else if (e.type === 'error' && !heard && !finishing.current) fallBackToRecognizer();
+      },
+      nativeSocket,
+    );
+    detector.current = new SilenceDetector();
+    readyTimer.current = setTimeout(() => {
+      if (!heard) fallBackToRecognizer();
+    }, READY_TIMEOUT_MS);
+    setError(null);
+    setState('listening');
+    await stream.start();
+    return true;
+  }
+
+  // ── Phone engine (Android recognizer) ──────────────────────────────────────
   const triedFallback = useRef(false);
-  const lastOptions = useRef<{ offline: boolean }>({ offline: false });
+  const lastOffline = useRef(false);
 
   useEffect(() => {
     if (!Recognizer) return;
@@ -86,7 +214,7 @@ export function useVoiceInput(onFinal: (text: string) => void) {
         if (e.error === 'no-speech' || e.error === 'aborted' || e.error === 'speech-timeout') return;
         if (e.error === 'language-not-supported' && !triedFallback.current) {
           triedFallback.current = true;
-          begin(FALLBACK_LANG, lastOptions.current.offline);
+          beginRecognizer(FALLBACK_LANG, lastOffline.current);
           return;
         }
         setError(ERROR_TEXT[e.error] ?? `No se pudo reconocer la voz (${e.error}).`);
@@ -95,11 +223,7 @@ export function useVoiceInput(onFinal: (text: string) => void) {
     return () => subs.forEach((sub) => sub.remove());
   }, []);
 
-  // Never leave the microphone open when the screen goes away.
-  useEffect(() => () => Recognizer?.abort(), []);
-
-  const start = useCallback(async () => {
-    setError(null);
+  async function startRecognizer(offline: boolean): Promise<void> {
     if (!Recognizer) return;
     const perm = await Recognizer.requestPermissionsAsync();
     if (!perm.granted) {
@@ -110,16 +234,41 @@ export function useVoiceInput(onFinal: (text: string) => void) {
       setError(ERROR_TEXT['service-not-allowed']!);
       return;
     }
-    const net = await NetInfo.fetch().catch(() => null);
-    const offline = net?.isConnected === false || net?.isInternetReachable === false;
     triedFallback.current = false;
-    lastOptions.current = { offline };
-    begin(LANG, offline);
+    lastOffline.current = offline;
+    beginRecognizer(LANG, offline);
+  }
+
+  // Never leave the microphone open when the screen goes away.
+  useEffect(
+    () => () => {
+      Recognizer?.abort();
+      session.current?.cancel();
+      try {
+        streamRef.current?.stop();
+      } catch {
+        // not started
+      }
+    },
+    [],
+  );
+
+  // ── Public ─────────────────────────────────────────────────────────────────
+  const start = useCallback(async () => {
+    setError(null);
+    const offline = await isOffline();
+    const key = container.account.llmCredentials()?.apiKey;
+    if (!offline && key && (await startServer(key))) return;
+    await startRecognizer(offline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stream]);
+
+  // Ends now; what was heard so far becomes the final text.
+  const stop = useCallback(() => {
+    if (session.current) void finishServer();
+    else Recognizer?.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-
-  // Ends now; what was heard so far comes as the final result.
-  const stop = useCallback(() => Recognizer?.stop(), []);
   const clearError = useCallback(() => setError(null), []);
 
   return { state, partial, error, start, stop, clearError };

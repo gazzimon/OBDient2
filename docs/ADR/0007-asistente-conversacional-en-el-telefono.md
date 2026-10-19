@@ -29,7 +29,15 @@ Hechos verificados (2026-10-18):
    botón de micrófono en el chat, el texto entra por el mismo `send()` que lo escrito; sin red pide
    reconocimiento en el teléfono. Whisper en la Z440 queda como mejora si el reconocedor no alcanza
    con el ruido del auto: el mismo módulo puede guardar el audio para enviarlo, sin otro build. Un solo
-   reconocedor a la vez (el micrófono es exclusivo). Salida: una sola voz con prioridades (alertas >
+   reconocedor a la vez (el micrófono es exclusivo).
+   *Actualización 2026-10-19 (decisión del usuario):* con conexión, **Voxtral Mini 4B Realtime** en la
+   GPU1 de la Z440: el teléfono manda PCM16 a 16 kHz en vivo (`expo-audio`, `useAudioStream`) por
+   WebSocket a `obdient-tools` (`/tools/v1/stt`, con la clave de la cuenta), que lo pasa a vLLM
+   `/v1/realtime`; vuelve texto parcial mientras se habla y el final al terminar (silencio de 1,2 s o
+   un toque). Sin conexión, o si el servidor no responde al empezar, el reconocedor de Android. El
+   modelo del chat sigue recibiendo solo texto. Descartados: Voxtral Small 24B (no entra en 24 GB),
+   Voxtral Mini 3B y Whisper/Qwen3-ASR (sin texto en vivo; quedan como alternativa si Voxtral no
+   alcanza con el ruido del auto). Salida: una sola voz con prioridades (alertas >
    maniobras > asistente, `domain/voice/voice-arbiter.ts`); el asistente todavía no habla (decisión
    del usuario, se retoma con el modo manejo).
 4. **Las imágenes son entrada válida.** Foto de un testigo del tablero, de una etiqueta o de un

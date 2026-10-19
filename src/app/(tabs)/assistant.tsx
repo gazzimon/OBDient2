@@ -98,7 +98,7 @@ export default function AssistantScreen() {
 
   // Voice (M6): what is heard shows in the box; the final text is sent.
   const mic = useVoiceInput((heard) => submit(heard, []));
-  const listening = mic.state === 'listening';
+  const listening = mic.state !== 'idle';
 
   const attach = async (source: PhotoSource) => {
     try {

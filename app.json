@@ -112,6 +112,15 @@
             "com.google.android.tts"
           ]
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "OBDient usa el micrófono para que le hables al asistente.",
+          "recordAudioAndroid": true,
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
+        }
       ]
     ],
     "experiments": {
