@@ -278,6 +278,15 @@ bajo, VIN "mal leído", "no tengo historial").
 
 ### Otros pendientes
 
+- **Mapa (decidido 2026-10-19, junto a M8):** hoy las teselas vienen de OpenFreeMap (público); si el
+  teléfono se queda sin conexión o sin DNS, el mapa queda con partes en blanco (MapLibre: "Unable to
+  resolve host tiles.openfreemap.org").
+  1. **Teselas propias en la Z440** desde el mismo extracto de OSM de Argentina que usan OSRM y Photon
+     (por ejemplo, un servidor de teselas vectoriales detrás de Caddy en `/tiles`), sin depender de un
+     tercero.
+  2. **Teselas sin conexión** de la zona habitual (región descargada en el teléfono) y un aviso "Mapa
+     sin conexión" en lugar de partes en blanco.
+
 - **Probar en el teléfono** (build Dev + Metro): detector YOLO y captura de cuadros, corregidos para
   builds release.
 - **Banco de maestros con viajes propios**: un viaje con cuadros, `make_samples.py` y los tres modelos.
