@@ -21,6 +21,7 @@ import {
   applySummary,
   clearNotes,
   failTurn,
+  setNextQuestions,
   finishTurn,
   type Conversation,
 } from '@/domain/assistant/conversation';
@@ -73,6 +74,20 @@ function summarizeLater(id: string, previous: string | null, dropped: readonly A
     .catch(() => undefined)
     .finally(() => summaries.delete(id));
   summaries.set(id, job);
+}
+
+// The buttons under the answer: the model proposes them in the background.
+function proposeNext(conv: Conversation, asked: string): void {
+  const afterId = conv.items[conv.items.length - 1]?.id;
+  if (!afterId) return;
+  void container.assistant
+    .nextQuestions(conv.api, asked)
+    .then((questions) => {
+      const store = useChatStore.getState();
+      const c = store.conversations.find((x) => x.id === conv.id);
+      if (c) store.save(setNextQuestions(c, afterId, questions));
+    })
+    .catch(() => undefined);
 }
 
 async function offlineTurn(conv: Conversation, text: string, photos: number, at: number): Promise<Conversation> {
@@ -160,6 +175,7 @@ async function run({ text, images, forModel, noteIds = undefined }: Message): Pr
       conv = finishTurn(conv, r.result, answerId, startedAt, Date.now());
       if (noteIds) conv = clearNotes(conv, noteIds);
       summarizeLater(conv.id, conv.summary ?? null, r.result.dropped);
+      proposeNext(conv, text);
     } else if (canGoOffline && UNREACHABLE.has(r.error) && !shown) {
       conv = await offlineTurn(conv, text, images.length, startedAt);
     } else {

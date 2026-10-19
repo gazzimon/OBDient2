@@ -58,18 +58,27 @@ export default function AssistantScreen() {
 
   // Next questions, drawn again after each answer (and when the context changes).
   const lastId = last?.id;
-  const suggestions = useMemo(() => {
+  // Next questions: online, the model's for this answer (they arrive a moment
+  // after it); offline, fixed phrases the app answers by itself. The empty
+  // chat shows a few examples.
+  const next = conversation?.next;
+  const lastTools = useMemo(() => {
     const lastUser = items.reduce((at, it, i) => (it.kind === 'user' ? i : at), -1);
-    const lastTools = items.slice(lastUser + 1).flatMap((it) => (it.kind === 'tool' ? [{ name: it.name, detail: it.detail }] : []));
-    const lastQuestion = lastUser >= 0 ? (items[lastUser] as { text: string }).text : null;
-    return suggest({ lastTools, connected, online, navigating, lastQuestion });
+    return items.slice(lastUser + 1).flatMap((it) => (it.kind === 'tool' ? [{ name: it.name, detail: it.detail }] : []));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastId, connected, online, navigating]);
+  }, [lastId]);
+  const suggestions = useMemo(() => {
+    if (!online || items.length === 0) {
+      const lastUser = items.reduce((at, it, i) => (it.kind === 'user' ? i : at), -1);
+      const lastQuestion = lastUser >= 0 ? (items[lastUser] as { text: string }).text : null;
+      return suggest({ lastTools, connected, online, navigating, lastQuestion });
+    }
+    return next && next.afterId === lastId ? [...next.questions] : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastId, next, connected, online, navigating, lastTools]);
+  // The fixed button: the map right after a destination was shown, otherwise "Ir a…".
+  const destinationShown = lastTools.some((t) => t.name === 'set_destination');
   const showSuggestions = status === 'signed-in' && !running && last?.kind !== 'user' && text === '' && photos.length === 0;
-
-  // Voice (M6): what is heard shows in the box; the final text is sent.
-  const mic = useVoiceInput((heard) => submit(heard, []));
-  const listening = mic.state === 'listening';
 
   // A suggestion is sent as a message, except "Ver en el mapa".
   const pick = (t: string) => (t === SEE_ON_MAP ? router.navigate('/') : submit(t));
@@ -86,6 +95,10 @@ export default function AssistantScreen() {
     setPhotos([]);
     void send(value.trim() || '¿Qué ves en la foto?', attached.map((p) => p.dataUrl));
   };
+
+  // Voice (M6): what is heard shows in the box; the final text is sent.
+  const mic = useVoiceInput((heard) => submit(heard, []));
+  const listening = mic.state === 'listening';
 
   const attach = async (source: PhotoSource) => {
     try {
@@ -144,7 +157,7 @@ export default function AssistantScreen() {
                 ? 'Lee códigos, freeze frame, monitores y valores en vivo. Para borrar códigos te pide confirmación.'
                 : 'Conectá el adaptador en la pestaña Vehículo para que pueda leer el auto.'}
             </Text>
-            <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} />
+            <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} mapFirst={destinationShown} />
           </View>
         ) : (
           <FlatList
@@ -154,7 +167,7 @@ export default function AssistantScreen() {
             data={items as ChatItem[]}
             // With the position: conversations saved before 2026-10-19 repeat ids.
             keyExtractor={(i, index) => `${index}:${i.id}`}
-            ListFooterComponent={showSuggestions ? <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} /> : null}
+            ListFooterComponent={showSuggestions ? <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} mapFirst={destinationShown} /> : null}
             renderItem={({ item }) => {
               switch (item.kind) {
                 case 'user':
@@ -279,7 +292,17 @@ export default function AssistantScreen() {
 }
 
 // Up to three suggested questions and the fixed "Ir a…" button.
-function Suggestions({ items, onPick, onGoTo }: { items: readonly string[]; onPick: (t: string) => void; onGoTo: () => void }) {
+function Suggestions({
+  items,
+  onPick,
+  onGoTo,
+  mapFirst,
+}: {
+  items: readonly string[];
+  onPick: (t: string) => void;
+  onGoTo: () => void;
+  mapFirst: boolean;
+}) {
   return (
     <View>
       {items.map((e) => (
@@ -292,11 +315,11 @@ function Suggestions({ items, onPick, onGoTo }: { items: readonly string[]; onPi
         </Pressable>
       ))}
       <Pressable
-        onPress={onGoTo}
+        onPress={mapFirst ? () => onPick(SEE_ON_MAP) : onGoTo}
         className="flex-row items-center gap-2 bg-brand-surface border border-brand-border rounded-2xl px-4 py-3 mb-2 active:opacity-60"
       >
         <MaterialCommunityIcons name="map-marker-outline" size={16} color={COLORS.mint} />
-        <Text className="text-brand-mint font-mono text-xs">Ir a una dirección…</Text>
+        <Text className="text-brand-mint font-mono text-xs">{mapFirst ? SEE_ON_MAP : 'Ir a una dirección…'}</Text>
       </Pressable>
     </View>
   );

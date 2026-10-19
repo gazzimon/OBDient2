@@ -58,6 +58,8 @@ export interface Conversation {
   readonly summary?: string | null;
   // Taken without the assistant, waiting for the driver's yes to pass them on.
   readonly notes?: readonly OfflineNote[];
+  // Next questions the model proposed after the item `afterId` (the buttons).
+  readonly next?: { readonly afterId: string; readonly questions: readonly string[] };
 }
 
 export const MAX_CONVERSATIONS = 20;
@@ -157,6 +159,12 @@ export function applySummary(c: Conversation, dropped: readonly ApiMessage[], su
   if (dropped.length === 0 || dropped.length > c.api.length) return c;
   if (!dropped.every((m, i) => c.api[i] === m)) return c;
   return { ...c, api: c.api.slice(dropped.length), summary };
+}
+
+// The model's next questions, kept only if nothing was said since.
+export function setNextQuestions(c: Conversation, afterId: string, questions: readonly string[]): Conversation {
+  if (c.items[c.items.length - 1]?.id !== afterId || questions.length === 0) return c;
+  return { ...c, next: { afterId, questions } };
 }
 
 // Newest first, at most MAX_CONVERSATIONS; empty ones are not kept.

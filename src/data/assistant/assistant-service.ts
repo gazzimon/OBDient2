@@ -8,6 +8,7 @@
 
 import { runTurn, ToolMemo, type AgentEvent, type TurnResult } from '@/domain/assistant/agent-loop';
 import type { AssistantContext } from '@/domain/assistant/prompt';
+import { nextQuestionsRequest, parseNextQuestions } from '@/domain/assistant/next-questions';
 import { summaryRequest } from '@/domain/assistant/summary';
 import type { ApiMessage, LlmPort } from '@/domain/ports/llm.port';
 import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
@@ -94,6 +95,17 @@ export class AssistantService {
       return { ok: true, result: await run(this.deps.makeLlm(renewed)) };
     } catch (err) {
       return { ok: false, ...classify(err) };
+    }
+  }
+
+  async nextQuestions(history: readonly ApiMessage[], asked: string | null): Promise<string[]> {
+    const credentials = this.deps.account.llmCredentials();
+    if (!credentials || history.length === 0) return [];
+    try {
+      const r = await this.deps.makeLlm(credentials).complete(nextQuestionsRequest(history));
+      return parseNextQuestions(r.content, asked);
+    } catch {
+      return [];
     }
   }
 

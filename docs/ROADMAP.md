@@ -228,9 +228,11 @@ bajo, VIN "mal leído", "no tengo historial").
     solo nombre y dirección (las coordenadas exigen su API paga): se busca la dirección y se marca
     aproximada. Los enlaces con `!3d…!4d…`, `q=lat,lng` o `geo:` son exactos.
   - *Notas*: los saludos no se anotan; "leé las notas" las envía como el botón.
-  - *Sugerencias* (`suggestions.ts`): 3 preguntas por reglas según lo último que pasó, al azar para que
-    cambien, al menos una solo para el modelo; sin conexión, solo frases del router. Más un botón fijo
-    "Ir a una dirección…". Con el auto en movimiento: solo el botón de voz (con M6).
+  - *Sugerencias*: con conexión las **genera el modelo** después de cada respuesta
+    (`next-questions.ts`: llamada aparte sin herramientas, ~1 s, en segundo plano; 3 preguntas sobre esa
+    conversación, la primera responde si el asistente preguntó algo). Sin conexión, frases fijas que el
+    router contesta (`suggestions.ts`). Más un botón fijo: "Ir a una dirección…", o "Ver en el mapa"
+    justo después de mostrar un destino. Con el auto en movimiento: solo el botón de voz (más adelante).
   - *Prompt*: fotos de cualquier cosa y otros temas, con naturalidad. (El tope de 60 palabras se
     probó y se sacó: las respuestas quedaban escuetas.)
   - *Esquinas* (`findCorner` en `places.ts`): "Calle y Calle" se resuelve con nuestro Photon, donde se
