@@ -54,6 +54,10 @@ function useModelFile(source: DetectorManifest['source']): ModelSource | null {
   return resolved?.from === source ? resolved.source : null;
 }
 
+function logFrame(n: number, step: string): void {
+  console.log(`[detector] frame ${n} ended at ${step}`);
+}
+
 // Placeholder while the model file is being resolved: an empty URL fails fast
 // and is replaced as soon as the real one arrives. In development the bundled
 // require() loads (Metro serves it over http), so no red error on screen.
@@ -88,11 +92,13 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
     [manifest],
   );
   const onResult = perception.onFrame;
+  const frameCount = useMemo(() => createSynchronizable(0), []);
 
   // `trace.step` names the last step reached, for the error report.
   const processFrame = useCallback(
     (frame: Frame, trace: { step: string }) => {
       'worklet';
+      trace.step = model == null ? 'no-model' : enabled ? 'start' : 'disabled';
       if ((model == null || !enabled) && !capture) {
         frame.dispose();
         return;
@@ -149,7 +155,25 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
       const outputs = model.runSync([input.buffer as ArrayBuffer]);
       const t2 = performance.now();
       trace.step = 'decode';
-      const detections = decodeYolo(outputToFloat(outputs[0]!, manifest.output), decode, lb);
+      const scores = outputToFloat(outputs[0]!, manifest.output);
+      const detections = decodeYolo(scores, decode, lb);
+      // Every 30th frame, what the model got and gave (diagnostics in the log).
+      let probe: string | undefined;
+      if (i % 30 === 0) {
+        const n = Math.floor(scores.length / (4 + manifest.numClasses));
+        let top = 0;
+        let topCls = -1;
+        for (let j = 4 * n; j < scores.length; j++) {
+          if (scores[j]! > top) {
+            top = scores[j]!;
+            topCls = Math.floor(j / n) - 4;
+          }
+        }
+        let sum = 0;
+        const sample = Math.min(input.length, 30000);
+        for (let j = 0; j < sample; j++) sum += input[j]!;
+        probe = `src ${src.width}x${src.height} bpp ${src.bytesPerPixel} rOff ${src.rOffset} or ${String(src.orientation)} · in mean ${(sum / sample).toFixed(3)} · out ${scores.length} top ${top.toFixed(3)} cls ${topCls} · dets ${detections.length}`;
+      }
 
       const result: FrameResult = {
         detections,
@@ -158,9 +182,11 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
         frameMs: performance.now() - t0,
         // By value: on the camera thread FULL_FRAME is a copy, identity never matches.
         crop: region.x1 > 0,
+        probe,
       };
       trace.step = 'send';
       scheduleOnRN(onResult, result);
+      trace.step = 'done';
     },
     [model, enabled, capture, manifest, decode, frameIndex, captureState, onCapture, onResult],
   );
@@ -169,8 +195,12 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
     (frame: Frame) => {
       'worklet';
       const trace = { step: 'start' };
+      const n = frameCount.getDirty();
+      frameCount.setBlocking(n + 1);
       try {
         processFrame(frame, trace);
+        // Diagnostics: where every 60th frame ended (only 'done' ran the model).
+        if (__DEV__ && n % 60 === 0) scheduleOnRN(logFrame, n, trace.step);
       } catch (e) {
         // With the step: the camera thread's own report prints only "{}".
         const err = e as Error;
@@ -182,7 +212,7 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
         }
       }
     },
-    [processFrame],
+    [processFrame, frameCount],
   );
 
   const frameOutput = useFrameOutput({

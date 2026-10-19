@@ -22,6 +22,8 @@ export interface FrameResult {
   readonly inferenceMs: number;
   readonly frameMs: number;
   readonly crop: boolean;
+  // Diagnostics, every 30th frame.
+  readonly probe?: string | undefined;
 }
 
 const STATS_WINDOW = 30;
@@ -57,6 +59,9 @@ class PerceptionPipeline {
     this.push(this.frame, r.frameMs);
     this.push(this.times, now);
 
+    if (r.probe && __DEV__) {
+      console.log(`[detector] ${r.probe} · ${r.inferenceMs.toFixed(0)}/${r.frameMs.toFixed(0)} ms · ${this.delegate}`);
+    }
     const tracks = this.tracker.update(r.detections, now);
     const camera = this.camera();
     const scene = buildScene(tracks, now, camera);
