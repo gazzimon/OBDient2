@@ -3,6 +3,7 @@
 import Constants from 'expo-constants';
 import { fetch as expoFetch } from 'expo/fetch';
 import { AssistantService } from '@/data/assistant/assistant-service';
+import { OfflineAssistant } from '@/domain/assistant/offline-assistant';
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import { OpenAiChatClient } from '@/data/llm/openai-chat-client';
 import { AccountService } from '@/data/auth/account-service';
@@ -71,12 +72,16 @@ const assistant = new AssistantService({
     }),
 });
 
+// Without the assistant (M4): known phrases and notes, on the same tools.
+const offlineAssistant = new OfflineAssistant(assistantTools);
+
 export const container = {
   setNavigationTools(names: ReadonlySet<string>, runner: ToolRunner): void {
     navigationTools = { names, runner };
   },
   account,
   assistant,
+  offlineAssistant,
   sensors,
   obd,
   trips,

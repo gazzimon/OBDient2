@@ -8,6 +8,7 @@
 
 import { runTurn, ToolMemo, type AgentEvent, type TurnResult } from '@/domain/assistant/agent-loop';
 import type { AssistantContext } from '@/domain/assistant/prompt';
+import { summaryRequest } from '@/domain/assistant/summary';
 import type { ApiMessage, LlmPort } from '@/domain/ports/llm.port';
 import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { LlmCredentials } from '@/data/auth/account-service';
@@ -30,6 +31,7 @@ export interface AccountCredentials {
 export interface SendInput {
   readonly conversationId: string;
   readonly history: readonly ApiMessage[];
+  readonly summary?: string | null;
   readonly clearsSoFar: number;
   readonly text: string;
   readonly images?: readonly string[];
@@ -65,6 +67,7 @@ export class AssistantService {
     const run = (llm: LlmPort) =>
       runTurn({
         history: input.history,
+        summary: input.summary ?? null,
         text: input.text,
         ...(input.images?.length ? { images: input.images } : {}),
         context: input.context,
@@ -91,6 +94,20 @@ export class AssistantService {
       return { ok: true, result: await run(this.deps.makeLlm(renewed)) };
     } catch (err) {
       return { ok: false, ...classify(err) };
+    }
+  }
+
+  // A summary of turns that left the context (M4). Null if it fails: the turns
+  // are then simply left out, as before.
+  async summarize(previous: string | null, dropped: readonly ApiMessage[], signal?: AbortSignal): Promise<string | null> {
+    const credentials = this.deps.account.llmCredentials();
+    if (!credentials || dropped.length === 0) return null;
+    try {
+      const r = await this.deps.makeLlm(credentials).complete(summaryRequest(previous, dropped), signal ? { signal } : {});
+      const text = r.content.trim();
+      return text || null;
+    } catch {
+      return null;
     }
   }
 }

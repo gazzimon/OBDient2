@@ -1,0 +1,67 @@
+// The phrase router (M4): a fixed list of phrases the app answers by itself,
+// without the model. Today it answers when the assistant cannot be reached;
+// voice (M5–M6) will run it first for commands like "silencio".
+//
+// Ported from OBDient's chat-commands.ts, with its rule: narrow on purpose. A
+// phrase wrongly taken as a command is a question that never got answered, so
+// every pattern asks for a verb plus its object, or a term with no other
+// meaning in a conversation about a car ("vtv", "freeze frame"). Anything else
+// is null and becomes a note for the assistant.
+
+import type { ToolCall } from './tools';
+
+export type PhraseIntent = 'codes' | 'battery' | 'readiness' | 'freeze_frame' | 'vehicle_info' | 'route_status' | 'stop_navigation';
+
+const PHRASES: readonly { readonly intent: PhraseIntent; readonly pattern: RegExp }[] = [
+  {
+    intent: 'codes',
+    pattern:
+      /^(?:codigos?|dtcs?)\??$|\b(?:lee|leer|leeme|lei|mira|mirame|fijate|revisa|revisame|tengo|hay|tiene|que)\b.{0,20}\b(?:codigos?|dtcs?)\b|\bcodigos? de (?:falla|error)\b/,
+  },
+  {
+    intent: 'battery',
+    pattern:
+      /^(?:bateria|tension|voltaje)\??$|\b(?:medi|medime|mide|medir|revisa|revisame|chequea|chequeame|proba|probar|como esta|cuanto tiene|cuanta|cuanto da)\b.{0,16}\b(?:bateria|tension|voltaje)\b/,
+  },
+  { intent: 'readiness', pattern: /\b(?:vtv|monitores?|readiness)\b/ },
+  { intent: 'freeze_frame', pattern: /\bfreeze ?frame\b|\bcuadro congelado\b/ },
+  { intent: 'vehicle_info', pattern: /\b(?:vin|numero de chasis)\b/ },
+  {
+    intent: 'route_status',
+    pattern: /\bcuanto (?:me |nos )?(?:falta|queda)\b|\ba que hora (?:llego|llegamos)\b|\bhora de llegada\b/,
+  },
+  {
+    intent: 'stop_navigation',
+    pattern: /\b(?:termina|terminar|cancela|cancelar|para|parar|frena|frenar|detene|detener|corta|cortar)\b.{0,12}\b(?:navegacion|ruta|guia)\b/,
+  },
+];
+
+// What each intent runs.
+export const INTENT_CALL: Readonly<Record<PhraseIntent, ToolCall>> = {
+  codes: { name: 'read_dtcs', kind: 'stored' },
+  battery: { name: 'read_pids', pids: ['VOLTAGE'] },
+  readiness: { name: 'read_readiness' },
+  freeze_frame: { name: 'read_freeze_frame' },
+  vehicle_info: { name: 'read_vehicle_info' },
+  route_status: { name: 'route_status' },
+  stop_navigation: { name: 'stop_navigation' },
+};
+
+export function normalise(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[¿¡]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+export function routePhrase(text: string): PhraseIntent | null {
+  const norm = normalise(text);
+  if (!norm) return null;
+  for (const { intent, pattern } of PHRASES) {
+    if (pattern.test(norm)) return intent;
+  }
+  return null;
+}

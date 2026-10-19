@@ -11,7 +11,7 @@ entrega valor por sí sola y prepara la siguiente. Estado al 2026-10-18.
 | **E3 AR anclada** | Ruta dibujada sobre la calle, marcador de maniobra, calibración del soporte | ✅ código · ⏳ calibración real |
 | **E4 Ver la vía** | Detector local para alertas: colisión frontal, distancia, "arrancó el de adelante", peatones | ✅ código · 🔧 en release el modelo no cargaba y los cuadros no se guardaban: corregido, ⏳ probar en el teléfono |
 | **E5 Ayuda en servidor** | Z440: chat Qwen3.8-27B (GPU0), OSRM + Photon Argentina (CPU); luego maestro etiquetador y Qwen-Drive (GPU1) | ✅ rutas y búsqueda · ✅ banco de maestros (Waymo demo) · ⏳ con viajes propios |
-| **E7 Asistente** | Chat por texto, voz e imágenes con herramientas OBD (ADR-0007), cuenta por correo y gateway new-api (ADR-0008) | ✅ M0–M3: chat con las 9 herramientas, fotos, borrado con confirmación, login por correo; probado en el auto con el B35 (2026-10-18) · ⏳ M4 |
+| **E7 Asistente** | Chat por texto, voz e imágenes con herramientas OBD (ADR-0007), cuenta por correo y gateway new-api (ADR-0008) | ✅ M0–M3: chat con las 9 herramientas, fotos, borrado con confirmación, login por correo; probado en el auto con el B35 (2026-10-18) · ✅ M4 (código y 388 pruebas; falta probar en el teléfono) |
 | **E6 Presentación** | Modo HUD reflejado en el parabrisas, otras plataformas (iOS) | pendiente |
 
 **MVP = E0–E3**, solo Android.
@@ -190,6 +190,20 @@ bajo, VIN "mal leído", "no tengo historial").
   ruta en el mapa y pregunta; `start_navigation` arranca con el sí; `route_status`, `stop_navigation`.
   Comercios, búsqueda web (servidor MCP propio en la K16, HERE) y respaldo del modelo (LiteLLM):
   después del MVP, con la migración del gateway.
+- **M4 — sin conexión y conversaciones largas (2026-10-19, hecho):**
+  - *Router de frases* (`domain/assistant/phrase-router.ts`): lista fija de patrones (verbo + objeto, sin
+    tildes, portada de OBDient `chat-commands.ts`): códigos, batería, VTV/monitores, freeze frame, VIN,
+    "¿cuánto falta?", terminar navegación. Ante la duda no captura. Responde con plantilla desde la
+    herramienta (descripciones de OBDex), sin modelo.
+  - *Notas* (`offline.ts`, `symptoms.ts`): lo que no encaja se guarda como nota con los síntomas
+    reconocidos y negados (tabla portada de OBDient) y una foto del auto (códigos y RPM, velocidad,
+    temperatura, carga, tensión). Se anotan con red caída (NetInfo) o si el asistente no responde antes
+    de mostrar nada. **Nada se envía solo**: un aviso sobre el teclado ofrece "Pasar al asistente" o
+    "Descartar". Sin cola al servidor.
+  - *Resumen* (`summary.ts`): los turnos que salen del contexto los resume el modelo (sin herramientas,
+    ≤ 300 tokens) y el resumen ocupa su lugar como primer intercambio; si falla, se descartan como antes.
+  - Pendiente: la puerta de voz (un motor Whisper con red y otro de Android sin red, nunca los dos a la vez)
+    entra con M6; el router corre primero.
 - **Antes del APK para probar en movimiento (decisión 2026-10-18):** navegación por chat → M4 (sin
   conexión y errores, resumen de conversaciones largas) → M5 (modo manejo: voz de salida, árbitro con
   alertas y guía, chips) → M6 (micrófono). Recién entonces el standalone y la prueba todo junto.

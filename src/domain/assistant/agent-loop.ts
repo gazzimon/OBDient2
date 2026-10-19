@@ -13,9 +13,10 @@
 
 import type { ApiMessage, ApiToolCall, AssembledToolCall, LlmPort } from '@/domain/ports/llm.port';
 import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
-import { trimHistory } from './history';
+import { estimateTokens, trimHistory } from './history';
 import { evaluatePolicy, TOOL_LEVEL } from './policy';
 import { maxTokensFor, SYSTEM_PROMPT, userMessage, type AssistantContext } from './prompt';
+import { summaryMessages } from './summary';
 import { parseToolCall, toolSchemas, type ToolCall, type ToolOutcome } from './tools';
 
 export const MAX_MODEL_CALLS = 4;
@@ -45,6 +46,8 @@ export class ToolMemo {
 
 export interface TurnOptions {
   readonly history: readonly ApiMessage[];
+  // What older, already dropped turns said (M4), ahead of the history.
+  readonly summary?: string | null;
   readonly text: string;
   // Photos attached to this message (data URLs), e.g. a dashboard warning light.
   readonly images?: readonly string[];
@@ -82,7 +85,9 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
   const signal = opts.signal ?? new AbortController().signal;
   const supported = opts.vehicle.supportedPids();
   const tools = toolSchemas(supported);
-  const { kept, dropped } = trimHistory(opts.history, HISTORY_BUDGET_TOKENS);
+  const summary = summaryMessages(opts.summary);
+  const summaryTokens = summary.reduce((sum, m) => sum + estimateTokens(m), 0);
+  const { kept, dropped } = trimHistory(opts.history, HISTORY_BUDGET_TOKENS - summaryTokens);
 
   const prompt = userMessage(opts.text, opts.context);
   const added: ApiMessage[] = [
@@ -116,7 +121,7 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
     try {
       result = await opts.llm.complete(
         {
-          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...kept, ...added],
+          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...summary, ...kept, ...added],
           tools,
           toolChoice: last ? 'none' : 'auto',
           maxTokens: maxTokensFor(opts.context),

@@ -8,13 +8,22 @@
 
 import type { ApiMessage } from '@/domain/ports/llm.port';
 import type { AgentEvent, TurnResult } from './agent-loop';
+import { MAX_NOTES, type OfflineNote } from './offline';
 import type { ToolName } from './tools';
 
 export type ToolStatus = 'running' | 'ok' | 'failed' | 'refused';
 
 export type ChatItem =
   | { readonly kind: 'user'; readonly id: string; readonly at: number; readonly text: string; readonly photos: number }
-  | { readonly kind: 'assistant'; readonly id: string; readonly at: number; readonly text: string; readonly cancelled: boolean }
+  | {
+      readonly kind: 'assistant';
+      readonly id: string;
+      readonly at: number;
+      readonly text: string;
+      readonly cancelled: boolean;
+      // Answered by the app without the model (M4).
+      readonly offline?: boolean;
+    }
   | {
       readonly kind: 'tool';
       readonly id: string;
@@ -45,6 +54,10 @@ export interface Conversation {
   // Successful clears so far: policy allows one per conversation.
   readonly clears: number;
   readonly stats: readonly TurnStat[];
+  // What the turns no longer in `api` said (M4).
+  readonly summary?: string | null;
+  // Taken without the assistant, waiting for the driver's yes to pass them on.
+  readonly notes?: readonly OfflineNote[];
 }
 
 export const MAX_CONVERSATIONS = 20;
@@ -116,6 +129,31 @@ export function finishTurn(c: Conversation, r: TurnResult, answerId: string, sta
 export function failTurn(c: Conversation, id: string, text: string, retryText: string | null, now: number): Conversation {
   const items = c.items.map((i) => (i.kind === 'tool' && i.status === 'running' ? { ...i, status: 'failed' as const, detail: null } : i));
   return { ...c, updatedAt: now, items: [...items, { kind: 'error', id, at: now, text, retryText }] };
+}
+
+// Answered by the app itself, without the assistant (M4). Not in the API
+// history: the model hears about it through the notes, if the driver agrees.
+export function addOfflineAnswer(c: Conversation, id: string, text: string, now: number): Conversation {
+  const item: ChatItem = { kind: 'assistant', id, at: now, text, cancelled: false, offline: true };
+  return { ...c, updatedAt: now, items: [...c.items, item].slice(-MAX_MESSAGES) };
+}
+
+export function addNote(c: Conversation, note: OfflineNote): Conversation {
+  return { ...c, notes: [...(c.notes ?? []), note].slice(-MAX_NOTES) };
+}
+
+// The notes reached the assistant, or the driver discarded them.
+export function clearNotes(c: Conversation, ids: readonly string[]): Conversation {
+  return { ...c, notes: (c.notes ?? []).filter((n) => !ids.includes(n.id)) };
+}
+
+// The model summarised the turns a turn left out of its context: they leave
+// the history and the summary stands in for them. Only if the history still
+// starts with those same messages (another turn may have changed it meanwhile).
+export function applySummary(c: Conversation, dropped: readonly ApiMessage[], summary: string): Conversation {
+  if (dropped.length === 0 || dropped.length > c.api.length) return c;
+  if (!dropped.every((m, i) => c.api[i] === m)) return c;
+  return { ...c, api: c.api.slice(dropped.length), summary };
 }
 
 // Newest first, at most MAX_CONVERSATIONS; empty ones are not kept.
