@@ -87,8 +87,10 @@ services:
   stt:
     profiles: [stt]
     <<: *gpu1
-    # La misma imagen que llm-chat (vLLM 0.31.0; la receta pide >= 0.20).
-    image: vllm/vllm-openai@sha256:c1c9f6fd5c109ba7f0546a59f5b2f15fb87f64c77782e90a27b648b42a8e67c3
+    # La imagen de llm-chat (vLLM 0.31.0) + las librerías de audio (stt/Dockerfile):
+    # la original no trae soundfile y el motor no arranca.
+    build: ./stt
+    image: obdient/stt:vllm-0.31.0-audio
     container_name: stt
     network_mode: host
     ipc: host
