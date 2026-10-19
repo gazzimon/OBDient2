@@ -7,6 +7,8 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const AUTH_URL = 'https://obdient.duckdns.org/auth';
+// The assistant's tools that need internet (obdient-tools: web search).
+const TOOLS_URL = 'https://obdient.duckdns.org/tools';
 // Magic (email code login, ADR-0008). Publishable: it ships in every client.
 const MAGIC_PUBLISHABLE_KEY = 'pk_live_REDACTED';
 
@@ -14,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const withAccounts = config as ExpoConfig;
   const base: ExpoConfig = {
     ...withAccounts,
-    extra: { ...withAccounts.extra, authUrl: AUTH_URL, magicPublishableKey: MAGIC_PUBLISHABLE_KEY },
+    extra: { ...withAccounts.extra, authUrl: AUTH_URL, toolsUrl: TOOLS_URL, magicPublishableKey: MAGIC_PUBLISHABLE_KEY },
   };
   if (process.env.APP_VARIANT !== 'development') return base;
   return {

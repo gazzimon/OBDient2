@@ -184,6 +184,8 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'route_status':
       case 'stop_navigation':
         return fail('not_supported', 'La navegación no la maneja el adaptador.'); // NavigationTools
+      case 'web_search':
+        return fail('not_supported', 'La búsqueda web no la maneja el adaptador.'); // WebSearchTool
     }
   }
 

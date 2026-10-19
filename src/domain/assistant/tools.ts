@@ -28,6 +28,7 @@ export const TOOL_NAMES = [
   'start_navigation',
   'route_status',
   'stop_navigation',
+  'web_search',
 ] as const;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
@@ -54,7 +55,9 @@ export type ToolCall =
   | { readonly name: 'set_destination'; readonly result: number }
   | { readonly name: 'start_navigation' }
   | { readonly name: 'route_status' }
-  | { readonly name: 'stop_navigation' };
+  | { readonly name: 'stop_navigation' }
+  // The web, through obdient-tools (SearXNG): short results, never whole pages.
+  | { readonly name: 'web_search'; readonly query: string };
 
 export const TOOL_LIMITS = {
   readPidsMax: 6,
@@ -214,6 +217,18 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     fn('start_navigation', 'Arranca la guía al destino ya mostrado, cuando el usuario confirmó. Abre la vista de manejo.', NO_ARGS),
     fn('route_status', 'Estado de la navegación: destino, distancia y tiempo que faltan, hora de llegada y próxima maniobra.', NO_ARGS),
     fn('stop_navigation', 'Termina la navegación en curso.', NO_ARGS),
+    fn(
+      'web_search',
+      'Busca en internet. Devuelve hasta 5 resultados con título, sitio y un fragmento corto, y las direcciones ' +
+        'que aparezcan. Para lo que no sale del auto ni de las otras herramientas: comercios y talleres, ' +
+        'horarios, precios, recalls, datos de un modelo de auto. Incluí la ciudad en la búsqueda si importa.',
+      {
+        type: 'object',
+        properties: { query: { type: 'string', minLength: 2, maxLength: 200 } },
+        required: ['query'],
+        additionalProperties: false,
+      },
+    ),
   ];
 }
 
@@ -304,6 +319,13 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       const r = a.result;
       if (typeof r !== 'number' || !Number.isInteger(r) || r < 1 || r > 5) return bad('"result" debe ser un número de 1 a 5.');
       return { ok: true, call: { name, result: r } };
+    }
+    case 'web_search': {
+      const extra = only('query');
+      if (extra) return bad(extra);
+      const q = a.query;
+      if (typeof q !== 'string' || q.trim().length < 2 || q.length > 200) return bad('"query" debe tener entre 2 y 200 caracteres.');
+      return { ok: true, call: { name, query: q.trim() } };
     }
     case 'read_freeze_frame':
     case 'read_readiness':

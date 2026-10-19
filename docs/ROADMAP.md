@@ -49,7 +49,7 @@ Se avanza con **E4 (detector en el teléfono)**.
 | **M6** | **Micrófono en el chat** (reconocedor de Android; Whisper si hace falta) | ⏳ en curso, necesita build Dev |
 | — | APK standalone y prueba todo junto manejando | después de M6 |
 | M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
-| M8 | `obdient-tools` (búsqueda web con SearXNG, comercios con HERE) y migración a LiteLLM (respaldo de modelos, medición de tiempos) | pendiente; SearXNG probado ([server/searxng](../server/searxng/README.md)) |
+| M8 | `obdient-tools` (búsqueda web con SearXNG, comercios con HERE) y migración a LiteLLM (respaldo de modelos, medición de tiempos) | ✅ `web_search` (2026-10-19): servicio en la K16 ([server/tools](../server/tools)), herramienta en la app; falta la ruta `/tools` en Caddy y probar en el teléfono · pendiente HERE y LiteLLM |
 | M9 | Diagnóstico del fabricante (UDS solo lectura) | pendiente |
 | Después | Modo manejo sin chat (voz de ida y vuelta, palabra "OBDient"), animaciones de espera, base de conocimiento ampliada | ideas |
 
