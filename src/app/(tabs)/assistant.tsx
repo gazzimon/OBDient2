@@ -18,6 +18,7 @@ import { ToolRow } from '@/presentation/components/assistant/ToolRow';
 import { EmailSignIn } from '@/presentation/components/feedback/EmailSignIn';
 import { useAccount } from '@/presentation/hooks/useAccount';
 import { useAssistant } from '@/presentation/hooks/useAssistant';
+import { useVoiceInput } from '@/presentation/hooks/useVoiceInput';
 import { pickPhoto, type Photo, type PhotoSource } from '@/presentation/services/photo';
 import { COLORS } from '@/presentation/theme';
 import { useChatStore } from '@/store/chatStore';
@@ -65,6 +66,10 @@ export default function AssistantScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastId, connected, online, navigating]);
   const showSuggestions = status === 'signed-in' && !running && last?.kind !== 'user' && text === '' && photos.length === 0;
+
+  // Voice (M6): what is heard shows in the box; the final text is sent.
+  const mic = useVoiceInput((heard) => submit(heard, []));
+  const listening = mic.state === 'listening';
 
   // A suggestion is sent as a message, except "Ver en el mapa".
   const pick = (t: string) => (t === SEE_ON_MAP ? router.navigate('/') : submit(t));
@@ -209,6 +214,11 @@ export default function AssistantScreen() {
             ))}
           </View>
         )}
+        {status === 'signed-in' && mic.error && (
+          <Pressable onPress={mic.clearError} className="px-4 pt-2">
+            <Text className="text-brand-amber font-mono text-[11px] leading-4">{mic.error}</Text>
+          </Pressable>
+        )}
         {status === 'signed-in' && (
           <View className="flex-row items-end gap-2 px-4 py-3 border-t border-brand-border">
             <Pressable onPress={choosePhoto} disabled={running} hitSlop={8} className="w-9 h-11 items-center justify-center active:opacity-60">
@@ -216,9 +226,10 @@ export default function AssistantScreen() {
             </Pressable>
             <TextInput
               ref={input}
-              value={text}
+              value={listening ? mic.partial : text}
               onChangeText={setText}
-              placeholder="Escribí tu pregunta…"
+              editable={!listening}
+              placeholder={listening ? 'Escuchando…' : 'Escribí o tocá el micrófono…'}
               placeholderTextColor={COLORS.muted}
               multiline
               className="flex-1 bg-brand-surface rounded-2xl px-4 py-3 text-brand-text font-mono text-sm max-h-32"
@@ -226,6 +237,26 @@ export default function AssistantScreen() {
             {running ? (
               <Pressable onPress={stop} hitSlop={8} className="w-11 h-11 rounded-full items-center justify-center bg-brand-surface active:opacity-60">
                 <MaterialCommunityIcons name="stop" size={22} color={COLORS.red} />
+              </Pressable>
+            ) : listening ? (
+              <Pressable
+                onPress={mic.stop}
+                hitSlop={8}
+                accessibilityLabel="Terminar de hablar"
+                className="w-11 h-11 rounded-full items-center justify-center active:opacity-60"
+                style={{ backgroundColor: COLORS.red }}
+              >
+                <MaterialCommunityIcons name="microphone" size={22} color={COLORS.text} />
+              </Pressable>
+            ) : !canSend ? (
+              <Pressable
+                onPress={() => void mic.start()}
+                hitSlop={8}
+                accessibilityLabel="Hablar"
+                className="w-11 h-11 rounded-full items-center justify-center active:opacity-60"
+                style={{ backgroundColor: COLORS.mint }}
+              >
+                <MaterialCommunityIcons name="microphone-outline" size={22} color={COLORS.bg} />
               </Pressable>
             ) : (
               <Pressable
