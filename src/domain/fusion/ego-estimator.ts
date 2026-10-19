@@ -59,8 +59,17 @@ export interface EgoPose {
   readonly tMs: number;
 }
 
+const distanceM = (d: { east: number; north: number }) => Math.hypot(d.east, d.north);
+
 const OBD_FRESH_MS = 1500;
 const GPS_COURSE_MIN_MPS = 3;
+// Below this the car is stopped: GPS speed noise reads 0.1–0.6 m/s standing
+// still. A stopped car neither turns nor moves, so the heading is frozen (the
+// gyro only sees the phone being handled) and fixes inside their own accuracy
+// are noise, not motion. Measured on the phone (2026-10-19): standing still,
+// the heading wandered 560–670° in 6–8 min and the position 3–7 m.
+const STILL_MPS = 0.8;
+const STILL_MIN_JUMP_M = 5;
 const FIX_BLEND_S = 1;
 const ACCEL_TAU_S = 0.4;
 const HISTORY_MS = 2500;
@@ -104,6 +113,8 @@ export class EgoEstimator {
 
     if (!this.position) {
       this.position = fix.position;
+    } else if (this.isStill(fix.speedMps) && distanceM(toEnu(this.position, fix.position)) <= Math.max(STILL_MIN_JUMP_M, fix.accuracyM)) {
+      this.pending = { east: 0, north: 0 };
     } else {
       const err = toEnu(this.position, fix.position);
       // Trust the fix in proportion to its quality.
@@ -151,10 +162,11 @@ export class EgoEstimator {
 
     // Heading: the gyro rate is counter-clockwise positive, heading is clockwise.
     this.yawRate = yawRateDegS;
-    if (this.headingValid) this.headingDeg = normalizeDeg(this.headingDeg - yawRateDegS * dt);
+    const still = this.isStill(null);
+    if (this.headingValid && !still) this.headingDeg = normalizeDeg(this.headingDeg - yawRateDegS * dt);
 
     // Position: dead-reckon, then absorb part of the pending fix correction.
-    let next = this.headingValid && this.speedMps > 0.3
+    let next = this.headingValid && !still
       ? destination(this.position, this.headingDeg, this.speedMps * dt)
       : this.position;
     if (dt > 0) {
@@ -191,6 +203,13 @@ export class EgoEstimator {
 
   get obdSpeedScale(): number {
     return this.obdScale;
+  }
+
+  // Stopped: by the OBD when fresh (exact 0), else by the GPS speed.
+  private isStill(gpsMps: number | null): boolean {
+    const obd = this.lastObd && this.lastT != null && this.lastT - this.lastObd.tMs <= OBD_FRESH_MS ? this.lastObd.kmh / 3.6 : null;
+    if (obd != null) return obd < STILL_MPS;
+    return (gpsMps ?? this.speedMps) < STILL_MPS;
   }
 
   private learnObdScale(fix: GpsFix): void {
