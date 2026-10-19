@@ -73,8 +73,8 @@ export class OpenAiChatClient implements LlmPort {
         body: JSON.stringify({
           model: this.config.model,
           messages: request.messages,
-          tools: request.tools,
-          tool_choice: request.toolChoice,
+          // A call without tools (the summary) sends neither field.
+          ...(request.tools.length ? { tools: request.tools, tool_choice: request.toolChoice } : {}),
           max_tokens: request.maxTokens,
           stream: true,
           chat_template_kwargs: { enable_thinking: request.thinking },

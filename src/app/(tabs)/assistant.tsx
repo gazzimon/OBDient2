@@ -35,7 +35,8 @@ export default function AssistantScreen() {
   const conversation = useChatStore((s) => s.conversations.find((c) => c.id === s.activeId) ?? null);
   const runningId = useChatStore((s) => s.runningId);
   const connected = useOBDStore((s) => s.connectionState === 'connected');
-  const { send, stop, running } = useAssistant();
+  const { send, sendNotes, discardNotes, stop, running } = useAssistant();
+  const notes = conversation?.notes?.length ?? 0;
   const [text, setText] = useState('');
   const [listOpen, setListOpen] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -151,6 +152,20 @@ export default function AssistantScreen() {
           />
         )}
 
+        {status === 'signed-in' && notes > 0 && !running && (
+          <View className="flex-row items-center gap-3 px-4 py-2 border-t border-brand-border bg-brand-surface">
+            <MaterialCommunityIcons name="note-text-outline" size={18} color={COLORS.amber} />
+            <Text className="text-brand-text font-mono text-xs flex-1">
+              {notes === 1 ? '1 nota sin enviar' : `${notes} notas sin enviar`}
+            </Text>
+            <Pressable onPress={discardNotes} hitSlop={8} className="active:opacity-60">
+              <Text className="text-brand-muted font-mono text-xs">Descartar</Text>
+            </Pressable>
+            <Pressable onPress={() => void sendNotes()} hitSlop={8} className="active:opacity-60">
+              <Text className="text-brand-mint font-mono-bold text-xs">Pasar al asistente</Text>
+            </Pressable>
+          </View>
+        )}
         {status === 'signed-in' && photos.length > 0 && (
           <View className="flex-row gap-2 px-4 pt-3">
             {photos.map((p) => (
