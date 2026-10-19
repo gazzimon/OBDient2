@@ -217,7 +217,8 @@ function forModel(outcome: ToolOutcome): string {
 
 // When the model gives no text: the measurements, as they are.
 // Bracketed planning tags the model sometimes leaks into the visible text.
-const INTERNAL_MARKER = /\[(?:INTENT|PLAN|THOUGHT|TOOL_CALL)[^\]\n]*\]/gi;
+// Seen: "[INTENT: tool_call]", "[INTENT]", "[tool: run_adapter_bench]".
+const INTERNAL_MARKER = /\[(?:INTENT|PLAN|THOUGHT|TOOL(?:_CALL)?)\b[^\]\n]*\]/gi;
 
 function withoutMarkers(text: string): string {
   return text.replace(INTERNAL_MARKER, '').trim();

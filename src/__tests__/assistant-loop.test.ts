@@ -211,7 +211,7 @@ describe('runTurn', () => {
   });
 
   it('a leaked internal marker is not shown; alone, the model is asked again', async () => {
-    const { llm, requests } = scripted(say('[INTENT: tool_call]'), ask(call('read_pids', { pids: ['VOLTAGE'] }, 't1')), say('12,6 V. [INTENT]'));
+    const { llm, requests } = scripted(say('[tool: read_pids]'), ask(call('read_pids', { pids: ['VOLTAGE'] }, 't1')), say('12,6 V. [INTENT]'));
     const { vehicle } = car({ read_pids: { ok: true, data: { VOLTAGE: 12.6 }, summary: 'VOLTAGE 12,6 V' } });
     const r = await runTurn({ history: [], text: 'batería', context: STOPPED, llm, vehicle, confirmation: confirmWith(true).confirmation });
     expect(r.text).toBe('12,6 V.');
