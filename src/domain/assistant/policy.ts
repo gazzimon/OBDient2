@@ -26,6 +26,7 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   start_navigation: 'read',
   route_status: 'read',
   stop_navigation: 'read',
+  where_am_i: 'read',
   web_search: 'read',
 };
 

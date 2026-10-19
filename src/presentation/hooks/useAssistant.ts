@@ -42,6 +42,8 @@ const ERROR_TEXT: Record<AssistantError, string> = {
   server: 'El asistente tuvo un problema. Probá de nuevo en un rato.',
 };
 
+const LOCALITY_WAIT_MS = 1_500;
+
 // The assistant cannot be reached: the app answers by itself.
 const UNREACHABLE: ReadonlySet<AssistantError> = new Set(['offline', 'timeout', 'server']);
 
@@ -132,6 +134,8 @@ async function run({ text, images, forModel, noteIds = undefined }: Message): Pr
       conv = await offlineTurn(conv, text, images.length, startedAt);
       return;
     }
+    // The town for the state block (cached; a short wait at most the first time).
+    await Promise.race([navigationTools.locality(), new Promise((r) => setTimeout(r, LOCALITY_WAIT_MS))]);
     // A map link is read here, not by the model (it cannot open links).
     const link = await navigationTools.loadLink(modelText, controller.signal);
     if (link) {

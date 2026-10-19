@@ -4,7 +4,7 @@
 // should self-host Photon or use a provider. Same API, different base URL.
 
 import type { LatLng } from '@/domain/geo/geo';
-import type { GeocodingPort, Place, SearchOptions } from '@/domain/navigation/route';
+import type { GeocodingPort, Place, SearchOptions, Whereabouts } from '@/domain/navigation/route';
 
 interface PhotonFeature {
   geometry: { coordinates: [number, number] };
@@ -39,6 +39,21 @@ export class PhotonGeocoder implements GeocodingPort {
     if (!res.ok) throw new Error(`Geocoder HTTP ${res.status}`);
     const body = (await res.json()) as { features?: PhotonFeature[] };
     return (body.features ?? []).map(toPlace);
+  }
+
+  // The nearest features; the first with a street names it (the nearest one
+  // can be a city block or a shop).
+  async reverse(point: LatLng, signal?: AbortSignal): Promise<Whereabouts | null> {
+    const url = `${this.baseUrl.replace(/\/$/, '')}/reverse?lat=${point.lat.toFixed(5)}&lon=${point.lng.toFixed(5)}&limit=5&radius=0.3`;
+    const res = await this.fetchFn(url, signal ? { signal } : undefined);
+    if (!res.ok) throw new Error(`Geocoder HTTP ${res.status}`);
+    const features = ((await res.json()) as { features?: (PhotonFeature & { properties: { osm_key?: string } })[] }).features ?? [];
+    if (features.length === 0) return null;
+    const p0 = features[0]!.properties;
+    const withStreet = features.find((f) => f.properties.street) ?? features.find((f) => f.properties.osm_key === 'highway');
+    const sp = withStreet?.properties;
+    const street = sp ? (sp.street ? [sp.street, sp.housenumber].filter(Boolean).join(' ') : (sp.name ?? null)) : null;
+    return { street, city: p0.city ?? sp?.city ?? null, state: p0.state ?? sp?.state ?? null };
   }
 }
 

@@ -238,6 +238,10 @@ bajo, VIN "mal leído", "no tengo historial").
   - *Esquinas* (`findCorner` en `places.ts`): "Calle y Calle" se resuelve con nuestro Photon, donde se
     tocan los recuadros de los tramos de las dos calles (probado en Posadas y CABA). Overpass público
     descartado (saturado). Si no se cruzan, el modelo lo dice.
+  - *Ubicación* (2026-10-19): el modelo pedía "desde dónde salís" porque no sabía que la app tiene el
+    GPS. Ahora el prompt lo dice; el estado de cada mensaje lleva **solo la ciudad** ("en Posadas,
+    Misiones", Photon `/reverse`, en caché 10 min o 3 km); y `where_am_i` da calle y altura cuando se la
+    pide. Probado con Qwen3.8: "¿queda lejos el ministerio?" → search_place + set_destination.
   - *Destino en el chat*: `set_destination` ya no salta al mapa; "¿es ahí?" se responde en el chat con
     "Sí, vamos" / "No, es otro lugar" / "Ver en el mapa".
   - *Ideas anotadas*: animaciones ASCII de espera de `qvac_node/salud/app/public/espera-ascii.js`
