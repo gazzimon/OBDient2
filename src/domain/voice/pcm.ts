@@ -76,6 +76,25 @@ export class SilenceDetector {
   }
 }
 
+// Voxtral Realtime ends the phrase after half a second of near digital
+// silence (measured 2026-10-19: a 0.5 s dropout cut the transcript; the same
+// audio with background noise at -46 dBFS came out whole). Some phones gate
+// pauses to almost zero, so a quiet chunk gets comfort noise at that level
+// before it is sent. The silence detector measures before this.
+export const QUIET_RMS = 0.002;
+const COMFORT_RMS = 0.005;
+
+export function withComfortNoise(samples: Int16Array, random: () => number = Math.random): Int16Array {
+  if (rms(samples) >= QUIET_RMS) return samples;
+  const out = new Int16Array(samples.length);
+  const amp = COMFORT_RMS * 32768 * Math.sqrt(3); // uniform noise with that RMS
+  for (let i = 0; i < samples.length; i++) {
+    const v = samples[i]! + Math.round((random() * 2 - 1) * amp);
+    out[i] = Math.max(-32768, Math.min(32767, v));
+  }
+  return out;
+}
+
 // Bytes → base64 (Hermes has btoa, but not for binary strings of this size in one go).
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 export function bytesToBase64(bytes: Uint8Array): string {

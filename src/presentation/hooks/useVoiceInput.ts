@@ -20,7 +20,7 @@ import type { ExpoSpeechRecognitionModuleType } from 'expo-speech-recognition/bu
 import type { AudioStreamBuffer, AudioStreamOptions, AudioStreamResult } from 'expo-audio';
 import { container } from '@/data/container';
 import { nativeSocket, RealtimeSttSession } from '@/data/stt/realtime-stt';
-import { bytesToBase64, pcm16Bytes, resample, rms, SilenceDetector, STT_RATE, toMono } from '@/domain/voice/pcm';
+import { bytesToBase64, pcm16Bytes, resample, rms, SilenceDetector, STT_RATE, toMono, withComfortNoise } from '@/domain/voice/pcm';
 
 const Recognizer = requireOptionalNativeModule<ExpoSpeechRecognitionModuleType>('ExpoSpeechRecognition');
 const hasAudioStream = requireOptionalNativeModule('ExpoAudio') != null;
@@ -87,8 +87,9 @@ export function useVoiceInput(onFinal: (text: string) => void) {
     if (!s || !d || finishing.current) return;
     const mono = toMono(new Int16Array(buf.data), buf.channels);
     const samples = resample(mono, buf.sampleRate, STT_RATE);
-    s.sendAudio(bytesToBase64(pcm16Bytes(samples)));
-    const phase = d.push(rms(samples), (samples.length / STT_RATE) * 1000);
+    const level = rms(samples);
+    s.sendAudio(bytesToBase64(pcm16Bytes(withComfortNoise(samples))));
+    const phase = d.push(level, (samples.length / STT_RATE) * 1000);
     if (phase === 'ended') void finishServer();
     else if (phase === 'no_speech') cancelServer();
     // eslint-disable-next-line react-hooks/exhaustive-deps

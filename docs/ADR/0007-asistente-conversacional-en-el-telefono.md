@@ -37,7 +37,11 @@ Hechos verificados (2026-10-18):
    un toque). Sin conexión, o si el servidor no responde al empezar, el reconocedor de Android. El
    modelo del chat sigue recibiendo solo texto. Descartados: Voxtral Small 24B (no entra en 24 GB),
    Voxtral Mini 3B y Whisper/Qwen3-ASR (sin texto en vivo; quedan como alternativa si Voxtral no
-   alcanza con el ruido del auto). Salida: una sola voz con prioridades (alertas >
+   alcanza con el ruido del auto).
+   *Medido el mismo día (llamadas reales en español, MINDS-14):* texto casi exacto con puntuación; primer
+   fragmento a 0,6–1,7 s, final 1–1,5 s después de terminar de hablar. Voxtral corta la frase tras ~0,5 s
+   de silencio digital casi total (con ruido de fondo realista no pasa): la app suma ruido de confort a
+   los trozos casi mudos antes de enviarlos. Salida: una sola voz con prioridades (alertas >
    maniobras > asistente, `domain/voice/voice-arbiter.ts`); el asistente todavía no habla (decisión
    del usuario, se retoma con el modo manejo).
 4. **Las imágenes son entrada válida.** Foto de un testigo del tablero, de una etiqueta o de un
