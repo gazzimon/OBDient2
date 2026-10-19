@@ -267,6 +267,11 @@ bajo, VIN "mal leído", "no tengo historial").
   - *Ajustes*: alertas habladas del detector: todas / solo críticas / ninguna (el destello se ve
     siempre). El interruptor "Instrucciones por voz" sigue apagando todo.
   - Sin build nuevo: `expo-speech` ya estaba. Los chips en manejo quedan para M6 (solo micrófono).
+- **Permisos (2026-10-19):** un solo camino (`domain/permissions`, `presentation/services/permissions.ts`):
+  al instalar, una pantalla con los tres esenciales (ubicación, Bluetooth, cámara) y su porqué; el
+  micrófono se pide al usarlo. Cada función llama `ensurePermission()`: explica, pide, y si Android ya
+  no pregunta (bloqueado) guía a Ajustes con la ruta exacta y al volver sigue sola. Nunca bloquea la
+  app: sin un permiso solo se apaga lo que lo usa. Panel en Ajustes → Permisos con el estado de cada uno.
 - **Antes del APK para probar en movimiento (decisión 2026-10-18):** navegación por chat → M4 (sin
   conexión y errores, resumen de conversaciones largas) → M5 (modo manejo: voz de salida, árbitro con
   alertas y guía, chips) → M6 (micrófono). Recién entonces el standalone y la prueba todo junto.

@@ -13,6 +13,7 @@ import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { voice } from './voice';
+import { ensurePermission } from './permissions';
 
 const PROGRESS_INTERVAL_MS = 100;
 const REROUTE_COOLDOWN_MS = 15_000;
@@ -146,8 +147,8 @@ class NavigationController {
 }
 
 async function currentPosition(): Promise<LatLng> {
-  const perm = await Location.requestForegroundPermissionsAsync();
-  if (!perm.granted) throw new Error('Se necesita permiso de ubicación');
+  // The app's sheet: explains, asks, or guides to Settings.
+  if (!(await ensurePermission('location'))) throw new Error('Se necesita permiso de ubicación');
   const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
   return { lat: loc.coords.latitude, lng: loc.coords.longitude };
 }

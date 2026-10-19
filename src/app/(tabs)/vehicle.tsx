@@ -16,6 +16,7 @@ import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
 import { useOBDStore } from '@/store/obdStore';
+import { ensurePermission } from '@/presentation/services/permissions';
 
 const SCAN_MS = 10_000;
 
@@ -39,6 +40,7 @@ export default function VehicleScreen() {
   const router = useRouter();
 
   const scan = async () => {
+    if (!(await ensurePermission('bluetooth'))) return;
     setDevices([]);
     setScanError(null);
     setScanning(true);
@@ -85,8 +87,9 @@ export default function VehicleScreen() {
     }
   };
 
-  const connect = (d: ScannedDevice) => {
+  const connect = async (d: ScannedDevice) => {
     endScan();
+    if (!(await ensurePermission('bluetooth'))) return;
     void container.obd.connect(d.id, d.name).catch(() => undefined);
   };
 
@@ -201,7 +204,7 @@ export default function VehicleScreen() {
               {sorted.map((d) => (
                 <Pressable
                   key={d.id}
-                  onPress={() => connect(d)}
+                  onPress={() => void connect(d)}
                   className="flex-row items-center bg-brand-surface rounded-2xl px-4 py-3 active:opacity-60"
                 >
                   <MaterialCommunityIcons

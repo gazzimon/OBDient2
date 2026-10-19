@@ -24,6 +24,7 @@ import { COLORS } from '@/presentation/theme';
 import { useChatStore } from '@/store/chatStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
+import { ensurePermission } from '@/presentation/services/permissions';
 
 // Each photo costs ~1.5k tokens of the 16k context.
 const MAX_PHOTOS = 2;
@@ -263,7 +264,7 @@ export default function AssistantScreen() {
               </Pressable>
             ) : !canSend && voiceInputAvailable ? (
               <Pressable
-                onPress={() => void mic.start()}
+                onPress={() => void ensurePermission('microphone').then((ok) => (ok ? mic.start() : undefined))}
                 hitSlop={8}
                 accessibilityLabel="Hablar"
                 className="w-11 h-11 rounded-full items-center justify-center active:opacity-60"
