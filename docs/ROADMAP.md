@@ -35,6 +35,24 @@ Se avanza con **E4 (detector en el teléfono)**.
 
 ## Próximos pasos (2026-10-18)
 
+### E7 · Hitos del asistente (estado 2026-10-19)
+
+| Hito | Qué | Estado |
+|---|---|---|
+| M0–M1 | Gateway y loop del agente (ADR-0007/0008) | ✅ |
+| M2 | Herramientas OBD reales (tramas, parsers, sesión, adaptador) | ✅ código · ⏳ B14 y un auto con códigos |
+| M3 | Chat, fotos, borrado con confirmación, historial de fallas, evaluación | ✅ probado en el auto (B35) |
+| Cuentas | Login por código de correo (Magic), clave por cuenta | ✅ |
+| Navegación | Direcciones, esquinas, enlaces de mapas, destino confirmado en el chat | ✅ probado en el teléfono |
+| M4 | Sin conexión (router de frases, notas), resumen de conversaciones largas | ✅ |
+| M5 | Una sola voz: alertas > maniobras; nivel de alertas | ✅ código · ⏳ probar manejando |
+| **M6** | **Micrófono en el chat** (reconocedor de Android; Whisper si hace falta) | ⏳ en curso, necesita build Dev |
+| — | APK standalone y prueba todo junto manejando | después de M6 |
+| M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
+| M8 | `obdient-tools` (búsqueda web con SearXNG, comercios con HERE) y migración a LiteLLM (respaldo de modelos, medición de tiempos) | pendiente; SearXNG probado ([server/searxng](../server/searxng/README.md)) |
+| M9 | Diagnóstico del fabricante (UDS solo lectura) | pendiente |
+| Después | Modo manejo sin chat (voz de ida y vuelta, palabra "OBDient"), animaciones de espera, base de conocimiento ampliada | ideas |
+
 ### E7 · M2 — herramientas OBD reales (código completo; falta el auto)
 
 Plan de M3 y flujo del agente: [plans/m3-chat-y-flujo-del-agente.md](plans/m3-chat-y-flujo-del-agente.md).

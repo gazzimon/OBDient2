@@ -25,6 +25,13 @@ Hechos verificados (2026-10-18):
 3. **La voz se resuelve en el teléfono.** Entrada: reconocimiento de voz del sistema, con el paquete
    de español descargado para que funcione sin red. Salida: `expo-speech`. El modelo recibe siempre
    texto, nunca audio.
+   *Actualización 2026-10-19 (M6):* entrada con `expo-speech-recognition` (reconocedor de Android),
+   botón de micrófono en el chat, el texto entra por el mismo `send()` que lo escrito; sin red pide
+   reconocimiento en el teléfono. Whisper en la Z440 queda como mejora si el reconocedor no alcanza
+   con el ruido del auto: el mismo módulo puede guardar el audio para enviarlo, sin otro build. Un solo
+   reconocedor a la vez (el micrófono es exclusivo). Salida: una sola voz con prioridades (alertas >
+   maniobras > asistente, `domain/voice/voice-arbiter.ts`); el asistente todavía no habla (decisión
+   del usuario, se retoma con el modo manejo).
 4. **Las imágenes son entrada válida.** Foto de un testigo del tablero, de una etiqueta o de un
    repuesto, enviada desde el selector de archivos del chat.
 5. **Herramientas, con política por nivel:**
@@ -49,7 +56,9 @@ Hechos verificados (2026-10-18):
 
 ## Consecuencias
 
-- Se pierde la posibilidad de que el servidor ejecute herramientas por su cuenta. Es intencional.
+- Se pierde la posibilidad de que el servidor ejecute herramientas por su cuenta. Es intencional. Las
+  herramientas que necesitan internet (búsqueda web, comercios) las sigue pidiendo el teléfono a un
+  servicio propio sin estado (`obdient-tools`, hito M8), que devuelve solo datos estructurados.
 - El prompt y el catálogo de herramientas viajan dentro del APK. No son secretos. Si hiciera falta
   ocultarlos, el gateway puede inyectarlos (ADR-0008).
 - Sin servicio, la pestaña sigue abriendo. Las frases comunes ejecutan la herramienta directamente
