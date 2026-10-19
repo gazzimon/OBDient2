@@ -49,4 +49,9 @@ describe('remainingPath', () => {
       [3, 0],
     ]);
   });
+
+  it('is empty when only a point is left', () => {
+    const progress = { segmentIndex: 2, snapped: { lat: 0, lng: 3 } } as RouteProgress;
+    expect(remainingPath(route, progress)).toEqual([]);
+  });
 });

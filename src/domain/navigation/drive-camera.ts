@@ -25,9 +25,10 @@ export function carPadding(height: number): number {
 }
 
 // The part of the route still ahead: from the car's point on it to the end.
+// Empty when less than a line is left (MapLibre rejects a one-point line).
 export function remainingPath(route: Route, progress: RouteProgress | null): [number, number][] {
   const all = route.geometry.map((p): [number, number] => [p.lng, p.lat]);
-  if (!progress) return all;
-  const ahead = all.slice(progress.segmentIndex + 1);
-  return [[progress.snapped.lng, progress.snapped.lat], ...ahead];
+  const path = progress ? [[progress.snapped.lng, progress.snapped.lat] as [number, number], ...all.slice(progress.segmentIndex + 1)] : all;
+  const distinct = path.filter((p, i) => i === 0 || p[0] !== path[i - 1]![0] || p[1] !== path[i - 1]![1]);
+  return distinct.length >= 2 ? distinct : [];
 }
