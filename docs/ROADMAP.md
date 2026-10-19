@@ -204,6 +204,19 @@ bajo, VIN "mal leído", "no tengo historial").
     ≤ 300 tokens) y el resumen ocupa su lugar como primer intercambio; si falla, se descartan como antes.
   - Pendiente: la puerta de voz (un motor Whisper con red y otro de Android sin red, nunca los dos a la vez)
     entra con M6; el router corre primero.
+- **Después de la prueba en el teléfono (2026-10-19):**
+  - *Enlaces de mapas* (`domain/navigation/map-links.ts`): la app lee enlaces de Google Maps, Waze y
+    `geo:` antes del modelo y deja el lugar como resultado 1. Un lugar compartido de Google suele traer
+    solo nombre y dirección (las coordenadas exigen su API paga): se busca la dirección y se marca
+    aproximada. Los enlaces con `!3d…!4d…`, `q=lat,lng` o `geo:` son exactos.
+  - *Notas*: los saludos no se anotan; "leé las notas" las envía como el botón.
+  - *Sugerencias* (`suggestions.ts`): 3 preguntas por reglas según lo último que pasó, al azar para que
+    cambien, al menos una solo para el modelo; sin conexión, solo frases del router. Más un botón fijo
+    "Ir a una dirección…". Con el auto en movimiento: solo el botón de voz (con M6).
+  - *Prompt*: respuestas de ≤ 60 palabras; fotos de cualquier cosa y otros temas, con naturalidad.
+  - *Ideas anotadas*: animaciones ASCII de espera de `qvac_node/salud/app/public/espera-ascii.js`
+    (funciones puras `dibujar(cuadro, cols, filas)`), y medir tiempos de respuesta y concurrencia en
+    el gateway: con la migración a LiteLLM.
 - **Antes del APK para probar en movimiento (decisión 2026-10-18):** navegación por chat → M4 (sin
   conexión y errores, resumen de conversaciones largas) → M5 (modo manejo: voz de salida, árbitro con
   alertas y guía, chips) → M6 (micrófono). Recién entonces el standalone y la prueba todo junto.

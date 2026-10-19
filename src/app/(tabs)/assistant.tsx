@@ -4,11 +4,13 @@
 // the adapter and answers back. Without an account the tab explains how to
 // get one; everything else in the app works without it.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNetInfo } from '@react-native-community/netinfo';
 import type { ChatItem } from '@/domain/assistant/conversation';
+import { suggest } from '@/domain/assistant/suggestions';
 import { ChatBubble } from '@/presentation/components/assistant/ChatBubble';
 import { ErrorRow } from '@/presentation/components/assistant/ErrorRow';
 import { ToolRow } from '@/presentation/components/assistant/ToolRow';
@@ -18,17 +20,14 @@ import { useAssistant } from '@/presentation/hooks/useAssistant';
 import { pickPhoto, type Photo, type PhotoSource } from '@/presentation/services/photo';
 import { COLORS } from '@/presentation/theme';
 import { useChatStore } from '@/store/chatStore';
+import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
 
 // Each photo costs ~1.5k tokens of the 16k context.
 const MAX_PHOTOS = 2;
 
-const EXAMPLES = [
-  '¿Cómo está la batería y tengo algún código?',
-  '¿Los monitores de emisiones están listos?',
-  'Mirá el ralentí durante 10 segundos',
-  '¿Qué datos da mi adaptador?',
-];
+// The fixed fourth button: the destination is typed by the driver.
+const GO_TO = 'Llevame a ';
 
 export default function AssistantScreen() {
   const { status } = useAccount();
@@ -41,6 +40,10 @@ export default function AssistantScreen() {
   const [listOpen, setListOpen] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const list = useRef<FlatList<ChatItem>>(null);
+  const input = useRef<TextInput>(null);
+  const net = useNetInfo();
+  const online = net.isConnected !== false && net.isInternetReachable !== false;
+  const navigating = useNavStore((s) => s.status === 'navigating');
 
   const items = conversation?.items ?? [];
   const streamingId = runningId != null && runningId === conversation?.id ? items[items.length - 1]?.id : null;
@@ -50,6 +53,22 @@ export default function AssistantScreen() {
   useEffect(() => {
     if (last) setTimeout(() => list.current?.scrollToEnd({ animated: true }), 50);
   }, [last]);
+
+  // Next questions, drawn again after each answer (and when the context changes).
+  const lastId = last?.id;
+  const suggestions = useMemo(() => {
+    const lastUser = items.reduce((at, it, i) => (it.kind === 'user' ? i : at), -1);
+    const lastTools = items.slice(lastUser + 1).flatMap((it) => (it.kind === 'tool' ? [{ name: it.name, detail: it.detail }] : []));
+    const lastQuestion = lastUser >= 0 ? (items[lastUser] as { text: string }).text : null;
+    return suggest({ lastTools, connected, online, navigating, lastQuestion });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastId, connected, online, navigating]);
+  const showSuggestions = status === 'signed-in' && !running && last?.kind !== 'user' && text === '' && photos.length === 0;
+
+  const goTo = () => {
+    setText(GO_TO);
+    setTimeout(() => input.current?.focus(), 50);
+  };
 
   // A photo alone gets a default question.
   const submit = (value = text, attached: Photo[] = photos) => {
@@ -116,15 +135,7 @@ export default function AssistantScreen() {
                 ? 'Lee códigos, freeze frame, monitores y valores en vivo. Para borrar códigos te pide confirmación.'
                 : 'Conectá el adaptador en la pestaña Vehículo para que pueda leer el auto.'}
             </Text>
-            {EXAMPLES.map((e) => (
-              <Pressable
-                key={e}
-                onPress={() => submit(e)}
-                className="bg-brand-surface border border-brand-border rounded-2xl px-4 py-3 mb-2 active:opacity-60"
-              >
-                <Text className="text-brand-text font-mono text-xs">{e}</Text>
-              </Pressable>
-            ))}
+            <Suggestions items={suggestions} onPick={(t) => submit(t)} onGoTo={goTo} />
           </View>
         ) : (
           <FlatList
@@ -133,6 +144,7 @@ export default function AssistantScreen() {
             contentContainerStyle={{ paddingVertical: 12 }}
             data={items as ChatItem[]}
             keyExtractor={(i) => i.id}
+            ListFooterComponent={showSuggestions ? <Suggestions items={suggestions} onPick={(t) => submit(t)} onGoTo={goTo} /> : null}
             renderItem={({ item }) => {
               switch (item.kind) {
                 case 'user':
@@ -198,6 +210,7 @@ export default function AssistantScreen() {
               <MaterialCommunityIcons name="camera-outline" size={22} color={running ? COLORS.border : COLORS.muted} />
             </Pressable>
             <TextInput
+              ref={input}
               value={text}
               onChangeText={setText}
               placeholder="Escribí tu pregunta…"
@@ -226,6 +239,30 @@ export default function AssistantScreen() {
 
       <ConversationList visible={listOpen} onClose={() => setListOpen(false)} />
     </SafeAreaView>
+  );
+}
+
+// Up to three suggested questions and the fixed "Ir a…" button.
+function Suggestions({ items, onPick, onGoTo }: { items: readonly string[]; onPick: (t: string) => void; onGoTo: () => void }) {
+  return (
+    <View>
+      {items.map((e) => (
+        <Pressable
+          key={e}
+          onPress={() => onPick(e)}
+          className="bg-brand-surface border border-brand-border rounded-2xl px-4 py-3 mb-2 active:opacity-60"
+        >
+          <Text className="text-brand-text font-mono text-xs">{e}</Text>
+        </Pressable>
+      ))}
+      <Pressable
+        onPress={onGoTo}
+        className="flex-row items-center gap-2 bg-brand-surface border border-brand-border rounded-2xl px-4 py-3 mb-2 active:opacity-60"
+      >
+        <MaterialCommunityIcons name="map-marker-outline" size={16} color={COLORS.mint} />
+        <Text className="text-brand-mint font-mono text-xs">Ir a una dirección…</Text>
+      </Pressable>
+    </View>
   );
 }
 
