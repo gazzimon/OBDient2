@@ -4,7 +4,11 @@ import Constants from 'expo-constants';
 import { fetch as expoFetch } from 'expo/fetch';
 import { AssistantService } from '@/data/assistant/assistant-service';
 import { OfflineAssistant } from '@/domain/assistant/offline-assistant';
-import { WebSearchTool } from '@/data/tools/web-search-tool';
+import { OnlineTools } from '@/data/tools/online-tools';
+import { ToolsClient } from '@/data/tools/tools-client';
+import { ServiceTools } from '@/data/service/service-tools';
+import { createMmkvServiceStorage } from '@/data/service/mmkv-service-storage';
+import { ServiceLog } from '@/domain/service/service-log';
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import { OpenAiChatClient } from '@/data/llm/openai-chat-client';
 import { AccountService } from '@/data/auth/account-service';
@@ -54,13 +58,26 @@ const account = new AccountService({ identity: magicIdentity, secrets: secureSto
 // registered at start to avoid an import cycle), the rest to the car.
 type ToolRunner = Pick<VehicleToolsPort, 'execute'>;
 let navigationTools: { names: ReadonlySet<string>; runner: ToolRunner } | null = null;
-// The web (M8): obdient-tools with the account's key.
-const webSearch = new WebSearchTool({ url: extra.toolsUrl, credentials: () => account.llmCredentials() });
+// obdient-tools (M8) with the account's key: web, dollar, car prices; fuel and
+// weather go through NavigationTools (they need the position).
+const toolsClient = new ToolsClient({ url: extra.toolsUrl, credentials: () => account.llmCredentials() });
+const onlineTools = new OnlineTools(toolsClient);
+// The service log on the phone.
+const serviceTools = new ServiceTools({ log: new ServiceLog(createMmkvServiceStorage()), vin: () => vehicleTools.knownVin() });
 const assistantTools: VehicleToolsPort = {
   supportedPids: () => vehicleTools.supportedPids(),
-  execute: (call, signal) => {
-    if (call.name === 'web_search') return webSearch.execute(call, signal);
-    return navigationTools?.names.has(call.name) ? navigationTools.runner.execute(call, signal) : vehicleTools.execute(call, signal);
+  execute: async (call, signal) => {
+    switch (call.name) {
+      case 'web_search':
+      case 'dollar_rate':
+      case 'car_price':
+        return onlineTools.execute(call, signal);
+      case 'log_service':
+      case 'read_service_log':
+        return serviceTools.execute(call);
+      default:
+        return navigationTools?.names.has(call.name) ? navigationTools.runner.execute(call, signal) : vehicleTools.execute(call, signal);
+    }
   },
 };
 
@@ -87,6 +104,7 @@ export const container = {
   account,
   assistant,
   offlineAssistant,
+  toolsClient,
   sensors,
   obd,
   trips,

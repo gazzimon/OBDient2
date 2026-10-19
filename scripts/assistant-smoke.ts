@@ -71,6 +71,12 @@ function simulated(): VehicleToolsPort {
       case 'route_status':
       case 'stop_navigation':
       case 'where_am_i':
+      case 'fuel_prices':
+      case 'weather':
+      case 'dollar_rate':
+      case 'car_price':
+      case 'log_service':
+      case 'read_service_log':
       case 'web_search':
         return { ok: false, error: 'not_supported', message: 'Sin navegación en el humo.' };
     }

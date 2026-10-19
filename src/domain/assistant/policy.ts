@@ -28,6 +28,13 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   stop_navigation: 'read',
   where_am_i: 'read',
   web_search: 'read',
+  fuel_prices: 'read',
+  dollar_rate: 'read',
+  weather: 'read',
+  car_price: 'read',
+  // Writes only the phone's own log, after the user confirmed the car.
+  log_service: 'read',
+  read_service_log: 'read',
 };
 
 // While moving, a sample keeps polling secondary PIDs instead of the dashboard's:
