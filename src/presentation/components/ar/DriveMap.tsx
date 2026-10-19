@@ -57,15 +57,10 @@ export function DriveMap({ primary }: { primary: boolean }) {
 
   // Recomputed only when the car moves on to another segment.
   const segment = progress?.segmentIndex ?? -1;
-  const shape = useMemo<GeoJSON.Feature | null>(
-    () =>
-      route
-        ? {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'LineString', coordinates: remainingPath(route, primary ? progress : null) },
-          }
-        : null,
+  const shape = useMemo<GeoJSON.Feature | null>(() => {
+    const coordinates = route ? remainingPath(route, primary ? progress : null) : [];
+    return coordinates.length ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } } : null;
+  },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [route, primary, segment],
   );

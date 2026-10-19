@@ -112,7 +112,7 @@ export class TripRecorder {
           i: f.index,
         });
       } catch (err) {
-        console.warn('[TripRecorder] frame not saved:', err);
+        console.warn('[TripRecorder] frame not saved:', err, (err as Error)?.stack?.slice(0, 600), typeof f.buffer, Object.prototype.toString.call(f.buffer));
         // Release builds show no console: leave the first errors in the log itself.
         if (this.frameErrors < 3) {
           this.frameErrors += 1;

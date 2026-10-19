@@ -55,12 +55,13 @@ function useModelFile(source: DetectorManifest['source']): ModelSource | null {
 }
 
 // Placeholder while the model file is being resolved: an empty URL fails fast
-// and is replaced as soon as the real one arrives.
+// and is replaced as soon as the real one arrives. In development the bundled
+// require() loads (Metro serves it over http), so no red error on screen.
 const PENDING: ModelSource = { url: '' };
 
 export function useDetector(manifest: DetectorManifest, delegate: DetectorDelegate, enabled: boolean, capture = false) {
   const file = useModelFile(manifest.source);
-  const plugin = useTensorflowModel(file ?? PENDING, delegate === 'cpu' ? [] : [delegate]);
+  const plugin = useTensorflowModel(file ?? (__DEV__ ? manifest.source : PENDING), delegate === 'cpu' ? [] : [delegate]);
   const model = plugin.state === 'loaded' ? plugin.model : undefined;
   const frameIndex = useMemo(() => createSynchronizable(0), []);
   const captureState = useMemo(() => createSynchronizable(initialCaptureState()), []);
@@ -88,7 +89,7 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
   );
   const onResult = perception.onFrame;
 
-  const onFrame = useCallback(
+  const processFrame = useCallback(
     (frame: Frame) => {
       'worklet';
       if ((model == null || !enabled) && !capture) {
@@ -149,6 +150,25 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
       scheduleOnRN(onResult, result);
     },
     [model, enabled, capture, manifest, decode, frameIndex, captureState, onCapture, onResult],
+  );
+
+  const onFrame = useCallback(
+    (frame: Frame) => {
+      'worklet';
+      try {
+        processFrame(frame);
+      } catch (e) {
+        // With the stack: the camera thread's own report prints only "{}".
+        const err = e as Error;
+        console.warn(`[useDetector] frame failed: ${err?.message} | ${String(err?.stack).slice(0, 600)}`);
+        try {
+          frame.dispose();
+        } catch {
+          // already disposed
+        }
+      }
+    },
+    [processFrame],
   );
 
   const frameOutput = useFrameOutput({
