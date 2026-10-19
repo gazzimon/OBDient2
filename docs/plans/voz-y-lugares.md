@@ -16,7 +16,7 @@
 - La búsqueda por categorías (estaciones por marca dentro de un recuadro) queda en el código
   (`findNearby`), sin ofrecerla al modelo.
 
-## 2. Voz (M5–M6, por hacer)
+## 2. Voz (M5 hecho 2026-10-19; M6 por hacer)
 
 | Tema | Decisión |
 |---|---|
@@ -28,7 +28,8 @@
 | Nivel de alertas | En Ajustes: todas / solo críticas / silenciadas |
 | Pantalla | Se mantienen la pestaña Ruta (mapa y búsqueda) y el chat: dos caminos a la misma navegación |
 | Lugares guardados | "Casa", "Trabajo" y últimos destinos en el teléfono (MMKV), con una herramienta. Sin RAG vectorial ni Honcho: es una lista chica y exacta |
-| Sin conexión | A decidir con la voz funcionando (encaja con M4) |
+| Sin conexión | M4: router de frases y notas en el teléfono. M6: con red Whisper (Z440), sin red el reconocedor de Android; nunca los dos a la vez, el texto entra por el mismo `send()` |
+| Silencio crítico | Silenciado, las alertas críticas suenan igual; "Ninguna" en Ajustes las calla también |
 
 ## 3. Después del MVP: comercios, búsqueda y respaldo (con la migración del gateway)
 

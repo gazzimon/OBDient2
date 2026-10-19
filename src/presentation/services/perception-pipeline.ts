@@ -6,7 +6,6 @@
 // for the AR overlay.
 
 import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
 import { container } from '@/data/container';
 import { AlertEngine, type DriverAlert } from '@/domain/perception/alerts';
 import type { Detection } from '@/domain/perception/detection';
@@ -15,6 +14,7 @@ import { Tracker } from '@/domain/perception/tracker';
 import { useEgoStore } from '@/store/egoStore';
 import { usePerceptionStore } from '@/store/perceptionStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { voice } from './voice';
 
 export interface FrameResult {
   readonly detections: Detection[];
@@ -96,11 +96,8 @@ class PerceptionPipeline {
     container.trips.event('alert', { kind: a.kind, level: a.level, trackId: a.trackId });
     if (a.level === 'critical') void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     else if (a.level === 'warning') void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    if (useSettingsStore.getState().voiceEnabled) {
-      // A critical alert interrupts navigation prompts; the others wait their turn.
-      if (a.level === 'critical') Speech.stop();
-      Speech.speak(a.message, { language: 'es-ES', rate: a.level === 'critical' ? 1.15 : 1 });
-    }
+    // The arbiter decides: a critical alert cuts guidance, the others wait.
+    voice.say(a.message, a.level === 'critical' ? 'critical' : 'alert');
   }
 
   private push(arr: number[], v: number): void {

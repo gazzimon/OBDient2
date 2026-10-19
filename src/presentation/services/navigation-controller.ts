@@ -2,7 +2,6 @@
 // fusion rate, voice prompts and automatic rerouting.
 
 import * as Location from 'expo-location';
-import * as Speech from 'expo-speech';
 import { container } from '@/data/container';
 import { bearingDeg, type LatLng } from '@/domain/geo/geo';
 import { Announcer } from '@/domain/navigation/guidance';
@@ -13,6 +12,7 @@ import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { voice } from './voice';
 
 const PROGRESS_INTERVAL_MS = 100;
 const REROUTE_COOLDOWN_MS = 15_000;
@@ -64,7 +64,7 @@ class NavigationController {
     if (this.tracker) container.sensors.release();
     this.tracker = null;
     container.trips.stop();
-    Speech.stop();
+    voice.stopAll();
     useNavStore.getState().clear();
   }
 
@@ -141,9 +141,7 @@ class NavigationController {
 
   private say(text: string): void {
     container.trips.event('voice', { text });
-    if (!useSettingsStore.getState().voiceEnabled) return;
-    Speech.stop();
-    Speech.speak(text, { language: 'es-ES' });
+    voice.say(text, 'maneuver');
   }
 }
 

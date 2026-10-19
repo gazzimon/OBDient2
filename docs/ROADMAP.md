@@ -217,6 +217,17 @@ bajo, VIN "mal leído", "no tengo historial").
   - *Ideas anotadas*: animaciones ASCII de espera de `qvac_node/salud/app/public/espera-ascii.js`
     (funciones puras `dibujar(cuadro, cols, filas)`), y medir tiempos de respuesta y concurrencia en
     el gateway: con la migración a LiteLLM.
+- **M5 — una sola voz (2026-10-19, código; falta probar manejando):**
+  - *Árbitro* (`domain/voice/voice-arbiter.ts`, instancia en `presentation/services/voice.ts`): alerta
+    crítica > alerta > maniobra > asistente. Lo más importante corta; lo demás espera (solo el último
+    de cada prioridad) y se descarta si esperó demasiado (maniobra 6 s, asistente 30 s). La guía y el
+    detector ya no llaman a `expo-speech` directo.
+  - *El asistente habla* su respuesta con el auto en movimiento o navegando, sin listas.
+  - *Silencio*: botón en la vista de manejo; "silencio", "callate", "activá la voz" en el teléfono
+    antes del modelo, con o sin conexión; `set_audio` para otras formas. Las críticas suenan igual.
+  - *Ajustes*: alertas habladas del detector: todas / solo críticas / ninguna (el destello se ve
+    siempre). El interruptor "Instrucciones por voz" sigue apagando todo.
+  - Sin build nuevo: `expo-speech` ya estaba. Los chips en manejo quedan para M6 (solo micrófono).
 - **Antes del APK para probar en movimiento (decisión 2026-10-18):** navegación por chat → M4 (sin
   conexión y errores, resumen de conversaciones largas) → M5 (modo manejo: voz de salida, árbitro con
   alertas y guía, chips) → M6 (micrófono). Recién entonces el standalone y la prueba todo junto.

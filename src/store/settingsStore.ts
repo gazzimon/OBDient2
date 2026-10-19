@@ -1,6 +1,7 @@
 // User preferences and AR calibration — persisted across launches via MMKV.
 
 import { create } from 'zustand';
+import type { AlertVoiceLevel } from '@/domain/voice/voice-arbiter';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { createMMKV } from 'react-native-mmkv';
 
@@ -60,6 +61,8 @@ interface SettingsState {
   geocoderUrl: string;
   mapStyleUrl: string;
   voiceEnabled: boolean;
+  // Which detector alerts are spoken (M5); the flash on screen always shows.
+  alertVoice: AlertVoiceLevel;
   // Local trip log while navigating (domain/recording). On while the MVP is
   // being field-tested: it is how AR problems get diagnosed afterwards.
   recordTrips: boolean;
@@ -81,6 +84,7 @@ interface SettingsState {
   resetCalibration: () => void;
   setEndpoints: (patch: Partial<typeof DEFAULT_ENDPOINTS>) => void;
   setVoiceEnabled: (on: boolean) => void;
+  setAlertVoice: (level: AlertVoiceLevel) => void;
   setRecordTrips: (on: boolean) => void;
   setRecordFrames: (on: boolean) => void;
   setDisclaimerAccepted: (on: boolean) => void;
@@ -97,6 +101,7 @@ export const useSettingsStore = create<SettingsState>()(
       calibration: DEFAULT_CALIBRATION,
       ...DEFAULT_ENDPOINTS,
       voiceEnabled: true,
+      alertVoice: 'all',
       recordTrips: true,
       recordFrames: true,
       disclaimerAccepted: false,
@@ -111,6 +116,7 @@ export const useSettingsStore = create<SettingsState>()(
       resetCalibration: () => set({ calibration: DEFAULT_CALIBRATION }),
       setEndpoints: (patch) => set(patch),
       setVoiceEnabled: (on) => set({ voiceEnabled: on }),
+      setAlertVoice: (level) => set({ alertVoice: level }),
       setRecordTrips: (on) => set({ recordTrips: on }),
       setRecordFrames: (on) => set({ recordFrames: on }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
@@ -129,6 +135,7 @@ export const useSettingsStore = create<SettingsState>()(
         geocoderUrl: s.geocoderUrl,
         mapStyleUrl: s.mapStyleUrl,
         voiceEnabled: s.voiceEnabled,
+        alertVoice: s.alertVoice,
         recordTrips: s.recordTrips,
         recordFrames: s.recordFrames,
         disclaimerAccepted: s.disclaimerAccepted,

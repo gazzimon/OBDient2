@@ -76,3 +76,16 @@ export const asksForNotes = (text: string): boolean => NOTES.test(normalise(text
 const SMALL_TALK = /^(?:hola|holi|buenas|buen dia|buenos dias|buenas tardes|buenas noches|gracias|muchas gracias|chau|ok|okey|dale|genial|perfecto)(?: [a-z]+){0,2}[!.]*$/;
 
 export const isSmallTalk = (text: string): boolean => SMALL_TALK.test(normalise(text));
+
+// Voice control (M5), checked before anything else, online or not: a short
+// message that is only the order. "Silencio" must act at once, without waiting
+// for the model; longer or other ways of saying it reach set_audio.
+const MUTE = /^(?:silencio|shh+|callate|calla|cerra la boca|basta|no hables|sin voz|mute|silencia(?:r|te)?(?: la voz)?)(?: por favor| porfa)?[!.]*$/;
+const UNMUTE = /^(?:habla|hablame|volve a hablar|activa la voz|con voz|voz|prende la voz|activa el sonido)(?: de nuevo| otra vez)?(?: por favor| porfa)?[!.]*$/;
+
+export function routeVoiceControl(text: string): 'mute' | 'unmute' | null {
+  const norm = normalise(text);
+  if (MUTE.test(norm)) return 'mute';
+  if (UNMUTE.test(norm)) return 'unmute';
+  return null;
+}

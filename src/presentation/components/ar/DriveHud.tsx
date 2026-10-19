@@ -13,6 +13,7 @@ import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useVoiceMuted, voice } from '@/presentation/services/voice';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -73,6 +74,7 @@ export function DriveHud({
   const remainingS =
     route && progress ? (route.durationS * progress.remainingM) / Math.max(1, route.distanceM) : null;
 
+  const muted = useVoiceMuted();
   return (
     <View pointerEvents="box-none" className="absolute inset-0 p-3">
       {/* Next maneuver */}
@@ -102,13 +104,25 @@ export function DriveHud({
           </Card>
         )}
 
-        <Pressable
-          onPress={onExit}
-          hitSlop={10}
-          className="w-11 h-11 rounded-full bg-brand-surface/90 border border-brand-border items-center justify-center active:opacity-60"
-        >
-          <MaterialCommunityIcons name="close" size={22} color={COLORS.text} />
-        </Pressable>
+        <View className="flex-row gap-3">
+          {/* Silence (M5): guidance and the assistant; critical alerts still speak. */}
+          <Pressable
+            onPress={() => voice.setMuted(!muted)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={muted ? 'Activar la voz' : 'Silenciar la voz'}
+            className="w-11 h-11 rounded-full bg-brand-surface/90 border border-brand-border items-center justify-center active:opacity-60"
+          >
+            <MaterialCommunityIcons name={muted ? 'volume-off' : 'volume-high'} size={22} color={muted ? COLORS.amber : COLORS.text} />
+          </Pressable>
+          <Pressable
+            onPress={onExit}
+            hitSlop={10}
+            className="w-11 h-11 rounded-full bg-brand-surface/90 border border-brand-border items-center justify-center active:opacity-60"
+          >
+            <MaterialCommunityIcons name="close" size={22} color={COLORS.text} />
+          </Pressable>
+        </View>
       </View>
 
       {/* Direction arrow: always there, AR or not. */}
