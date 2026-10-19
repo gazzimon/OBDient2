@@ -26,6 +26,7 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   start_navigation: 'read',
   route_status: 'read',
   stop_navigation: 'read',
+  set_audio: 'read',
 };
 
 // While moving, a sample keeps polling secondary PIDs instead of the dashboard's:

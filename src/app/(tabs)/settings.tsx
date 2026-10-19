@@ -16,6 +16,7 @@ import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
 import { usePerceptionStore } from '@/store/perceptionStore';
 import { DEFAULT_ENDPOINTS, useSettingsStore } from '@/store/settingsStore';
+import type { AlertVoiceLevel } from '@/domain/voice/voice-arbiter';
 
 const DELEGATES = [
   { id: 'android-gpu', label: 'GPU' },
@@ -72,6 +73,20 @@ export default function SettingsScreen() {
         <Row label="Instrucciones por voz">
           <Switch value={s.voiceEnabled} onValueChange={s.setVoiceEnabled} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
+        <Text className="text-brand-muted font-mono text-xs mt-1 mb-2">Alertas habladas del detector</Text>
+        <View className="flex-row gap-2 mb-4">
+          {ALERT_VOICE.map((a) => (
+            <Pressable
+              key={a.id}
+              onPress={() => s.setAlertVoice(a.id)}
+              className={`flex-1 rounded-xl py-2 items-center border ${
+                s.alertVoice === a.id ? 'border-brand-teal' : 'border-brand-border'
+              } active:opacity-60`}
+            >
+              <Text className={`font-mono text-xs ${s.alertVoice === a.id ? 'text-brand-teal' : 'text-brand-muted'}`}>{a.label}</Text>
+            </Pressable>
+          ))}
+        </View>
         <Row label="Datos técnicos sobre la AR">
           <Switch value={s.debugOverlay} onValueChange={s.setDebugOverlay} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
@@ -287,6 +302,13 @@ function AccountSection() {
     </>
   );
 }
+
+// Which detector alerts speak (M5). The flash on screen always shows.
+const ALERT_VOICE: readonly { id: AlertVoiceLevel; label: string }[] = [
+  { id: 'all', label: 'Todas' },
+  { id: 'critical', label: 'Solo críticas' },
+  { id: 'off', label: 'Ninguna' },
+];
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (

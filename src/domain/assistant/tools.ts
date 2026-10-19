@@ -28,6 +28,7 @@ export const TOOL_NAMES = [
   'start_navigation',
   'route_status',
   'stop_navigation',
+  'set_audio',
 ] as const;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
@@ -54,7 +55,9 @@ export type ToolCall =
   | { readonly name: 'set_destination'; readonly result: number }
   | { readonly name: 'start_navigation' }
   | { readonly name: 'route_status' }
-  | { readonly name: 'stop_navigation' };
+  | { readonly name: 'stop_navigation' }
+  // The app's voice on or off (M5): "callate", "volvé a hablar".
+  | { readonly name: 'set_audio'; readonly on: boolean };
 
 export const TOOL_LIMITS = {
   readPidsMax: 6,
@@ -214,6 +217,17 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     fn('start_navigation', 'Arranca la guía al destino ya mostrado, cuando el usuario confirmó. Abre la vista de manejo.', NO_ARGS),
     fn('route_status', 'Estado de la navegación: destino, distancia y tiempo que faltan, hora de llegada y próxima maniobra.', NO_ARGS),
     fn('stop_navigation', 'Termina la navegación en curso.', NO_ARGS),
+    fn(
+      'set_audio',
+      'Silencia (on: false) o vuelve a activar (on: true) la voz de la app: guía y respuestas habladas. Las alertas ' +
+        'críticas suenan igual. Para "callate", "no hables", "volvé a hablar".',
+      {
+        type: 'object',
+        properties: { on: { type: 'boolean' } },
+        required: ['on'],
+        additionalProperties: false,
+      },
+    ),
   ];
 }
 
@@ -304,6 +318,12 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       const r = a.result;
       if (typeof r !== 'number' || !Number.isInteger(r) || r < 1 || r > 5) return bad('"result" debe ser un número de 1 a 5.');
       return { ok: true, call: { name, result: r } };
+    }
+    case 'set_audio': {
+      const extra = only('on');
+      if (extra) return bad(extra);
+      if (typeof a.on !== 'boolean') return bad('"on" debe ser true o false.');
+      return { ok: true, call: { name, on: a.on } };
     }
     case 'read_freeze_frame':
     case 'read_readiness':
