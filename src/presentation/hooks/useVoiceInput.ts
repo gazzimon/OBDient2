@@ -6,10 +6,18 @@
 // show in the input box as they are heard; the final text is handed to
 // onFinal. With no connection it asks for on-device recognition, which needs
 // the Spanish offline pack installed on the phone.
+//
+// The native module is optional: a build without it (older Dev APKs) keeps
+// the chat working, without the microphone. Only types come from the package,
+// so nothing of it loads unless the module is there.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { requireOptionalNativeModule } from 'expo';
 import NetInfo from '@react-native-community/netinfo';
-import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
+import type { ExpoSpeechRecognitionModuleType } from 'expo-speech-recognition/build/ExpoSpeechRecognitionModule.types';
+
+const Recognizer = requireOptionalNativeModule<ExpoSpeechRecognitionModuleType>('ExpoSpeechRecognition');
+export const voiceInputAvailable = Recognizer != null;
 
 export type VoiceInputState = 'idle' | 'listening';
 
@@ -36,47 +44,54 @@ export function useVoiceInput(onFinal: (text: string) => void) {
   const triedFallback = useRef(false);
   const lastOptions = useRef<{ offline: boolean }>({ offline: false });
 
-  useSpeechRecognitionEvent('start', () => {
-    setState('listening');
-    setError(null);
-  });
-  useSpeechRecognitionEvent('end', () => {
-    setState('idle');
-    setPartial('');
-  });
-  useSpeechRecognitionEvent('result', (e) => {
-    const text = e.results[0]?.transcript?.trim() ?? '';
-    if (!e.isFinal) {
-      setPartial(text);
-      return;
-    }
-    setPartial('');
-    if (text) finalRef.current(text);
-  });
-  useSpeechRecognitionEvent('error', (e) => {
-    setState('idle');
-    setPartial('');
-    // Nothing said, or stopped by the user: not an error worth showing.
-    if (e.error === 'no-speech' || e.error === 'aborted' || e.error === 'speech-timeout') return;
-    if (e.error === 'language-not-supported' && !triedFallback.current) {
-      triedFallback.current = true;
-      begin(FALLBACK_LANG, lastOptions.current.offline);
-      return;
-    }
-    setError(ERROR_TEXT[e.error] ?? `No se pudo reconocer la voz (${e.error}).`);
-  });
+  useEffect(() => {
+    if (!Recognizer) return;
+    const subs = [
+      Recognizer.addListener('start', () => {
+        setState('listening');
+        setError(null);
+      }),
+      Recognizer.addListener('end', () => {
+        setState('idle');
+        setPartial('');
+      }),
+      Recognizer.addListener('result', (e) => {
+        const text = e.results[0]?.transcript?.trim() ?? '';
+        if (!e.isFinal) {
+          setPartial(text);
+          return;
+        }
+        setPartial('');
+        if (text) finalRef.current(text);
+      }),
+      Recognizer.addListener('error', (e) => {
+        setState('idle');
+        setPartial('');
+        // Nothing said, or stopped by the user: not an error worth showing.
+        if (e.error === 'no-speech' || e.error === 'aborted' || e.error === 'speech-timeout') return;
+        if (e.error === 'language-not-supported' && !triedFallback.current) {
+          triedFallback.current = true;
+          begin(FALLBACK_LANG, lastOptions.current.offline);
+          return;
+        }
+        setError(ERROR_TEXT[e.error] ?? `No se pudo reconocer la voz (${e.error}).`);
+      }),
+    ];
+    return () => subs.forEach((sub) => sub.remove());
+  }, []);
 
   // Never leave the microphone open when the screen goes away.
-  useEffect(() => () => ExpoSpeechRecognitionModule.abort(), []);
+  useEffect(() => () => Recognizer?.abort(), []);
 
   const start = useCallback(async () => {
     setError(null);
-    const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!Recognizer) return;
+    const perm = await Recognizer.requestPermissionsAsync();
     if (!perm.granted) {
       setError(ERROR_TEXT['not-allowed']!);
       return;
     }
-    if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
+    if (!Recognizer.isRecognitionAvailable()) {
       setError(ERROR_TEXT['service-not-allowed']!);
       return;
     }
@@ -87,19 +102,20 @@ export function useVoiceInput(onFinal: (text: string) => void) {
   }, []);
 
   function begin(lang: string, offline: boolean) {
+    if (!Recognizer) return;
     lastOptions.current = { offline };
-    ExpoSpeechRecognitionModule.start({
+    Recognizer.start({
       lang,
       interimResults: true,
       continuous: false,
       maxAlternatives: 1,
-      requiresOnDeviceRecognition: offline && ExpoSpeechRecognitionModule.supportsOnDeviceRecognition(),
+      requiresOnDeviceRecognition: offline && Recognizer.supportsOnDeviceRecognition(),
       androidIntentOptions: { EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: END_SILENCE_MS },
     });
   }
 
   // Ends now; what was heard so far comes as the final result.
-  const stop = useCallback(() => ExpoSpeechRecognitionModule.stop(), []);
+  const stop = useCallback(() => Recognizer?.stop(), []);
   const clearError = useCallback(() => setError(null), []);
 
   return { state, partial, error, start, stop, clearError };

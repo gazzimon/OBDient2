@@ -18,7 +18,7 @@ import { ToolRow } from '@/presentation/components/assistant/ToolRow';
 import { EmailSignIn } from '@/presentation/components/feedback/EmailSignIn';
 import { useAccount } from '@/presentation/hooks/useAccount';
 import { useAssistant } from '@/presentation/hooks/useAssistant';
-import { useVoiceInput } from '@/presentation/hooks/useVoiceInput';
+import { useVoiceInput, voiceInputAvailable } from '@/presentation/hooks/useVoiceInput';
 import { pickPhoto, type Photo, type PhotoSource } from '@/presentation/services/photo';
 import { COLORS } from '@/presentation/theme';
 import { useChatStore } from '@/store/chatStore';
@@ -248,7 +248,7 @@ export default function AssistantScreen() {
               >
                 <MaterialCommunityIcons name="microphone" size={22} color={COLORS.text} />
               </Pressable>
-            ) : !canSend ? (
+            ) : !canSend && voiceInputAvailable ? (
               <Pressable
                 onPress={() => void mic.start()}
                 hitSlop={8}
