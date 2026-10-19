@@ -13,6 +13,8 @@ import {
 import { ClearDtcsModal } from '@/presentation/components/assistant/ClearDtcsModal';
 import { AccountGate } from '@/presentation/components/feedback/AccountGate';
 import { DisclaimerGate } from '@/presentation/components/feedback/Disclaimer';
+import { PermissionSheet } from '@/presentation/components/permissions/PermissionSheet';
+import { PermissionsIntro } from '@/presentation/components/permissions/PermissionsIntro';
 import { restoreAccount } from '@/presentation/hooks/useAccount';
 import { NAVIGATION_TOOL_NAMES, navigationTools } from '@/presentation/services/navigation-tools';
 import { container } from '@/data/container';
@@ -50,8 +52,11 @@ export default function RootLayout() {
         }}
       />
       <DisclaimerGate />
+      <PermissionsIntro />
       <AccountGate />
       <ClearDtcsModal />
+      {/* The explanation before a permission, whoever asks for it. */}
+      <PermissionSheet />
       {/* Magic's code and device-approval screens (email login, ADR-0008). Last, so it draws on top. */}
       <MagicRelayer />
     </>

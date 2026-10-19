@@ -17,6 +17,7 @@ import { COLORS } from '@/presentation/theme';
 import { usePerceptionStore } from '@/store/perceptionStore';
 import { DEFAULT_ENDPOINTS, useSettingsStore } from '@/store/settingsStore';
 import type { AlertVoiceLevel } from '@/domain/voice/voice-arbiter';
+import { PermissionsPanel } from '@/presentation/components/permissions/PermissionsPanel';
 
 const DELEGATES = [
   { id: 'android-gpu', label: 'GPU' },
@@ -69,6 +70,9 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-brand-bg" edges={['top']}>
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingTop: 12, paddingBottom: 32 }}>
+        <SectionHeader title="Permisos" />
+        <PermissionsPanel />
+
         <SectionHeader title="Guía" />
         <Row label="Instrucciones por voz">
           <Switch value={s.voiceEnabled} onValueChange={s.setVoiceEnabled} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />

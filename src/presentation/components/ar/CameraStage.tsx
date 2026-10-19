@@ -14,6 +14,7 @@ import { useState, type ReactNode } from 'react';
 import { Text, View, type LayoutChangeEvent } from 'react-native';
 import { Camera, useCameraPermission, type CameraOutput } from 'react-native-vision-camera';
 import { PillButton } from '@/presentation/components/layout/PillButton';
+import { ensurePermission } from '@/presentation/services/permissions';
 
 const ASPECT = 16 / 9;
 
@@ -39,7 +40,12 @@ export function CameraStage({ outputs, children }: Props) {
         <Text className="text-brand-text font-mono text-sm text-center">
           La guía AR necesita la cámara para dibujar la ruta sobre la calle.
         </Text>
-        <PillButton label="Permitir cámara" onPress={() => void requestPermission()} />
+        <PillButton
+          label="Permitir cámara"
+          // The app's sheet first (it guides to Settings if Android no longer
+          // asks); then vision-camera reads the permission again.
+          onPress={() => void ensurePermission('camera').then((ok) => (ok ? requestPermission() : false))}
+        />
       </View>
     );
   }
