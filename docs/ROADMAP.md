@@ -46,7 +46,7 @@ Se avanza con **E4 (detector en el teléfono)**.
 | Navegación | Direcciones, esquinas, enlaces de mapas, destino confirmado en el chat | ✅ probado en el teléfono |
 | M4 | Sin conexión (router de frases, notas), resumen de conversaciones largas | ✅ |
 | M5 | Una sola voz: alertas > maniobras; nivel de alertas | ✅ código · ⏳ probar manejando |
-| **M6** | **Micrófono en el chat** (reconocedor de Android; Whisper si hace falta) | ⏳ en curso, necesita build Dev |
+| **M6** | **Voz al chat**: Voxtral Mini 4B Realtime en la GPU1 (en vivo, por `obdient-tools`), reconocedor de Android sin conexión | ✅ código y puente en la K16 (2026-10-19) · falta: desplegar `stt` en la Z440, `STT_API_KEY` en la K16, build Dev con `expo-audio`, probar en el auto |
 | — | APK standalone y prueba todo junto manejando | después de M6 |
 | M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
 | M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM | ✅ código y servicio en la K16 (2026-10-19) · falta la ruta `/tools` en Caddy y probar en el teléfono |

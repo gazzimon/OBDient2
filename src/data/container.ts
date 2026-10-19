@@ -105,6 +105,8 @@ export const container = {
   assistant,
   offlineAssistant,
   toolsClient,
+  // obdient-tools' base URL (the speech WebSocket lives under it).
+  toolsUrl: extra.toolsUrl,
   sensors,
   obd,
   trips,

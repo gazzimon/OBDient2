@@ -9,5 +9,8 @@
   "scripts": {
     "start": "node src/main.mjs",
     "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
   }
 }
