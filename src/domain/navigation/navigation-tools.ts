@@ -10,7 +10,7 @@ import type { LatLng } from '@/domain/geo/geo';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import { instructionEs } from '@/domain/navigation/guidance';
 import { findMapLink, isShortLink, parseMapLink } from '@/domain/navigation/map-links';
-import { findByText, withDistance, type FoundPlace } from '@/domain/navigation/places';
+import { findByText, parseCorner, withDistance, type FoundPlace } from '@/domain/navigation/places';
 import type { GeocodingPort, Place, Route } from '@/domain/navigation/route';
 import type { RouteProgress } from '@/domain/navigation/route-progress';
 import type { NavStatus } from '@/store/navStore';
@@ -23,8 +23,6 @@ export interface NavigationToolDeps {
   readonly stop: () => void;
   // The driving view (AR), where guidance is shown.
   readonly openDrive: () => void;
-  // The map with the destination and its route, to check it is the right place.
-  readonly openMap: () => void;
   readonly state: () => {
     status: NavStatus;
     destination: Place | null;
@@ -114,22 +112,30 @@ export class NavigationTools {
   private async search(call: Extract<NavCall, { name: 'search_place' }>, signal: AbortSignal): Promise<ToolOutcome> {
     const near = await this.deps.position();
     this.results = await findByText(this.deps.geocoder(), call.query, near, signal);
-    const results = this.results.map((p, i) => ({ result: i + 1, name: p.name, detail: p.detail, distanceKm: p.distanceKm }));
+    const results = this.results.map((p, i) => ({
+      result: i + 1,
+      name: p.name,
+      detail: p.detail,
+      distanceKm: p.distanceKm,
+      ...(p.corner ? { corner: true } : {}),
+    }));
+    // Asked for a corner that is not there: the model must say so, not pick a namesake.
+    const cornerMissing = parseCorner(call.query) != null && !this.results.some((p) => p.corner);
     return {
       ok: true,
-      data: { results },
+      data: { results, ...(cornerMissing ? { corner: 'not_found' } : {}) },
       summary: results.length ? `${results.length} resultados para "${call.query}"` : `Sin resultados para "${call.query}"`,
     };
   }
 
-  // Plan the route and show it on the map; guidance waits for the user's yes.
+  // Plan the route (it shows on the Ruta tab); guidance waits for the user's yes.
   private async show(n: number): Promise<ToolOutcome> {
     const place = this.results[n - 1];
     if (!place) return fail('invalid_arguments', 'No hay un resultado con ese número: buscá primero con search_place.');
     await this.deps.planTo(place);
     const s = this.deps.state();
     if (s.status !== 'ready' || !s.route) return fail('not_supported', s.error ?? 'No se pudo calcular la ruta.');
-    this.deps.openMap();
+    // The chat stays open: the "¿es ahí?" is answered there (Ruta tab on request).
     return {
       ok: true,
       data: {

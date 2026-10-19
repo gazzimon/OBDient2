@@ -1,6 +1,4 @@
 import { forSpeech, MAX_WAIT_MS, VoiceArbiter, type AlertVoiceLevel, type Speaker } from '@/domain/voice/voice-arbiter';
-import { routeVoiceControl } from '@/domain/assistant/phrase-router';
-import { parseToolCall } from '@/domain/assistant/tools';
 
 function setup(opts: { voiceOn?: boolean; level?: AlertVoiceLevel } = {}) {
   const log: string[] = [];
@@ -114,25 +112,5 @@ describe('forSpeech', () => {
     const long = 'Una frase corta. '.repeat(40);
     expect(forSpeech(long, 100).length).toBeLessThanOrEqual(100);
     expect(forSpeech(long, 100).endsWith('.')).toBe(true);
-  });
-});
-
-describe('voice control phrases', () => {
-  it.each(['Silencio', '¡Callate!', 'shhh', 'no hables por favor', 'silenciá la voz'])('"%s" mutes', (t) => {
-    expect(routeVoiceControl(t)).toBe('mute');
-  });
-  it.each(['Hablá de nuevo', 'activá la voz', 'volvé a hablar porfa'])('"%s" unmutes', (t) => {
-    expect(routeVoiceControl(t)).toBe('unmute');
-  });
-  it.each(['el motor hace un silencio raro', '¿por qué no hablás de la batería?', 'basta de códigos, llevame a casa'])('"%s" is neither', (t) => {
-    expect(routeVoiceControl(t)).toBeNull();
-  });
-});
-
-describe('set_audio', () => {
-  it('parses on/off strictly', () => {
-    expect(parseToolCall('set_audio', '{"on":false}', [])).toEqual({ ok: true, call: { name: 'set_audio', on: false } });
-    expect(parseToolCall('set_audio', '{"on":"no"}', []).ok).toBe(false);
-    expect(parseToolCall('set_audio', '{}', []).ok).toBe(false);
   });
 });

@@ -83,7 +83,6 @@ describe('NavigationTools', () => {
         Object.assign(state, { status: 'idle', route: null, destination: null });
       },
       openDrive: () => calls.push('drive'),
-      openMap: () => calls.push('map'),
       state: () => state,
       now: () => new Date(2026, 9, 18, 20, 0).getTime(),
     });
@@ -102,10 +101,10 @@ describe('NavigationTools', () => {
       data: { destination: 'Uruguay 1223 CABA', detail: 'CABA', distanceKm: 1.5, durationMin: 6, arrival: '20:06', started: false },
       summary: 'En el mapa: Uruguay 1223 CABA',
     });
-    expect(calls).toEqual(['plan Uruguay 1223 CABA', 'map']);
+    expect(calls).toEqual(['plan Uruguay 1223 CABA']);
 
     expect(await t.execute({ name: 'start_navigation' }, signal)).toMatchObject({ ok: true, data: { started: true } });
-    expect(calls).toEqual(['plan Uruguay 1223 CABA', 'map', 'start', 'drive']);
+    expect(calls).toEqual(['plan Uruguay 1223 CABA', 'start', 'drive']);
 
     state.progress = { remainingM: 750, offRoute: false, nextManeuver: null, distanceToManeuverM: null } as unknown as RouteProgress;
     expect(await t.execute({ name: 'route_status' }, signal)).toMatchObject({
@@ -130,7 +129,7 @@ describe('NavigationTools', () => {
       error: 'not_supported',
       message: 'Sin conexión',
     });
-    expect(broken.calls).not.toContain('map');
+    expect(broken.calls).not.toContain('start');
   });
 
   it('the model must give an address or place name', () => {

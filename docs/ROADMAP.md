@@ -213,7 +213,13 @@ bajo, VIN "mal leído", "no tengo historial").
   - *Sugerencias* (`suggestions.ts`): 3 preguntas por reglas según lo último que pasó, al azar para que
     cambien, al menos una solo para el modelo; sin conexión, solo frases del router. Más un botón fijo
     "Ir a una dirección…". Con el auto en movimiento: solo el botón de voz (con M6).
-  - *Prompt*: respuestas de ≤ 60 palabras; fotos de cualquier cosa y otros temas, con naturalidad.
+  - *Prompt*: fotos de cualquier cosa y otros temas, con naturalidad. (El tope de 60 palabras se
+    probó y se sacó: las respuestas quedaban escuetas.)
+  - *Esquinas* (`findCorner` en `places.ts`): "Calle y Calle" se resuelve con nuestro Photon, donde se
+    tocan los recuadros de los tramos de las dos calles (probado en Posadas y CABA). Overpass público
+    descartado (saturado). Si no se cruzan, el modelo lo dice.
+  - *Destino en el chat*: `set_destination` ya no salta al mapa; "¿es ahí?" se responde en el chat con
+    "Sí, vamos" / "No, es otro lugar" / "Ver en el mapa".
   - *Ideas anotadas*: animaciones ASCII de espera de `qvac_node/salud/app/public/espera-ascii.js`
     (funciones puras `dibujar(cuadro, cols, filas)`), y medir tiempos de respuesta y concurrencia en
     el gateway: con la migración a LiteLLM.
@@ -222,9 +228,10 @@ bajo, VIN "mal leído", "no tengo historial").
     crítica > alerta > maniobra > asistente. Lo más importante corta; lo demás espera (solo el último
     de cada prioridad) y se descarta si esperó demasiado (maniobra 6 s, asistente 30 s). La guía y el
     detector ya no llaman a `expo-speech` directo.
-  - *El asistente habla* su respuesta con el auto en movimiento o navegando, sin listas.
-  - *Silencio*: botón en la vista de manejo; "silencio", "callate", "activá la voz" en el teléfono
-    antes del modelo, con o sin conexión; `set_audio` para otras formas. Las críticas suenan igual.
+  - *Revertido el mismo día* (decisión del usuario, keep it simple): el asistente no habla, y
+    "silencio" y `set_audio` salen del chat. La voz se retoma con M6 (grabar en el chat y mandar el
+    audio) y la comunicación sin chat en modo manejo, más adelante. Queda el botón de parlante de la
+    vista de manejo para la guía.
   - *Ajustes*: alertas habladas del detector: todas / solo críticas / ninguna (el destello se ve
     siempre). El interruptor "Instrucciones por voz" sigue apagando todo.
   - Sin build nuevo: `expo-speech` ya estaba. Los chips en manejo quedan para M6 (solo micrófono).

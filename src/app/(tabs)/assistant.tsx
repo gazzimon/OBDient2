@@ -7,10 +7,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNetInfo } from '@react-native-community/netinfo';
 import type { ChatItem } from '@/domain/assistant/conversation';
-import { suggest } from '@/domain/assistant/suggestions';
+import { SEE_ON_MAP, suggest } from '@/domain/assistant/suggestions';
 import { ChatBubble } from '@/presentation/components/assistant/ChatBubble';
 import { ErrorRow } from '@/presentation/components/assistant/ErrorRow';
 import { ToolRow } from '@/presentation/components/assistant/ToolRow';
@@ -64,6 +65,9 @@ export default function AssistantScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastId, connected, online, navigating]);
   const showSuggestions = status === 'signed-in' && !running && last?.kind !== 'user' && text === '' && photos.length === 0;
+
+  // A suggestion is sent as a message, except "Ver en el mapa".
+  const pick = (t: string) => (t === SEE_ON_MAP ? router.navigate('/') : submit(t));
 
   const goTo = () => {
     setText(GO_TO);
@@ -135,7 +139,7 @@ export default function AssistantScreen() {
                 ? 'Lee códigos, freeze frame, monitores y valores en vivo. Para borrar códigos te pide confirmación.'
                 : 'Conectá el adaptador en la pestaña Vehículo para que pueda leer el auto.'}
             </Text>
-            <Suggestions items={suggestions} onPick={(t) => submit(t)} onGoTo={goTo} />
+            <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} />
           </View>
         ) : (
           <FlatList
@@ -143,8 +147,9 @@ export default function AssistantScreen() {
             className="flex-1 px-4"
             contentContainerStyle={{ paddingVertical: 12 }}
             data={items as ChatItem[]}
-            keyExtractor={(i) => i.id}
-            ListFooterComponent={showSuggestions ? <Suggestions items={suggestions} onPick={(t) => submit(t)} onGoTo={goTo} /> : null}
+            // With the position: conversations saved before 2026-10-19 repeat ids.
+            keyExtractor={(i, index) => `${index}:${i.id}`}
+            ListFooterComponent={showSuggestions ? <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} /> : null}
             renderItem={({ item }) => {
               switch (item.kind) {
                 case 'user':
