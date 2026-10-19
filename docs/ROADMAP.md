@@ -49,9 +49,17 @@ Se avanza con **E4 (detector en el teléfono)**.
 | **M6** | **Micrófono en el chat** (reconocedor de Android; Whisper si hace falta) | ⏳ en curso, necesita build Dev |
 | — | APK standalone y prueba todo junto manejando | después de M6 |
 | M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
-| M8 | `obdient-tools` (búsqueda web con SearXNG, comercios con HERE) y migración a LiteLLM (respaldo de modelos, medición de tiempos) | ✅ `web_search` (2026-10-19): servicio en la K16 ([server/tools](../server/tools)), herramienta en la app; falta la ruta `/tools` en Caddy y probar en el teléfono · pendiente HERE y LiteLLM |
+| M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM | ✅ código y servicio en la K16 (2026-10-19) · falta la ruta `/tools` en Caddy y probar en el teléfono |
 | M9 | Diagnóstico del fabricante (UDS solo lectura) | pendiente |
 | Después | Modo manejo sin chat (voz de ida y vuelta, palabra "OBDient"), animaciones de espera, base de conocimiento ampliada | ideas |
+
+**Herramientas del asistente (24, 2026-10-19).** Auto: read_pids, sample_pids, read_dtcs,
+read_freeze_frame, read_readiness, read_vehicle_info, read_adapter_info, run_adapter_bench, clear_dtcs,
+read_fault_history · Cuenta: calculate · Navegación: search_place (direcciones y esquinas),
+set_destination, start_navigation, route_status, stop_navigation, where_am_i · Internet (obdient-tools):
+web_search (con precios y direcciones de los fragmentos), fuel_prices, dollar_rate, weather, car_price ·
+Teléfono: log_service (confirmando el auto, hasta que exista el garage), read_service_log. Con 24 se
+revisa si conviene un router (ver *Otros pendientes*).
 
 ### E7 · M2 — herramientas OBD reales (código completo; falta el auto)
 

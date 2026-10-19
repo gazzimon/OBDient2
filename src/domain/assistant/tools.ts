@@ -30,6 +30,12 @@ export const TOOL_NAMES = [
   'stop_navigation',
   'where_am_i',
   'web_search',
+  'fuel_prices',
+  'dollar_rate',
+  'weather',
+  'car_price',
+  'log_service',
+  'read_service_log',
 ] as const;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
@@ -60,7 +66,20 @@ export type ToolCall =
   // Street and town where the car is (GPS), for "¿dónde estoy?".
   | { readonly name: 'where_am_i' }
   // The web, through obdient-tools (SearXNG): short results, never whole pages.
-  | { readonly name: 'web_search'; readonly query: string };
+  | { readonly name: 'web_search'; readonly query: string }
+  // Nearest stations and prices (Secretaría de Energía data, daily).
+  | { readonly name: 'fuel_prices'; readonly product: FuelProduct | null }
+  | { readonly name: 'dollar_rate' }
+  // Here (GPS) or a named town.
+  | { readonly name: 'weather'; readonly place: string | null }
+  // CCA monthly list, thousands of pesos.
+  | { readonly name: 'car_price'; readonly query: string; readonly year: number | null }
+  // The service log on the phone; the car is always confirmed with the user first.
+  | { readonly name: 'log_service'; readonly car: string; readonly item: string; readonly km: number | null; readonly note: string | null }
+  | { readonly name: 'read_service_log'; readonly car: string | null };
+
+export const FUEL_PRODUCTS = ['nafta', 'nafta_premium', 'gasoil', 'gasoil_premium', 'gnc'] as const;
+export type FuelProduct = (typeof FUEL_PRODUCTS)[number];
 
 export const TOOL_LIMITS = {
   readPidsMax: 6,
@@ -233,6 +252,58 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
         additionalProperties: false,
       },
     ),
+    fn(
+      'fuel_prices',
+      'Estaciones de servicio más cercanas al auto con su marca, dirección, distancia y precio por litro (con cuántos ' +
+        'días tiene el dato), y la más barata cerca. Datos oficiales de la Secretaría de Energía. Los resultados quedan ' +
+        'numerados para set_destination.',
+      {
+        type: 'object',
+        properties: { product: { type: 'string', enum: FUEL_PRODUCTS, description: 'Si se sabe qué carga.' } },
+        additionalProperties: false,
+      },
+    ),
+    fn('dollar_rate', 'Cotización del dólar en Argentina: oficial, blue, MEP, contado con liquidación, tarjeta.', NO_ARGS),
+    fn('weather', 'El tiempo ahora y en las próximas 6 horas: cielo, temperatura, lluvia, viento y visibilidad.', {
+      type: 'object',
+      properties: { place: { type: 'string', maxLength: 80, description: 'Otra ciudad; sin esto, donde está el auto.' } },
+      additionalProperties: false,
+    }),
+    fn(
+      'car_price',
+      'Precio de un auto nuevo o usado por versión y año, según la lista mensual de la Cámara del Comercio Automotor ' +
+        '(en miles de pesos, para autos en muy buen estado).',
+      {
+        type: 'object',
+        properties: {
+          query: { type: 'string', minLength: 2, maxLength: 100, description: 'Marca, modelo y versión: "Onix 1.4 LTZ".' },
+          year: { type: 'integer', minimum: 1990, maximum: 2100 },
+        },
+        required: ['query'],
+        additionalProperties: false,
+      },
+    ),
+    fn(
+      'log_service',
+      'Anota en el registro de service del teléfono un trabajo hecho (cambio de aceite, filtros, frenos, VTV…). ' +
+        'Antes confirmá con el usuario de qué auto se trata.',
+      {
+        type: 'object',
+        properties: {
+          car: { type: 'string', minLength: 2, maxLength: 60, description: 'El auto confirmado por el usuario: marca, modelo, año o patente.' },
+          item: { type: 'string', minLength: 2, maxLength: 80, description: 'Qué se hizo.' },
+          km: { type: 'integer', minimum: 0, maximum: 2000000 },
+          note: { type: 'string', maxLength: 200 },
+        },
+        required: ['car', 'item'],
+        additionalProperties: false,
+      },
+    ),
+    fn('read_service_log', 'Lee el registro de service: qué se hizo, cuándo y a cuántos km.', {
+      type: 'object',
+      properties: { car: { type: 'string', maxLength: 60, description: 'Solo los de este auto.' } },
+      additionalProperties: false,
+    }),
   ];
 }
 
@@ -331,6 +402,50 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       if (typeof q !== 'string' || q.trim().length < 2 || q.length > 200) return bad('"query" debe tener entre 2 y 200 caracteres.');
       return { ok: true, call: { name, query: q.trim() } };
     }
+    case 'fuel_prices': {
+      const extra = only('product');
+      if (extra) return bad(extra);
+      const p = a.product;
+      if (p !== undefined && !(FUEL_PRODUCTS as readonly unknown[]).includes(p)) return bad(`"product" debe ser ${FUEL_PRODUCTS.join(', ')}.`);
+      return { ok: true, call: { name, product: (p as FuelProduct | undefined) ?? null } };
+    }
+    case 'weather': {
+      const extra = only('place');
+      if (extra) return bad(extra);
+      const p = a.place;
+      if (p !== undefined && (typeof p !== 'string' || p.trim().length < 2 || p.length > 80)) return bad('"place" debe ser el nombre de una ciudad.');
+      return { ok: true, call: { name, place: typeof p === 'string' ? p.trim() : null } };
+    }
+    case 'car_price': {
+      const extra = only('query', 'year');
+      if (extra) return bad(extra);
+      const q = a.query;
+      if (typeof q !== 'string' || q.trim().length < 2 || q.length > 100) return bad('"query" debe tener entre 2 y 100 caracteres.');
+      const y = a.year;
+      if (y !== undefined && (typeof y !== 'number' || !Number.isInteger(y) || y < 1990 || y > 2100)) return bad('"year" debe ser un año.');
+      return { ok: true, call: { name, query: q.trim(), year: (y as number | undefined) ?? null } };
+    }
+    case 'log_service': {
+      const extra = only('car', 'item', 'km', 'note');
+      if (extra) return bad(extra);
+      const { car, item, km, note } = a;
+      if (typeof car !== 'string' || car.trim().length < 2 || car.length > 60) return bad('"car" debe decir qué auto, confirmado con el usuario.');
+      if (typeof item !== 'string' || item.trim().length < 2 || item.length > 80) return bad('"item" debe decir qué se hizo.');
+      if (km !== undefined && (typeof km !== 'number' || !Number.isInteger(km) || km < 0 || km > 2_000_000)) return bad('"km" debe ser un número entero.');
+      if (note !== undefined && (typeof note !== 'string' || note.length > 200)) return bad('"note" es texto de hasta 200 caracteres.');
+      return {
+        ok: true,
+        call: { name, car: car.trim(), item: item.trim(), km: (km as number | undefined) ?? null, note: typeof note === 'string' && note.trim() ? note.trim() : null },
+      };
+    }
+    case 'read_service_log': {
+      const extra = only('car');
+      if (extra) return bad(extra);
+      const car = a.car;
+      if (car !== undefined && (typeof car !== 'string' || car.length > 60)) return bad('"car" es texto.');
+      return { ok: true, call: { name, car: typeof car === 'string' && car.trim() ? car.trim() : null } };
+    }
+    case 'dollar_rate':
     case 'read_freeze_frame':
     case 'read_readiness':
     case 'read_vehicle_info':

@@ -27,4 +27,9 @@ export const navigationTools = new NavigationTools({
   openDrive: () => router.push('/drive'),
   state: () => useNavStore.getState(),
   followLink: (url, signal) => followLink(url, signal),
+  remote: {
+    fuel: (here, product, signal) =>
+      container.toolsClient.post('fuel', { lat: here.lat, lng: here.lng, ...(product ? { product } : {}) }, signal, 'Los precios de combustible'),
+    weather: (at, signal) => container.toolsClient.post('weather', { lat: at.lat, lng: at.lng }, signal, 'El pronóstico'),
+  },
 });

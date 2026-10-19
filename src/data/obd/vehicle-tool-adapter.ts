@@ -121,6 +121,12 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   }
 
   // Every mode-01 PID the car announced that the app knows how to read.
+  // The VIN this session already read (codes, freeze frame, vehicle info), or null.
+  knownVin(): string | null {
+    const s = this.session();
+    return s ? (this.vins.get(s) ?? null) : null;
+  }
+
   supportedPids(): readonly PidId[] {
     const info = this.session()?.sessionInfo;
     if (!info) return [];
@@ -184,7 +190,14 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'route_status':
       case 'stop_navigation':
       case 'where_am_i':
+      case 'fuel_prices':
+      case 'weather':
         return fail('not_supported', 'La navegación no la maneja el adaptador.'); // NavigationTools
+      case 'dollar_rate':
+      case 'car_price':
+      case 'log_service':
+      case 'read_service_log':
+        return fail('not_supported', 'No la maneja el adaptador.'); // OnlineTools, ServiceTools
       case 'web_search':
         return fail('not_supported', 'La búsqueda web no la maneja el adaptador.'); // WebSearchTool
     }

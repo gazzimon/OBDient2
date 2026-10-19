@@ -7,7 +7,7 @@
 // geocoder, GPS and navigation controller.
 
 import { distanceM, type LatLng } from '@/domain/geo/geo';
-import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
+import type { FuelProduct, ToolCall, ToolErrorCode, ToolOutcome } from '@/domain/assistant/tools';
 import { instructionEs } from '@/domain/navigation/guidance';
 import { findMapLink, isShortLink, parseMapLink } from '@/domain/navigation/map-links';
 import { findByText, parseCorner, withDistance, type FoundPlace } from '@/domain/navigation/places';
@@ -30,9 +30,28 @@ export interface NavigationToolDeps {
     progress: RouteProgress | null;
     error: string | null;
   };
+  // Server-side data that needs the position (obdient-tools).
+  readonly remote?: RemotePlaces;
   // Follows a short link (maps.app.goo.gl) to the real one.
   readonly followLink?: (url: string, signal?: AbortSignal) => Promise<string>;
   readonly now?: () => number;
+}
+
+export type RemoteReply<T> = { readonly ok: true; readonly data: T } | { readonly ok: false; readonly error: ToolErrorCode; readonly message: string };
+
+export interface FuelStation {
+  readonly brand: string;
+  readonly company: string;
+  readonly address: string;
+  readonly town: string;
+  readonly distanceKm: number;
+  readonly location: LatLng;
+  readonly prices: Readonly<Record<string, { readonly price: number; readonly daysOld: number }>>;
+}
+
+export interface RemotePlaces {
+  fuel(here: LatLng, product: FuelProduct | null, signal: AbortSignal): Promise<RemoteReply<{ nearest: FuelStation[]; cheapest: FuelStation | null; updated: string | null }>>;
+  weather(at: LatLng, signal: AbortSignal): Promise<RemoteReply<unknown>>;
 }
 
 // A map link the app read before the model sees the message.
@@ -42,7 +61,7 @@ export type LinkResult =
 
 type NavCall = Extract<
   ToolCall,
-  { name: 'search_place' | 'set_destination' | 'start_navigation' | 'route_status' | 'stop_navigation' | 'where_am_i' }
+  { name: 'search_place' | 'set_destination' | 'start_navigation' | 'route_status' | 'stop_navigation' | 'where_am_i' | 'fuel_prices' | 'weather' }
 >;
 
 export const NAVIGATION_TOOL_NAMES: ReadonlySet<ToolCall['name']> = new Set([
@@ -52,6 +71,8 @@ export const NAVIGATION_TOOL_NAMES: ReadonlySet<ToolCall['name']> = new Set([
   'route_status',
   'stop_navigation',
   'where_am_i',
+  'fuel_prices',
+  'weather',
 ]);
 
 const LOCALITY_MS = 10 * 60_000;
@@ -81,6 +102,10 @@ export class NavigationTools {
           return this.stopNavigation();
         case 'where_am_i':
           return await this.whereAmI(signal);
+        case 'fuel_prices':
+          return await this.fuel((call as Extract<NavCall, { name: 'fuel_prices' }>).product, signal);
+        case 'weather':
+          return await this.weather((call as Extract<NavCall, { name: 'weather' }>).place, signal);
         default:
           return fail('not_supported', 'No es una herramienta de navegación.');
       }
@@ -119,6 +144,43 @@ export class NavigationTools {
       if (signal?.aborted) return { ok: false, reason: 'cancelado' };
       return { ok: false, reason: `sin respuesta (${err instanceof Error ? err.message : String(err)})` };
     }
+  }
+
+  // The nearest stations become the numbered results, so "llevame a la más
+  // barata" is the usual set_destination → "¿es ahí?".
+  private async fuel(product: FuelProduct | null, signal: AbortSignal): Promise<ToolOutcome> {
+    if (!this.deps.remote) return fail('not_supported', 'Los precios de combustible no están disponibles.');
+    const here = await this.deps.position();
+    if (!here) return fail('not_supported', 'No hay posición del GPS todavía.');
+    const r = await this.deps.remote.fuel(here, product, signal);
+    if (!r.ok) return r;
+    const { nearest, cheapest, updated } = r.data;
+    const list = cheapest && !nearest.some((s) => same(s, cheapest)) ? [...nearest, cheapest] : nearest;
+    this.results = list.map((s) => ({ name: `${s.brand}, ${s.address}`, detail: s.town, location: s.location, distanceKm: s.distanceKm }));
+    const stations = list.map((s, i) => ({ result: i + 1, brand: s.brand, address: s.address, town: s.town, distanceKm: s.distanceKm, prices: s.prices }));
+    const cheapestResult = cheapest ? list.findIndex((s) => same(s, cheapest)) + 1 : null;
+    return {
+      ok: true,
+      data: { stations, cheapest: cheapestResult, dataUpdated: updated },
+      summary: stations.length ? `${stations.length} estaciones cerca` : 'No hay estaciones cerca',
+    };
+  }
+
+  private async weather(place: string | null, signal: AbortSignal): Promise<ToolOutcome> {
+    if (!this.deps.remote) return fail('not_supported', 'El pronóstico no está disponible.');
+    const here = await this.deps.position();
+    let at = here;
+    let where = 'donde está el auto';
+    if (place) {
+      const found = await this.deps.geocoder().search(place, here, signal, { limit: 1 });
+      if (!found[0]) return fail('not_supported', `No encontré "${place}".`);
+      at = found[0].location;
+      where = [found[0].name, found[0].detail].filter(Boolean).join(', ');
+    }
+    if (!at) return fail('not_supported', 'No hay posición del GPS todavía.');
+    const r = await this.deps.remote.weather(at, signal);
+    if (!r.ok) return r;
+    return { ok: true, data: { place: where, ...(r.data as object) }, summary: `Pronóstico: ${where}` };
   }
 
   private async whereAmI(signal: AbortSignal): Promise<ToolOutcome> {
@@ -248,3 +310,5 @@ function km(m: number): number {
 function fail(error: Extract<ToolOutcome, { ok: false }>['error'], message: string): ToolOutcome {
   return { ok: false, error, message };
 }
+
+const same = (a: FuelStation, b: FuelStation) => a.location.lat === b.location.lat && a.location.lng === b.location.lng;
