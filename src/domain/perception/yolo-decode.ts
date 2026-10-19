@@ -32,6 +32,42 @@ interface Candidate {
   cls: number;
 }
 
+function boxIou(a: Candidate, b: Candidate): number {
+  'worklet';
+  const ix = Math.max(0, Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1));
+  const iy = Math.max(0, Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1));
+  const inter = ix * iy;
+  const u = (a.x2 - a.x1) * (a.y2 - a.y1) + (b.x2 - b.x1) * (b.y2 - b.y1) - inter;
+  return u <= 0 ? 0 : inter / u;
+}
+
+// Helpers first: on the camera thread worklets are not hoisted.
+// Per-class greedy NMS.
+export function nms(cands: Candidate[], iouThreshold: number, max: number): Candidate[] {
+  'worklet';
+  const sorted = cands.slice().sort((a, b) => b.score - a.score);
+  const kept: Candidate[] = [];
+  for (const c of sorted) {
+    let suppressed = false;
+    for (const k of kept) {
+      if (k.cls === c.cls && boxIou(k, c) > iouThreshold) {
+        suppressed = true;
+        break;
+      }
+    }
+    if (!suppressed) {
+      kept.push(c);
+      if (kept.length >= max) break;
+    }
+  }
+  return kept;
+}
+
+function top(cands: Candidate[], max: number): Candidate[] {
+  'worklet';
+  return cands.slice().sort((a, b) => b.score - a.score).slice(0, max);
+}
+
 export function decodeYolo(out: Float32Array, opts: DecodeOptions, lb: Letterbox): Detection[] {
   'worklet';
   const k = opts.normalized ? lb.size : 1;
@@ -83,39 +119,4 @@ export function decodeYolo(out: Float32Array, opts: DecodeOptions, lb: Letterbox
     dets.push({ cls, score: c.score, box: modelBoxToFrame(c, lb) });
   }
   return dets;
-}
-
-// Per-class greedy NMS.
-export function nms(cands: Candidate[], iouThreshold: number, max: number): Candidate[] {
-  'worklet';
-  const sorted = cands.slice().sort((a, b) => b.score - a.score);
-  const kept: Candidate[] = [];
-  for (const c of sorted) {
-    let suppressed = false;
-    for (const k of kept) {
-      if (k.cls === c.cls && boxIou(k, c) > iouThreshold) {
-        suppressed = true;
-        break;
-      }
-    }
-    if (!suppressed) {
-      kept.push(c);
-      if (kept.length >= max) break;
-    }
-  }
-  return kept;
-}
-
-function top(cands: Candidate[], max: number): Candidate[] {
-  'worklet';
-  return cands.slice().sort((a, b) => b.score - a.score).slice(0, max);
-}
-
-function boxIou(a: Candidate, b: Candidate): number {
-  'worklet';
-  const ix = Math.max(0, Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1));
-  const iy = Math.max(0, Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1));
-  const inter = ix * iy;
-  const u = (a.x2 - a.x1) * (a.y2 - a.y1) + (b.x2 - b.x1) * (b.y2 - b.y1) - inter;
-  return u <= 0 ? 0 : inter / u;
 }

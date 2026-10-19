@@ -3,6 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { instructionEs } from '@/domain/navigation/guidance';
 import { AR_BLOCKER_ES, arBlocker, headingGuide } from '@/domain/navigation/heading-guide';
@@ -77,8 +78,16 @@ export function DriveHud({
     route && progress ? (route.durationS * progress.remainingM) / Math.max(1, route.distanceM) : null;
 
   const muted = useVoiceMuted();
+  // Landscape: the camera cutout and the gesture bar are on the sides.
+  const insets = useSafeAreaInsets();
+  const pad = {
+    paddingTop: Math.max(12, insets.top),
+    paddingBottom: Math.max(12, insets.bottom),
+    paddingLeft: Math.max(12, insets.left),
+    paddingRight: Math.max(12, insets.right),
+  };
   return (
-    <View pointerEvents="box-none" className="absolute inset-0 p-3">
+    <View pointerEvents="box-none" className="absolute inset-0" style={pad}>
       {/* Next maneuver */}
       <View className="flex-row items-start justify-between">
         {status === 'arrived' ? (
