@@ -11,6 +11,7 @@
 #   curl "https://obdient.duckdns.org/photon/api?q=obelisco&limit=1"
 #   curl -H "Authorization: Bearer $(cat ~/.config/obdient/llm-token)" https://obdient.duckdns.org/llm/v1/models
 #   curl https://obdient.duckdns.org/auth/healthz
+#   curl https://obdient.duckdns.org/tools/healthz
 
 obdient.duckdns.org {
 	# OBDient2: rutas (OSRM) y búsqueda (Photon) en la Z440.
@@ -37,6 +38,11 @@ obdient.duckdns.org {
 	# OBDient2: cuentas (ADR-0008). Firebase ID token -> clave del modelo.
 	handle /auth/* {
 		reverse_proxy 127.0.0.1:8790
+	}
+
+	# OBDient2: herramientas con internet (M8). Búsqueda web sobre SearXNG local.
+	handle /tools/* {
+		reverse_proxy 127.0.0.1:8791
 	}
 
 	# OBDient: proxy senior, como hasta ahora.

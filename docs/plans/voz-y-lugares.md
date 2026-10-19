@@ -46,6 +46,10 @@ Teléfono (agente) ──JSON-RPC/HTTPS──► obdient-tools (K16, MCP)
 
 - La búsqueda web nunca le pasa texto de páginas al modelo: el servicio extrae direcciones, las valida
   con HERE/Photon y devuelve campos. Es la defensa contra la inyección de instrucciones.
+- *Hecho 2026-10-19 (`web_search`, server/tools):* pasa el fragmento del buscador (no la página),
+  recortado a 180 caracteres, en una línea, sin marcas, corchetes ni llaves; y las direcciones que
+  aparecen, aparte. El modelo las busca con `search_place` (Photon) antes de ir. Sin URL. Solo con la
+  clave de la cuenta (new-api la valida), 20 búsquedas por minuto, sin registrar las consultas.
 - Otros agentes (Claude) pueden usar el mismo servidor MCP.
 
 **Proveedores, por costo (2026, a verificar en sus páginas antes de contratar):**

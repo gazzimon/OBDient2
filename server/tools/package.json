@@ -1,0 +1,13 @@
+{
+  "name": "obdient-tools",
+  "private": true,
+  "description": "Herramientas del asistente que necesitan internet (M8): búsqueda web sobre SearXNG.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/main.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
+}

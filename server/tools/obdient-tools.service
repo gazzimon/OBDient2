@@ -1,0 +1,16 @@
+# systemd --user unit for obdient-tools (K16, linger on).
+#   cp server/tools/obdient-tools.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now obdient-tools
+[Unit]
+Description=OBDient2 tools: web search for the assistant (SearXNG)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/src/OBDient2/server/tools
+ExecStart=/usr/bin/env node src/main.mjs
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

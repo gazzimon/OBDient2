@@ -70,6 +70,7 @@ function simulated(): VehicleToolsPort {
       case 'start_navigation':
       case 'route_status':
       case 'stop_navigation':
+      case 'web_search':
         return { ok: false, error: 'not_supported', message: 'Sin navegación en el humo.' };
     }
   };
