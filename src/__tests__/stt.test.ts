@@ -1,5 +1,5 @@
 import { RealtimeSttSession, type SocketLike, type SttEvent } from '@/data/stt/realtime-stt';
-import { bytesToBase64, pcm16Bytes, resample, rms, SilenceDetector, toMono } from '@/domain/voice/pcm';
+import { bytesToBase64, pcm16Bytes, QUIET_RMS, resample, rms, SilenceDetector, toMono, withComfortNoise } from '@/domain/voice/pcm';
 
 describe('pcm', () => {
   it('resamples 48 kHz to 16 kHz and mixes to mono', () => {
@@ -19,6 +19,15 @@ describe('pcm', () => {
     expect(bytesToBase64(bytes.slice(0, 2))).toBe('AQA=');
     expect(bytesToBase64(bytes.slice(0, 3))).toBe('AQD+');
     expect(bytesToBase64(bytes.slice(0, 10))).toBe('AQD+//9/AIACAQ==');
+  });
+
+  it('a quiet chunk gets comfort noise (Voxtral stops at digital silence); speech is untouched', () => {
+    const silent = new Int16Array(1600);
+    const filled = withComfortNoise(silent);
+    expect(rms(filled)).toBeGreaterThan(QUIET_RMS);
+    expect(rms(filled)).toBeLessThan(0.01);
+    const speech = Int16Array.from({ length: 1600 }, (_, i) => Math.round(8000 * Math.sin(i / 5)));
+    expect(withComfortNoise(speech)).toBe(speech);
   });
 
   it('a phrase ends after the silence that follows speech', () => {
