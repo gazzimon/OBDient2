@@ -9,7 +9,8 @@
 import type { LatLng } from '@/domain/geo/geo';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import { instructionEs } from '@/domain/navigation/guidance';
-import { findByText, type FoundPlace } from '@/domain/navigation/places';
+import { findMapLink, isShortLink, parseMapLink } from '@/domain/navigation/map-links';
+import { findByText, withDistance, type FoundPlace } from '@/domain/navigation/places';
 import type { GeocodingPort, Place, Route } from '@/domain/navigation/route';
 import type { RouteProgress } from '@/domain/navigation/route-progress';
 import type { NavStatus } from '@/store/navStore';
@@ -31,8 +32,15 @@ export interface NavigationToolDeps {
     progress: RouteProgress | null;
     error: string | null;
   };
+  // Follows a short link (maps.app.goo.gl) to the real one.
+  readonly followLink?: (url: string, signal?: AbortSignal) => Promise<string>;
   readonly now?: () => number;
 }
+
+// A map link the app read before the model sees the message.
+export type LinkResult =
+  | { readonly ok: true; readonly name: string; readonly detail: string; readonly approximate: boolean; readonly distanceKm: number | null }
+  | { readonly ok: false; readonly reason: string };
 
 type NavCall = Extract<ToolCall, { name: 'search_place' | 'set_destination' | 'start_navigation' | 'route_status' | 'stop_navigation' }>;
 
@@ -70,6 +78,36 @@ export class NavigationTools {
       if (signal.aborted) return fail('cancelled', 'Cancelado.');
       // Geocoder or router unreachable (no signal, server down).
       return fail('timeout', `Sin respuesta del servicio de mapas: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // The destination of a map link becomes result 1 of the last search, so the
+  // usual set_destination → "¿es ahí?" → start_navigation follows.
+  async loadLink(text: string, signal?: AbortSignal): Promise<LinkResult | null> {
+    let url = findMapLink(text);
+    if (!url) return null;
+    try {
+      if (isShortLink(url)) {
+        if (!this.deps.followLink) return { ok: false, reason: 'no se pueden abrir enlaces cortos' };
+        url = await this.deps.followLink(url, signal);
+      }
+      const link = parseMapLink(url);
+      if (!link) return { ok: false, reason: 'el enlace no trae un lugar' };
+      const near = await this.deps.position();
+      if (link.location) {
+        const place = withDistance({ name: link.name ?? 'Punto del enlace', detail: '', location: link.location }, near);
+        this.results = [place];
+        return { ok: true, name: place.name, detail: '', approximate: false, distanceKm: place.distanceKm };
+      }
+      const found = link.query ? await findByText(this.deps.geocoder(), link.query, near, signal) : [];
+      const first = found[0];
+      if (!first) return { ok: false, reason: `no encontré la dirección "${link.query ?? ''}"` };
+      const named = { ...first, name: link.name ?? first.name, detail: [first.name, first.detail].filter(Boolean).join(', ') };
+      this.results = [named, ...found.slice(1)];
+      return { ok: true, name: named.name, detail: named.detail, approximate: true, distanceKm: named.distanceKm };
+    } catch (err) {
+      if (signal?.aborted) return { ok: false, reason: 'cancelado' };
+      return { ok: false, reason: `sin respuesta (${err instanceof Error ? err.message : String(err)})` };
     }
   }
 

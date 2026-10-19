@@ -75,7 +75,7 @@ export async function findByText(
   return [...nearOnes, ...places.filter((p) => !isNear(p))].slice(0, MAX_RESULTS);
 }
 
-function withDistance(p: Place, near: LatLng | null): FoundPlace {
+export function withDistance(p: Place, near: LatLng | null): FoundPlace {
   return { ...p, distanceKm: near ? Math.round(distanceM(near, p.location) / 100) / 10 : null };
 }
 

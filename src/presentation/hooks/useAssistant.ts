@@ -25,6 +25,8 @@ import {
   type Conversation,
 } from '@/domain/assistant/conversation';
 import { noteReply, notesBrief } from '@/domain/assistant/offline';
+import { asksForNotes } from '@/domain/assistant/phrase-router';
+import { navigationTools } from '@/presentation/services/navigation-tools';
 import { useChatStore } from '@/store/chatStore';
 import { screenConfirmation } from '@/store/confirmStore';
 import { assistantContext } from './assistantContext';
@@ -82,7 +84,18 @@ async function offlineTurn(conv: Conversation, text: string, photos: number, at:
 
 const hhmm = (at: number) => new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-async function run(text: string, images: readonly string[], noteIds: readonly string[] | null): Promise<void> {
+interface Message {
+  // What the screen shows.
+  readonly text: string;
+  readonly images: readonly string[];
+  // What the model gets, when the app added something (a map link it read,
+  // the notes): otherwise the same text.
+  readonly forModel?: string;
+  // Notes this message carries: cleared when the assistant answers.
+  readonly noteIds?: readonly string[];
+}
+
+async function run({ text, images, forModel, noteIds = undefined }: Message): Promise<void> {
   const first = useChatStore.getState();
   if (first.runningId || (!text.trim() && images.length === 0)) return;
   const pending = first.activeId ? summaries.get(first.activeId) : undefined;
@@ -98,10 +111,33 @@ async function run(text: string, images: readonly string[], noteIds: readonly st
   const answerId = newId('a');
   // Notes are only ever sent to the assistant: never turned into a note again.
   const canGoOffline = noteIds == null;
+  let modelText = (forModel ?? text).trim();
   try {
     if (canGoOffline && (await knownOffline())) {
       conv = await offlineTurn(conv, text, images.length, startedAt);
       return;
+    }
+    // A map link is read here, not by the model (it cannot open links).
+    const link = await navigationTools.loadLink(modelText, controller.signal);
+    if (link) {
+      const rowId = newId('t');
+      const call = { name: 'search_place' as const, query: 'enlace de mapa' };
+      conv = applyEvent(conv, { type: 'tool_start', id: rowId, call }, Date.now(), answerId);
+      conv = applyEvent(
+        conv,
+        {
+          type: 'tool_end',
+          id: rowId,
+          call,
+          outcome: link.ok
+            ? { ok: true, data: null, summary: `Enlace: ${link.name}${link.approximate ? ' (aproximado)' : ''}` }
+            : { ok: false, error: 'not_supported', message: `No pude leer el enlace: ${link.reason}` },
+        },
+        Date.now(),
+        answerId,
+      );
+      useChatStore.getState().save(conv);
+      modelText = `${modelText}\n\n${linkNote(link)}`;
     }
     let shown = false;
     const r = await container.assistant.send({
@@ -109,7 +145,7 @@ async function run(text: string, images: readonly string[], noteIds: readonly st
       history: conv.api,
       summary: conv.summary ?? null,
       clearsSoFar: conv.clears,
-      text: text.trim(),
+      text: modelText,
       images,
       context: assistantContext(),
       confirmation: screenConfirmation,
@@ -139,16 +175,33 @@ async function run(text: string, images: readonly string[], noteIds: readonly st
   }
 }
 
+// What the model is told about a link the app read.
+function linkNote(link: NonNullable<Awaited<ReturnType<typeof navigationTools.loadLink>>>): string {
+  if (!link.ok) return `[enlace de mapa: la app no lo pudo leer (${link.reason})]`;
+  const where = [link.name, link.detail].filter(Boolean).join(', ');
+  const km = link.distanceKm != null ? `, a ${String(link.distanceKm).replace('.', ',')} km` : '';
+  const approx = link.approximate ? ' Ubicación aproximada: el enlace no trae el punto exacto y se buscó su dirección.' : '';
+  return `[enlace de mapa leído por la app: ${where}${km}. Ya es el resultado 1 de search_place.${approx}]`;
+}
+
 export function useAssistant() {
   const running = useChatStore((s) => s.runningId != null);
 
-  const send = useCallback((text: string, images: readonly string[] = []) => run(text, images, null), []);
+  const send = useCallback(async (text: string, images: readonly string[] = []) => {
+    // "Leé las notas": the same as the button, with the driver's own words on screen.
+    const notes = useChatStore.getState().active()?.notes ?? [];
+    if (notes.length && images.length === 0 && asksForNotes(text) && !(await knownOffline())) {
+      return run({ text, images, forModel: notesBrief(notes, hhmm), noteIds: notes.map((n) => n.id) });
+    }
+    return run({ text, images });
+  }, []);
 
   // The notes taken without the assistant, as one message, with the driver's yes.
   const sendNotes = useCallback(async () => {
     const notes = useChatStore.getState().active()?.notes ?? [];
     if (notes.length === 0) return;
-    await run(notesBrief(notes, hhmm), [], notes.map((n) => n.id));
+    const brief = notesBrief(notes, hhmm);
+    await run({ text: brief, images: [], noteIds: notes.map((n) => n.id) });
   }, []);
 
   const discardNotes = useCallback(() => {
