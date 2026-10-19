@@ -1,0 +1,10 @@
+# Daily data for obdient-tools: fuel prices and dollar rates.
+[Unit]
+Description=OBDient2 tools: daily data (fuel, dollar)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/src/OBDient2/server/tools
+ExecStart=/usr/bin/env node src/jobs.mjs daily
+NoNewPrivileges=yes

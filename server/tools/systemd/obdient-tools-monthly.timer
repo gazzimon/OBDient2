@@ -1,0 +1,10 @@
+# The 5th of each month (the CCA publishes early in the month), 06:45.
+[Unit]
+Description=OBDient2 tools: monthly data
+
+[Timer]
+OnCalendar=*-*-05 06:45:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

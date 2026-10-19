@@ -1,0 +1,11 @@
+# Every day at 06:15 (Argentina); if the K16 was off, as soon as it starts.
+[Unit]
+Description=OBDient2 tools: daily data
+
+[Timer]
+OnCalendar=*-*-* 06:15:00
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target
