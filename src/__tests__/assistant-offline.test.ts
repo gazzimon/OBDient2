@@ -6,6 +6,7 @@ import { routePhrase } from '@/domain/assistant/phrase-router';
 import type { AssistantContext } from '@/domain/assistant/prompt';
 import { SUMMARY_PREFIX, summaryMessages, summaryRequest } from '@/domain/assistant/summary';
 import { matchSymptoms } from '@/domain/assistant/symptoms';
+import { MarkerFilter } from '@/domain/assistant/stream-filter';
 import type { ApiMessage, LlmPort, LlmRequest } from '@/domain/ports/llm.port';
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
@@ -238,5 +239,44 @@ describe('summary', () => {
     expect(m[1]).toMatchObject({ role: 'user', content: expect.stringContaining('Corsa 1.4.') });
     expect(m[2]).toMatchObject({ role: 'assistant', content: 'Entendido.' });
     expect(m[3]).toMatchObject({ role: 'user' });
+  });
+});
+
+describe('marker filter (streaming)', () => {
+  const run = (chunks: string[]) => {
+    const f = new MarkerFilter();
+    return chunks.map((c) => f.push(c)).join('') + f.flush();
+  };
+  it('never shows a marker, even split across chunks', () => {
+    expect(run(['Voy a ver. [INT', 'ENT: tool_', 'call] Listo'])).toBe('Voy a ver.  Listo');
+    expect(run(['[tool: read_dtcs]'])).toBe('');
+  });
+  it('lets other brackets through, once they close or end', () => {
+    expect(run(['Es [importante] ok'])).toBe('Es [importante] ok');
+    expect(run(['Mirá el [1'])).toBe('Mirá el [1');
+    expect(run(['uno [\n', 'dos'])).toBe('uno [\ndos');
+  });
+  it('does not hold plain text', () => {
+    const f = new MarkerFilter();
+    expect(f.push('Hola ')).toBe('Hola ');
+  });
+});
+
+describe('memo', () => {
+  it('does not reuse the fault history, which changes with every code read', async () => {
+    const history: ToolCall = { name: 'read_fault_history' };
+    let reads = 0;
+    const vehicle: VehicleToolsPort = {
+      supportedPids: () => [],
+      execute: async () => ({ ok: true, data: { n: ++reads }, summary: 'h' }),
+    };
+    const calls = [{ id: '1', name: 'read_fault_history', arguments: '{}' }];
+    let round = 0;
+    const llm: LlmPort = {
+      complete: async () => (round++ < 2 ? { content: '', toolCalls: calls, finishReason: 'tool_calls' } : { content: 'ok', toolCalls: [], finishReason: 'stop' }),
+    };
+    await runTurn({ history: [], text: 'historial', context: CTX, llm, vehicle, confirmation: { confirm: async () => true } });
+    expect(history.name).toBe('read_fault_history');
+    expect(reads).toBe(2);
   });
 });
