@@ -153,17 +153,27 @@ export default function AssistantScreen() {
         )}
 
         {status === 'signed-in' && notes > 0 && !running && (
-          <View className="flex-row items-center gap-3 px-4 py-2 border-t border-brand-border bg-brand-surface">
-            <MaterialCommunityIcons name="note-text-outline" size={18} color={COLORS.amber} />
-            <Text className="text-brand-text font-mono text-xs flex-1">
-              {notes === 1 ? '1 nota sin enviar' : `${notes} notas sin enviar`}
-            </Text>
-            <Pressable onPress={discardNotes} hitSlop={8} className="active:opacity-60">
-              <Text className="text-brand-muted font-mono text-xs">Descartar</Text>
-            </Pressable>
-            <Pressable onPress={() => void sendNotes()} hitSlop={8} className="active:opacity-60">
-              <Text className="text-brand-mint font-mono-bold text-xs">Pasar al asistente</Text>
-            </Pressable>
+          <View className="px-4 py-3 border-t border-brand-border bg-brand-surface">
+            <View className="flex-row items-center gap-2">
+              <MaterialCommunityIcons name="note-text-outline" size={18} color={COLORS.amber} />
+              <Text className="text-brand-text font-mono text-xs flex-1">
+                {notes === 1 ? '1 nota sin enviar' : `${notes} notas sin enviar`}
+              </Text>
+            </View>
+            <View className="flex-row gap-2 mt-2">
+              <Pressable
+                onPress={() => void sendNotes()}
+                className="flex-1 h-10 rounded-full items-center justify-center active:opacity-60"
+                style={{ backgroundColor: COLORS.mint }}
+              >
+                <Text className="font-mono-bold text-xs" style={{ color: COLORS.bg }}>
+                  Pasar al asistente
+                </Text>
+              </Pressable>
+              <Pressable onPress={discardNotes} className="h-10 px-5 rounded-full items-center justify-center border border-brand-border active:opacity-60">
+                <Text className="text-brand-muted font-mono text-xs">Descartar</Text>
+              </Pressable>
+            </View>
           </View>
         )}
         {status === 'signed-in' && photos.length > 0 && (
