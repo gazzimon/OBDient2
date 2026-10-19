@@ -89,14 +89,16 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
   );
   const onResult = perception.onFrame;
 
+  // `trace.step` names the last step reached, for the error report.
   const processFrame = useCallback(
-    (frame: Frame) => {
+    (frame: Frame, trace: { step: string }) => {
       'worklet';
       if ((model == null || !enabled) && !capture) {
         frame.dispose();
         return;
       }
       const t0 = performance.now();
+      trace.step = 'pixels';
       const src = pixelSourceFromFrame(frame);
       if (src == null) {
         frame.dispose();
@@ -105,10 +107,13 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
 
       if (capture) {
         const now = Date.now();
+        trace.step = 'capture-state';
         const cs = captureState.getDirty();
+        trace.step = 'capture-decision';
         const keep = captureDecision(cs, now, DEFAULT_CAPTURE);
         if (keep) {
           captureState.setBlocking(cs);
+          trace.step = 'capture-pack';
           const shot: CapturedFrame = {
             buffer: packRows(src.data, src.width, src.height, src.bytesPerRow, src.bytesPerPixel),
             width: src.width,
@@ -119,6 +124,7 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
             burst: keep.burst,
             index: keep.index,
           };
+          trace.step = 'capture-send';
           scheduleOnRN(onCapture, shot);
         }
       }
@@ -127,16 +133,22 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
         return;
       }
 
+      trace.step = 'frame-index';
       const i = frameIndex.getDirty();
       frameIndex.setBlocking(i + 1);
+      trace.step = 'region';
       const region = regionForFrame(i, DEFAULT_PLAN);
+      trace.step = 'alloc';
       const input = allocateInput(manifest);
+      trace.step = 'fill';
       const lb = fillInput(src, region, manifest.inputSize, manifest.input, input);
       frame.dispose(); // pixels copied into the tensor; free the camera buffer early
 
       const t1 = performance.now();
+      trace.step = 'run';
       const outputs = model.runSync([input.buffer as ArrayBuffer]);
       const t2 = performance.now();
+      trace.step = 'decode';
       const detections = decodeYolo(outputToFloat(outputs[0]!, manifest.output), decode, lb);
 
       const result: FrameResult = {
@@ -147,6 +159,7 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
         // By value: on the camera thread FULL_FRAME is a copy, identity never matches.
         crop: region.x1 > 0,
       };
+      trace.step = 'send';
       scheduleOnRN(onResult, result);
     },
     [model, enabled, capture, manifest, decode, frameIndex, captureState, onCapture, onResult],
@@ -155,12 +168,13 @@ export function useDetector(manifest: DetectorManifest, delegate: DetectorDelega
   const onFrame = useCallback(
     (frame: Frame) => {
       'worklet';
+      const trace = { step: 'start' };
       try {
-        processFrame(frame);
+        processFrame(frame, trace);
       } catch (e) {
-        // With the stack: the camera thread's own report prints only "{}".
+        // With the step: the camera thread's own report prints only "{}".
         const err = e as Error;
-        console.warn(`[useDetector] frame failed: ${err?.message} | ${String(err?.stack).slice(0, 600)}`);
+        console.warn(`[useDetector] frame failed at ${trace.step}: ${err?.message}`);
         try {
           frame.dispose();
         } catch {

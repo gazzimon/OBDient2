@@ -23,7 +23,7 @@ const JPEG_QUALITY = 85;
 
 // Packed pixels handed over from the camera thread.
 export interface CapturedFrame {
-  readonly buffer: ArrayBuffer;
+  readonly buffer: Uint8Array;
   readonly width: number;
   readonly height: number;
   readonly pixelFormat: PixelFormat;
@@ -93,7 +93,7 @@ export class TripRecorder {
         // A buffer of this runtime, alive for the whole call: the one that
         // arrives from the camera thread is reported "detached" by Nitro. The
         // async loader copies it before leaving the JS thread and decodes off it.
-        const pixels = f.buffer.slice(0);
+        const pixels = f.buffer.slice().buffer as ArrayBuffer;
         const image = await Images.loadFromRawPixelDataAsync({
           buffer: pixels,
           width: f.width,
@@ -112,7 +112,7 @@ export class TripRecorder {
           i: f.index,
         });
       } catch (err) {
-        console.warn('[TripRecorder] frame not saved:', err, (err as Error)?.stack?.slice(0, 600), typeof f.buffer, Object.prototype.toString.call(f.buffer));
+        console.warn('[TripRecorder] frame not saved:', err, Object.prototype.toString.call(f.buffer));
         // Release builds show no console: leave the first errors in the log itself.
         if (this.frameErrors < 3) {
           this.frameErrors += 1;

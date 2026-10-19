@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, View, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
+import { StatusBar } from 'expo-status-bar';
 import { detectorModel } from '@/data/perception/detector-model';
 import { AlertFlash } from '@/presentation/components/ar/AlertFlash';
 import { ArOverlay } from '@/presentation/components/ar/ArOverlay';
@@ -76,6 +77,8 @@ export default function DriveScreen() {
 
   return (
     <View className="flex-1 bg-black">
+      {/* Full screen: the clock and battery would sit on the HUD's buttons. */}
+      <StatusBar hidden />
       <View style={mapPrimary ? PIP : FULL}>
         <CameraStage outputs={outputs}>
           {({ width, height }) => (

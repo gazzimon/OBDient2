@@ -58,11 +58,13 @@ export function packRows(
   height: number,
   bytesPerRow: number,
   bytesPerPixel: number,
-): ArrayBuffer {
+): Uint8Array {
   'worklet';
+  // A typed array, not its ArrayBuffer: sent from the camera thread, a bare
+  // ArrayBuffer arrived on the JS thread as an empty object.
   const row = width * bytesPerPixel;
-  if (bytesPerRow === row) return src.slice(0, row * height).buffer as ArrayBuffer;
+  if (bytesPerRow === row) return src.slice(0, row * height);
   const out = new Uint8Array(row * height);
   for (let y = 0; y < height; y++) out.set(src.subarray(y * bytesPerRow, y * bytesPerRow + row), y * row);
-  return out.buffer as ArrayBuffer;
+  return out;
 }

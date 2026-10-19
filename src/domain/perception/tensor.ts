@@ -64,6 +64,11 @@ export function letterboxFor(src: { width: number; height: number }, region: Reg
   return { region, size, scale, padX: (size - rw * scale) / 2, padY: (size - rh * scale) / 2 };
 }
 
+function clampInt8(v: number): number {
+  'worklet';
+  return v < -128 ? -128 : v > 127 ? 127 : v;
+}
+
 // Fills `out` (length size*size*3, HWC, RGB) and returns the letterbox used.
 export function fillInput(
   src: PixelSource,
@@ -139,11 +144,6 @@ export function fillInput(
     }
   }
   return lb;
-}
-
-function clampInt8(v: number): number {
-  'worklet';
-  return v < -128 ? -128 : v > 127 ? 127 : v;
 }
 
 // A box in model input pixels → normalised to the full frame.
