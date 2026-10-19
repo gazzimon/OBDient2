@@ -12,6 +12,7 @@ import { COLORS } from '@/presentation/theme';
 import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
+import { usePerceptionStore } from '@/store/perceptionStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useVoiceMuted, voice } from '@/presentation/services/voice';
 
@@ -57,6 +58,7 @@ export function DriveHud({
   const obdState = useOBDStore((s) => s.connectionState);
   const obdHz = useOBDStore((s) => s.speedRateHz);
   const debug = useSettingsStore((s) => s.debugOverlay);
+  const detectorOn = useSettingsStore((s) => s.detectorEnabled);
 
   const m = progress?.nextManeuver ?? null;
   const guide =
@@ -96,12 +98,15 @@ export function DriveHud({
               </Text>
             </View>
           </Card>
-        ) : (
+        ) : route || !ego ? (
           <Card>
             <Text className="text-brand-muted font-mono text-xs">
               {ego ? 'Ubicando el vehículo en la ruta…' : 'Esperando GPS…'}
             </Text>
           </Card>
+        ) : (
+          // Free driving: nothing to announce.
+          <View />
         )}
 
         <View className="flex-row gap-3">
@@ -175,6 +180,7 @@ export function DriveHud({
             <Chip label="IMU" ok={pose != null} warn={false} />
             <Chip label={obdState === 'connected' ? `OBD ${obdHz.toFixed(0)}Hz` : 'OBD'} ok={obdState === 'connected'} warn={obdState === 'connecting'} />
           </View>
+          {detectorOn && (__DEV__ || debug) && <DetectorChip />}
           {route && progress && remainingS != null && (
             <Card>
               <Text className="text-brand-teal font-mono-bold text-lg">{formatEta(remainingS)}</Text>
@@ -204,6 +210,21 @@ function Card({ children }: { children: ReactNode }) {
       {children}
     </View>
   );
+}
+
+// Dev / technical data: is the detector really running, how fast, what it sees.
+function DetectorChip() {
+  const status = usePerceptionStore((s) => s.status);
+  const error = usePerceptionStore((s) => s.error);
+  const stats = usePerceptionStore((s) => s.stats);
+  const seen = usePerceptionStore((s) => s.objects.length);
+  const label =
+    status === 'running' && stats
+      ? `YOLO ${stats.fps.toFixed(0)} fps · ${stats.inferenceMs.toFixed(0)} ms · ${seen} obj · ${stats.delegate}`
+      : status === 'error'
+        ? `YOLO error: ${error ?? '?'}`
+        : `YOLO ${status}`;
+  return <Chip label={label} ok={status === 'running'} warn={status === 'loading'} />;
 }
 
 function Chip({ label, ok, warn }: { label: string; ok: boolean; warn: boolean }) {
