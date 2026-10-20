@@ -52,6 +52,7 @@ export function DriveMap({ primary }: { primary: boolean }) {
   const mapStyleUrl = useSettingsStore((s) => s.mapStyleUrl);
   const route = useNavStore((s) => s.route);
   const progress = useNavStore((s) => s.progress);
+  const map3d = useSettingsStore((s) => s.driveMap3d);
   const [height, setHeight] = useState(0);
   const follow = useFollow(primary);
 
@@ -86,10 +87,11 @@ export function DriveMap({ primary }: { primary: boolean }) {
         {driving ? (
           <Camera
             center={follow.center}
-            bearing={follow.bearing}
+            // 2D: north up, the car turns instead of the map.
+            bearing={map3d ? follow.bearing : 0}
             zoom={follow.zoom}
-            pitch={DRIVE_PITCH}
-            padding={{ top: carPadding(height) }}
+            pitch={map3d ? DRIVE_PITCH : 0}
+            padding={{ top: map3d ? carPadding(height) : 0 }}
             duration={FOLLOW_MS}
             easing="linear"
           />
@@ -117,7 +119,13 @@ export function DriveMap({ primary }: { primary: boolean }) {
       {driving && (
         <View
           pointerEvents="none"
-          style={{ position: 'absolute', left: '50%', marginLeft: -CAR_W / 2, top: height * CAR_AT - CAR_H * 0.55 }}
+          style={{
+            position: 'absolute',
+            left: '50%',
+            marginLeft: -CAR_W / 2,
+            top: height * (map3d ? CAR_AT : 0.5) - CAR_H * 0.55,
+            transform: map3d ? [] : [{ rotate: `${follow.bearing}deg` }],
+          }}
         >
           <CarMarker />
         </View>
