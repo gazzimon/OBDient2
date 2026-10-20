@@ -56,39 +56,9 @@ export default function SettingsScreen() {
         <Row label="Instrucciones por voz">
           <Switch value={s.voiceEnabled} onValueChange={s.setVoiceEnabled} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
-        <Row label="Datos técnicos sobre la AR">
+        <Row label="Datos técnicos en manejo">
           <Switch value={s.debugOverlay} onValueChange={s.setDebugOverlay} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
-
-        <SectionHeader title="Cámara AR" />
-        <Pressable
-          onPress={() => router.push('/calibrate')}
-          className="flex-row items-center bg-brand-surface rounded-2xl px-4 py-3 mb-6 active:opacity-60"
-        >
-          <MaterialCommunityIcons name="crosshairs-gps" size={18} color={COLORS.mint} />
-          <View className="ml-3 flex-1">
-            <Text className="text-brand-text font-mono text-sm">Calibrar soporte</Text>
-            <Text className="text-brand-muted font-mono text-[10px]">
-              FOV {s.calibration.hfovDeg}° · altura {s.calibration.cameraHeightM} m · cabeceo {s.calibration.pitchOffsetDeg}°
-            </Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
-        </Pressable>
-
-        <Row label="Guía AR sobre la cámara (en pausa)">
-          <Switch value={s.driveAr} onValueChange={s.setDriveAr} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
-        </Row>
-        <Pressable
-          onPress={() => router.push('/cameras')}
-          className="flex-row items-center bg-brand-surface rounded-2xl px-4 py-3 mb-6 active:opacity-60"
-        >
-          <MaterialCommunityIcons name="camera-iris" size={18} color={COLORS.mint} />
-          <View className="ml-3 flex-1">
-            <Text className="text-brand-text font-mono text-sm">Cámaras del teléfono</Text>
-            <Text className="text-brand-muted font-mono text-[10px]">Qué lentes expone este teléfono a las apps</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
-        </Pressable>
 
         <SectionHeader title="Mis viajes" />
         <Row label="Guardar mis viajes">

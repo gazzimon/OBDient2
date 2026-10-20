@@ -7,8 +7,7 @@
 //   4 trip bar: ✕ end (confirmed), time · km · arrival, ⋯ quick actions
 //
 // Glanceable and one tap each: large targets, nothing to type. Works in
-// portrait and landscape. With the AR camera as the main view, its own
-// notices (why the route is not drawn) and the direction arrow come back.
+// portrait and landscape.
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
@@ -16,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SOUND_LABEL, followingManeuver, gpsQuality, nextSoundMode, repeatPhrase, type GpsQuality } from '@/domain/navigation/drive-hud';
 import { instructionEs } from '@/domain/navigation/guidance';
-import { AR_BLOCKER_ES, arBlocker, headingGuide } from '@/domain/navigation/heading-guide';
 import type { Maneuver } from '@/domain/navigation/route';
 import type { SoundMode } from '@/domain/voice/voice-arbiter';
 import { formatDistance, formatDuration, formatEta } from '@/presentation/format';
@@ -58,7 +56,7 @@ const SOUND_ICON: Readonly<Record<SoundMode, IconName>> = {
   silent: 'volume-off',
 };
 
-const MIC_LABEL: Readonly<Record<DrivePhase, string>> = {
+export const MIC_LABEL: Readonly<Record<DrivePhase, string>> = {
   idle: 'Hablar con el asistente',
   listening: 'Terminar de hablar',
   thinking: 'Detener la respuesta',
@@ -67,14 +65,7 @@ const MIC_LABEL: Readonly<Record<DrivePhase, string>> = {
 
 const GPS_DOT: Readonly<Record<GpsQuality, string>> = { ok: COLORS.mint, weak: COLORS.amber, none: COLORS.red };
 
-interface Props {
-  onExit: () => void;
-  ribbonVisible: boolean;
-  // The AR camera is the main view: its notices and arrow are shown.
-  arVisible: boolean;
-}
-
-export function DriveHud({ onExit, ribbonVisible, arVisible }: Props) {
+export function DriveHud({ onExit }: { onExit: () => void }) {
   const route = useNavStore((s) => s.route);
   const progress = useNavStore((s) => s.progress);
   const status = useNavStore((s) => s.status);
@@ -118,18 +109,6 @@ export function DriveHud({ onExit, ribbonVisible, arVisible }: Props) {
     ]);
   };
 
-  const guide = arVisible && route && progress && ego?.headingValid ? headingGuide(route, progress, ego.position, ego.headingDeg) : null;
-  const blocker =
-    !arVisible || arrived
-      ? null
-      : arBlocker({
-          hasPosition: ego != null,
-          hasPose: pose != null,
-          headingValid: ego?.headingValid ?? false,
-          hasProgress: progress != null,
-          ribbonVisible,
-        });
-
   const pad = {
     paddingTop: Math.max(10, insets.top),
     paddingBottom: Math.max(10, insets.bottom),
@@ -172,23 +151,6 @@ export function DriveHud({ onExit, ribbonVisible, arVisible }: Props) {
             <Text className="text-brand-text font-mono text-sm">{ego ? 'Ubicando el vehículo en la ruta…' : 'Esperando GPS…'}</Text>
           )}
         </Pressable>
-      )}
-
-      {/* AR view only: where the route is, and why it is not drawn */}
-      {guide && !arrived && (
-        <View pointerEvents="none" className="self-center items-center mt-2">
-          <View
-            className="w-14 h-14 rounded-full bg-brand-surface/80 border border-brand-teal items-center justify-center"
-            style={{ transform: [{ rotate: `${guide.relativeDeg}deg` }] }}
-          >
-            <MaterialCommunityIcons name="navigation" size={32} color={COLORS.mint} />
-          </View>
-        </View>
-      )}
-      {blocker && (
-        <View pointerEvents="none" className="self-center mt-2 px-3 py-1.5 rounded-full bg-brand-surface/90 border border-brand-border">
-          <Text className="text-brand-muted font-mono text-xs">{AR_BLOCKER_ES[blocker]}</Text>
-        </View>
       )}
 
       {/* 2 Rail (left) and 3 speed (right) */}
@@ -272,7 +234,7 @@ export function DriveHud({ onExit, ribbonVisible, arVisible }: Props) {
 // Large, centred, two lines at most, over a dark band: readable from the
 // seat at a glance, like film subtitles. Only the piece being said, never the
 // whole answer.
-function DriveSubtitles({ assistant, landscape }: { assistant: ReturnType<typeof useDriveAssistant>; landscape: boolean }) {
+export function DriveSubtitles({ assistant, landscape }: { assistant: ReturnType<typeof useDriveAssistant>; landscape: boolean }) {
   const subs = assistant.subtitles;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -313,7 +275,7 @@ function DriveSubtitles({ assistant, landscape }: { assistant: ReturnType<typeof
   );
 }
 
-function RailButton({
+export function RailButton({
   icon,
   label,
   onPress,

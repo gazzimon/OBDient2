@@ -1,23 +1,19 @@
-// Map shown while driving (Modo manejo). Full screen it is the driving view:
-// tilted 3D map (the style's buildings), the car fixed low on the screen, the
-// map turning and moving under it, closer in town and farther on the road,
-// and only the part of the route still ahead. As the floating mini map (when
-// the AR camera is the main view) it follows the GPS flat, as before. Same
-// component in both roles, so swapping views only resizes it.
+// Map shown while driving (Modo manejo): tilted 3D map (the style's
+// buildings), the car fixed low on the screen, the map turning and moving
+// under it, closer in town and farther on the road, and only the part of the
+// route still ahead. In 2D, north up and the car turns. `primary` false is a
+// small flat map that follows the GPS (kept for a future mini map).
 //
 // The full-screen camera follows the fused ego state (GPS + OBD + IMU) a few
 // times a second with linear easing between updates — smoother than the raw
 // GPS fix the native follow mode uses.
 //
-// androidView="texture": the camera preview is a surface too, and two
-// overlapping SurfaceViews on Android may draw in the wrong order. A
-// TextureView composes like any other view, above or below the camera.
 
 import { useEffect, useMemo, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { Camera, GeoJSONSource, Layer, Map, NativeUserLocation, type LngLat } from '@maplibre/maplibre-react-native';
 import { CAR_AT, DRIVE_PITCH, carPadding, remainingPath, zoomForSpeed } from '@/domain/navigation/drive-camera';
-import { CAR_H, CAR_W, CarMarker } from '@/presentation/components/ar/CarMarker';
+import { CAR_H, CAR_W, CarMarker } from '@/presentation/components/drive/CarMarker';
 import { COLORS } from '@/presentation/theme';
 import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
@@ -48,7 +44,7 @@ function useFollow(active: boolean): Follow | null {
   return follow;
 }
 
-export function DriveMap({ primary }: { primary: boolean }) {
+export function DriveMap({ primary = true }: { primary?: boolean }) {
   const mapStyleUrl = useSettingsStore((s) => s.mapStyleUrl);
   const route = useNavStore((s) => s.route);
   const progress = useNavStore((s) => s.progress);

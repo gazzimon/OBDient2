@@ -3,7 +3,7 @@
 // continues by itself when the user comes back with it on.
 //
 // Android only (MVP). PermissionsAndroid covers the four; the libraries' own
-// requests (expo-location, vision-camera, expo-audio) then find them granted.
+// requests (expo-location, expo-camera, expo-audio) then find them granted.
 // Android tells "blocked" only as the answer to a request (never_ask_again),
 // so the last answer is kept in MMKV.
 

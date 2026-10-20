@@ -237,7 +237,7 @@ export function useAssistant() {
   // Spoken while driving (the drive screen's microphone): the same turn, with
   // a note for the model to answer for the ear. The chat shows the words said.
   const sendSpoken = useCallback(
-    (text: string) => run({ text, images: [], forModel: `${text}\n\n${SPOKEN_HINT}` }),
+    (text: string, images: readonly string[] = []) => run({ text, images, forModel: `${text}\n\n${SPOKEN_HINT}` }),
     [],
   );
 

@@ -17,6 +17,9 @@ import { ConnectionStatus } from '@/presentation/components/feedback/ConnectionS
 import { AlertBanner } from '@/presentation/components/feedback/AlertBanner';
 import type { ObdParameterSnapshot } from '@/domain/entities/obd-parameter';
 import { useOBDStore } from '@/store/obdStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import { CameraHud } from '@/presentation/components/dashboard/CameraHud';
+import { useFreeOrientationWhileFocused } from '@/presentation/hooks/useLandscape';
 
 // Highest-priority active alert in the snapshot.
 function findActiveAlert(params: ObdParameterSnapshot) {
@@ -43,6 +46,9 @@ export default function DashboardScreen() {
   const params = isConnected ? liveParams : mockParams;
   const activeAlert = findActiveAlert(params);
   const showBanner = activeAlert != null && activeAlert.key !== dismissedAlertKey;
+  const camera = useSettingsStore((s) => s.dashboardCamera);
+  // The camera view follows the phone (upright or sideways in the mount).
+  useFreeOrientationWhileFocused(camera);
 
   return (
     <SafeAreaView className="flex-1 bg-brand-bg" edges={['top']}>
@@ -60,6 +66,12 @@ export default function DashboardScreen() {
         )}
       </View>
 
+      <ViewSwitch camera={camera} />
+
+      {camera ? (
+        <CameraHud />
+      ) : (
+        <>
       {showBanner && (
         <AlertBanner
           severity={activeAlert.severity}
@@ -91,6 +103,32 @@ export default function DashboardScreen() {
           <MetricCard icon="thermometer-low" label="Aire admisión" param={params.IAT} />
         </View>
       </ScrollView>
+        </>
+      )}
     </SafeAreaView>
+  );
+}
+
+// Medidores | Cámara
+function ViewSwitch({ camera }: { camera: boolean }) {
+  const set = useSettingsStore((s) => s.setDashboardCamera);
+  const tab = (on: boolean, label: string) => (
+    <Pressable
+      onPress={() => set(on)}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: camera === on }}
+      className="flex-1 h-9 rounded-xl items-center justify-center active:opacity-70"
+      style={{ backgroundColor: camera === on ? '#2DE1A5' : 'transparent' }}
+    >
+      <Text className="font-mono-bold text-xs" style={{ color: camera === on ? '#0D0D0D' : '#9A9A9A' }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+  return (
+    <View className="flex-row mx-4 mb-2 p-1 rounded-2xl bg-brand-surface border border-brand-border">
+      {tab(false, 'Medidores')}
+      {tab(true, 'Cámara')}
+    </View>
   );
 }

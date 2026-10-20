@@ -77,10 +77,10 @@ interface SettingsState {
   accountPromptDismissed: boolean;
   // Shows pose/heading/rates over the AR view — a field-testing aid.
   debugOverlay: boolean;
-  // Modo manejo: the 3D map is the main view; true puts the AR camera first.
-  driveAr: boolean;
   // Driving map: tilted 3D following the course, or flat 2D north up.
   driveMap3d: boolean;
+  // Tablero: the gauges, or the camera with the numbers on top.
+  dashboardCamera: boolean;
 
   setLastDevice: (id: string, name: string | null) => void;
   setCalibration: (patch: Partial<ArCalibration>) => void;
@@ -94,8 +94,8 @@ interface SettingsState {
   setDisclaimerAccepted: (on: boolean) => void;
   setAccountPromptDismissed: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
-  setDriveAr: (on: boolean) => void;
   setDriveMap3d: (on: boolean) => void;
+  setDashboardCamera: (on: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -114,8 +114,8 @@ export const useSettingsStore = create<SettingsState>()(
       disclaimerAccepted: false,
       accountPromptDismissed: false,
       debugOverlay: false,
-      driveAr: false,
       driveMap3d: true,
+      dashboardCamera: false,
 
       setLastDevice: (id, name) => set({ lastDeviceId: id, lastDeviceName: name }),
       setCalibration: (patch) => set((s) => ({ calibration: { ...s.calibration, ...patch } })),
@@ -129,8 +129,8 @@ export const useSettingsStore = create<SettingsState>()(
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setAccountPromptDismissed: (on) => set({ accountPromptDismissed: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
-      setDriveAr: (on) => set({ driveAr: on }),
       setDriveMap3d: (on) => set({ driveMap3d: on }),
+      setDashboardCamera: (on) => set({ dashboardCamera: on }),
     }),
     {
       name: 'obdient2-settings',
@@ -151,8 +151,8 @@ export const useSettingsStore = create<SettingsState>()(
         disclaimerAccepted: s.disclaimerAccepted,
         accountPromptDismissed: s.accountPromptDismissed,
         debugOverlay: s.debugOverlay,
-        driveAr: s.driveAr,
         driveMap3d: s.driveMap3d,
+        dashboardCamera: s.dashboardCamera,
       }),
       // New calibration fields get their defaults instead of `undefined`.
       merge: (persisted, current) => {
