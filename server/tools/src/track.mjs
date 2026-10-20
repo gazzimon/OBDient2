@@ -17,7 +17,7 @@ const OBD_KEYS = ['rpm', 'coolant', 'fuelLph', 'voltage', 'load'];
 export class BadTrack extends Error {}
 
 // One checked point → the OsmAnd query (speed in knots, time in seconds).
-export function osmandQuery(device, p, now) {
+export function osmandQuery(device, p, now, driver = null) {
   const t = Number(p.t);
   if (!Number.isFinite(t) || Math.abs(t - now) > DAY_MS) throw new BadTrack('bad_time');
   if (!validPoint({ lat: Number(p.lat), lng: Number(p.lng) })) throw new BadTrack('bad_position');
@@ -35,6 +35,9 @@ export function osmandQuery(device, p, now) {
   if (kmh != null) q.set('speed', (kmh / 1.852).toFixed(2));
   if (bearing != null) q.set('bearing', bearing.toFixed(0));
   if (acc != null) q.set('accuracy', acc.toFixed(0));
+  // VIN = the car, driver = the account's email (decision 2026-10-20).
+  if (typeof p.vin === 'string' && /^[A-HJ-NPR-Z0-9]{11,17}$/.test(p.vin)) q.set('vin', p.vin);
+  if (driver) q.set('driverUniqueId', driver);
   if (p.obd && typeof p.obd === 'object') {
     for (const k of OBD_KEYS) {
       const v = Number(p.obd[k]);
@@ -44,11 +47,11 @@ export function osmandQuery(device, p, now) {
   return q.toString();
 }
 
-export function checkTrack(body, now) {
+export function checkTrack(body, now, driver = null) {
   const device = typeof body.device === 'string' ? body.device.trim() : '';
   // Traccar's OsmAnd port rejects '-' in ids (400, checked with 6.16): letters, digits, '_'.
   if (!/^[A-Za-z0-9_]{4,40}$/.test(device)) throw new BadTrack('bad_device');
   const points = Array.isArray(body.points) ? body.points : [];
   if (points.length === 0 || points.length > MAX_POINTS) throw new BadTrack('bad_points');
-  return points.map((p) => osmandQuery(device, p ?? {}, now));
+  return points.map((p) => osmandQuery(device, p ?? {}, now, driver));
 }

@@ -13,9 +13,14 @@ Web: http://192.168.100.200:8082 (red local, no publicada en internet)
 - Arranque: `cd server/traccar && docker compose up -d` (se reinicia solo).
 - La **primera cuenta** que se crea en la web es la de administrador: crearla enseguida y después
   desactivar el registro libre en *Configuración → Servidor*.
-- Cada teléfono es un dispositivo `obd_xxxxxxxx` (lo muestra Ajustes en la app) y se crea solo con su
-  primera posición (`database.registerUnknown`). El administrador lo ve y lo puede renombrar
-  ("Gol de Juan").
+- **Quién es quién** (decisión 2026-10-20):
+  - **Dispositivo = el adaptador**: `obd_` + su dirección Bluetooth (mañana, su número de serie de
+    fábrica). Se crea solo con su primera posición (`database.registerUnknown`); renombrarlo en la web.
+  - **Auto = VIN**: va como atributo `vin` en cada posición (la app lo lee al conectar, `09 02`).
+  - **Conductor = correo de la cuenta**: lo pone el servidor (`driverUniqueId`), no la app.
+    `obdient-auth` guarda en cada login la huella SHA-256 de la clave → correo
+    (`~/.local/share/obdient/key-owners.json`, 600; nunca la clave). Para verlo con nombre en Traccar:
+    *Configuración → Conductores*, uno por persona con el correo como identificador.
 - Atributos que manda la app con cada posición: `rpm`, `coolant`, `load`, `voltage`, `fuelLph`
   (los que el adaptador leyó en los últimos 3 s).
 - Traccar rechaza `-` en el identificador (400): solo letras, números y `_`.

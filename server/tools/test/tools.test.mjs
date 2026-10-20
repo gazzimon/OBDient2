@@ -120,3 +120,39 @@ test('track route: valid key, forwards each point, own allowance', async () => {
     server.close();
   }
 });
+
+test('track: driver from the key owners (hash → email), VIN passed on', async () => {
+  const { mkdtempSync, readFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { keyOwners } = await import('../../auth/src/key-owners.mjs');
+  const { keyOwnerLookup } = await import('../src/key-owners.mjs');
+  const file = join(mkdtempSync(join(tmpdir(), 'owners-')), 'key-owners.json');
+  const owners = keyOwners(file);
+  owners.remember('sk-abc', 'juan@example.com');
+  owners.remember('sk-new', 'juan@example.com'); // a new key replaces the old one
+  const ownerOf = keyOwnerLookup(file);
+  assert.equal(ownerOf('sk-abc'), null);
+  assert.equal(ownerOf('sk-new'), 'juan@example.com');
+  assert.ok(!readFileSync(file, 'utf8').includes('sk-new'));
+
+  const sent = [];
+  const now = Date.now();
+  const app = createApp({ search: async () => [], isValidKey: async () => true, ownerOf, track: async (q) => sent.push(new URLSearchParams(q)) });
+  const server = await listen(app, 0);
+  try {
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/tools/v1/track`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer sk-new' },
+      body: JSON.stringify({ device: 'obd_001da568988b', points: [{ t: now, lat: -27.37, lng: -55.89, vin: '9BWZZZ377VT004251' }, { t: now, lat: -27.37, lng: -55.89, vin: 'bad vin!' }] }),
+    });
+    assert.equal(res.status, 200);
+    assert.equal(sent[0].get('driverUniqueId'), 'juan@example.com');
+    assert.equal(sent[0].get('vin'), '9BWZZZ377VT004251');
+    assert.equal(sent[1].get('vin'), null);
+    owners.forget('juan@example.com');
+    assert.equal(keyOwnerLookup(file)('sk-new'), null);
+  } finally {
+    server.close();
+  }
+});

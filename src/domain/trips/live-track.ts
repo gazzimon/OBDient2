@@ -10,6 +10,8 @@ export interface TrackPoint {
   readonly bearing: number | null;
   readonly acc: number;
   readonly obd?: Readonly<Record<string, number>>;
+  // The car (always sent when the adapter has read it).
+  readonly vin?: string | null;
 }
 
 export const EVERY_MOVING_MS = 5_000;
@@ -22,7 +24,14 @@ export function trackDue(lastAt: number | null, now: number, kmh: number): boole
   return now - lastAt >= (kmh >= 3 ? EVERY_MOVING_MS : EVERY_STILL_MS);
 }
 
-// "obd_" and 8 letters or digits: what Traccar accepts as a device id.
+// The device is the adapter (decision 2026-10-20): today its Bluetooth address,
+// later its serial number. "obd_" + letters and digits: what Traccar accepts.
+export function deviceIdFor(adapterId: string | null): string | null {
+  const clean = (adapterId ?? '').replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+  return clean.length >= 4 ? `obd_${clean.slice(0, 36)}` : null;
+}
+
+// Fallback when the adapter's id is unknown: "obd_" and 8 letters or digits.
 export function newDeviceId(random: () => number = Math.random): string {
   const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
   let id = 'obd_';
