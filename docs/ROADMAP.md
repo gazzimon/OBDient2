@@ -46,8 +46,8 @@ Se avanza con **E4 (detector en el teléfono)**.
 | Navegación | Direcciones, esquinas, enlaces de mapas, destino confirmado en el chat | ✅ probado en el teléfono |
 | M4 | Sin conexión (router de frases, notas), resumen de conversaciones largas | ✅ |
 | M5 | Una sola voz: alertas > maniobras; nivel de alertas | ✅ código · ⏳ probar manejando |
-| **M6** | **Voz al chat**: Voxtral Mini 4B Realtime en la GPU1 (en vivo, por `obdient-tools`), reconocedor de Android sin conexión | ✅ código, puente en la K16 y `stt` en la Z440, probado de punta a punta (2026-10-19) · falta: build Dev con `expo-audio` y micrófono en el teléfono; en movimiento solo el botón de voz; probar en el auto |
-| **Manejo** | **Modo manejo** (2026-10-19): mapa 3D como vista principal (inclinado 60°, auto fijo abajo, zoom según la velocidad, edificios del estilo, solo la ruta que falta), la cámara en una ventana con el detector; la AR sobre la calle queda como opción en Ajustes. Manejo libre sin destino (botón *Manejar*). Detector siempre activo en la vista, con o sin ruta, e indicador en Dev. Chat en movimiento (OBD > 8 km/h): solo un micrófono grande | 🔧 código · ⏳ probar en el teléfono y en el escritorio con un video de tránsito |
+| **M6** | **Voz al chat**: Voxtral Mini 4B Realtime en la GPU1 (en vivo, por `obdient-tools`), reconocedor de Android sin conexión | ✅ cerrado (2026-10-20): probado en el teléfono; en manejo, conversación por voz con subtítulos, ≤ 60 palabras y escucha continua |
+| **Manejo** | **Modo manejo** (F1 del [plan](plans/modo-navegacion-ux.md)): mapa 3D/2D, cartel con "luego", riel (hablar, sonido en 3 estados, GPS), barra de viaje y acciones rápidas; YOLO fuera (rama `etapa-camara`); mapa en el chat, animaciones de espera, teclado | ✅ cerrado como MVP (2026-10-20), con detalles estéticos pendientes · F2–F6 siguen en el plan |
 | — | APK standalone y prueba todo junto manejando | **ahora** (2026-10-19) |
 
 **Decisión 2026-10-19 (cámara):** se deja de invertir en la navegación por cámara. Con el APK standalone se
@@ -60,7 +60,7 @@ el código queda, apagado (la cámara solo se monta con el ajuste "Cámara en ma
 Estado al cerrar: el detector corre (corregido el orden de las funciones worklet) pero no se validó que
 detecte; la captura de cuadros para el maestro queda apagada (copiar ~3,6 MB por cuadro al hilo JS
 trababa la cámara y cerraba la app en `libworklets`).
-| Historial | Conversaciones: botón junto a "nueva" ✅, lista agrupada por fecha, buscador, una línea por conversación. **Mis viajes**: automático con la app abierta y el OBD conectado (sin OBD no graba); vista tipo historial de Google Maps (lista por día, recorrido en el mapa, km, tiempo, consumo, códigos) | después de la prueba manejando |
+| **Historial** | Conversaciones: botón junto a "nueva" ✅, compartir ✅; lista agrupada por fecha, buscador, una línea por conversación. **Mis viajes**: automático con la app abierta y el OBD conectado (sin OBD no graba); vista tipo historial de Google Maps; exportar/compartir | **siguiente** (2026-10-20) |
 | M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
 | M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM | ✅ código, servicio y ruta `/tools` en la K16 (2026-10-19) · falta probar en el teléfono |
 | M9 | Diagnóstico del fabricante (UDS solo lectura). Datos de marca vía **gemelo del adaptador** en modo laboratorio ([ADR-0009](ADR/0009-gemelo-del-adaptador-modo-laboratorio.md)) | pendiente · después de cerrar la navegación |
