@@ -204,6 +204,10 @@ function linkNote(link: NonNullable<Awaited<ReturnType<typeof navigationTools.lo
   return `[enlace de mapa leído por la app: ${where}${km}. Ya es el resultado 1 de search_place.${approx}]`;
 }
 
+// The answer is heard, not read, by someone driving (decision 2026-10-20).
+const SPOKEN_HINT =
+  '[Por voz, mientras maneja: respondé para escuchar, en menos de 60 palabras, sin listas, viñetas ni markdown. Si hay opciones, como mucho tres y cortas.]';
+
 export function useAssistant() {
   const running = useChatStore((s) => s.runningId != null);
 
@@ -230,7 +234,14 @@ export function useAssistant() {
     if (c?.notes?.length) store.save(clearNotes(c, c.notes.map((n) => n.id)));
   }, []);
 
+  // Spoken while driving (the drive screen's microphone): the same turn, with
+  // a note for the model to answer for the ear. The chat shows the words said.
+  const sendSpoken = useCallback(
+    (text: string) => run({ text, images: [], forModel: `${text}\n\n${SPOKEN_HINT}` }),
+    [],
+  );
+
   const stop = useCallback(() => controller?.abort(), []);
 
-  return { send, sendNotes, discardNotes, stop, running };
+  return { send, sendSpoken, sendNotes, discardNotes, stop, running };
 }

@@ -25,7 +25,20 @@ const TOOLS: Record<string, { label: string; icon: IconName }> = {
   start_navigation: { label: 'Arrancando la navegación', icon: 'navigation-variant-outline' },
   route_status: { label: 'Revisando la ruta', icon: 'map-marker-distance' },
   stop_navigation: { label: 'Terminando la navegación', icon: 'map-marker-off-outline' },
+  where_am_i: { label: 'Viendo dónde estás', icon: 'crosshairs-gps' },
+  web_search: { label: 'Buscando en internet', icon: 'web' },
+  fuel_prices: { label: 'Buscando precios de combustible', icon: 'gas-station-outline' },
+  dollar_rate: { label: 'Consultando el dólar', icon: 'currency-usd' },
+  weather: { label: 'Consultando el clima', icon: 'weather-partly-cloudy' },
+  car_price: { label: 'Buscando precios de autos', icon: 'car-info' },
+  log_service: { label: 'Anotando en el registro de service', icon: 'wrench-clock' },
+  read_service_log: { label: 'Leyendo el registro de service', icon: 'clipboard-text-clock-outline' },
 };
+
+// What the assistant is doing, in words (the drive screen's subtitle too).
+export function toolLabel(name: string): string {
+  return TOOLS[name]?.label ?? 'Consultando';
+}
 
 const STATUS: Record<Exclude<ToolStatus, 'running'>, { icon: IconName; color: string }> = {
   ok: { icon: 'check-circle-outline', color: COLORS.mint },

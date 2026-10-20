@@ -10,7 +10,7 @@
 // portrait and landscape. With the AR camera as the main view, its own
 // notices (why the route is not drawn) and the direction arrow come back.
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -20,7 +20,8 @@ import { AR_BLOCKER_ES, arBlocker, headingGuide } from '@/domain/navigation/head
 import type { Maneuver } from '@/domain/navigation/route';
 import type { SoundMode } from '@/domain/voice/voice-arbiter';
 import { formatDistance, formatDuration, formatEta } from '@/presentation/format';
-import { useDriveAssistant } from '@/presentation/hooks/useDriveAssistant';
+import { chunkAt } from '@/domain/voice/subtitles';
+import { useDriveAssistant, type DrivePhase } from '@/presentation/hooks/useDriveAssistant';
 import { useSoundMode, voice } from '@/presentation/services/voice';
 import { COLORS } from '@/presentation/theme';
 import { useEgoStore } from '@/store/egoStore';
@@ -55,6 +56,13 @@ const SOUND_ICON: Readonly<Record<SoundMode, IconName>> = {
   all: 'volume-high',
   alerts: 'bell-ring-outline',
   silent: 'volume-off',
+};
+
+const MIC_LABEL: Readonly<Record<DrivePhase, string>> = {
+  idle: 'Hablar con el asistente',
+  listening: 'Terminar de hablar',
+  thinking: 'Detener la respuesta',
+  speaking: 'Cortar y hablar',
 };
 
 const GPS_DOT: Readonly<Record<GpsQuality, string>> = { ok: COLORS.mint, weak: COLORS.amber, none: COLORS.red };
@@ -188,11 +196,11 @@ export function DriveHud({ onExit, ribbonVisible, arVisible }: Props) {
         <View className="gap-3">
           <RailButton
             size={64}
-            icon={assistant.running ? 'stop' : 'microphone'}
-            label={assistant.listening ? 'Terminar de hablar' : assistant.running ? 'Detener' : 'Hablar con el asistente'}
+            icon={assistant.phase === 'thinking' ? 'stop' : assistant.phase === 'speaking' ? 'microphone-message' : 'microphone'}
+            label={MIC_LABEL[assistant.phase]}
             onPress={assistant.talk}
-            color={assistant.listening || assistant.running ? COLORS.red : COLORS.mint}
-            iconColor={assistant.listening || assistant.running ? COLORS.text : COLORS.bg}
+            color={assistant.phase === 'idle' ? COLORS.mint : COLORS.red}
+            iconColor={assistant.phase === 'idle' ? COLORS.bg : COLORS.text}
           />
           <RailButton icon={SOUND_ICON[sound]} label={SOUND_LABEL[sound]} onPress={cycleSound} iconColor={sound === 'all' ? COLORS.text : COLORS.amber} />
           <RailButton label={map3d ? 'Cambiar a mapa 2D' : 'Cambiar a mapa 3D'} onPress={toggleMap} dot={GPS_DOT[gps]}>
@@ -204,18 +212,8 @@ export function DriveHud({ onExit, ribbonVisible, arVisible }: Props) {
         </View>
       </View>
 
-      {/* What the assistant heard or said */}
-      {(assistant.listening || assistant.running || assistant.reply || assistant.error) && (
-        <Pressable onPress={assistant.dismiss} className="self-center mb-2 max-w-[520px] bg-brand-surface/95 border border-brand-border rounded-2xl px-4 py-3">
-          <Text className="text-brand-text font-mono text-sm" numberOfLines={4}>
-            {assistant.listening
-              ? assistant.partial || 'Escuchando…'
-              : assistant.running
-                ? 'Pensando…'
-                : (assistant.reply ?? assistant.error)}
-          </Text>
-        </Pressable>
-      )}
+      {/* The conversation, as film subtitles */}
+      <DriveSubtitles assistant={assistant} landscape={landscape} />
       {toast && (
         <View pointerEvents="none" className="self-center mb-2 px-4 py-2 rounded-full bg-brand-surface/95 border border-brand-border">
           <Text className="text-brand-text font-mono text-sm">{toast}</Text>
@@ -267,6 +265,50 @@ export function DriveHud({ onExit, ribbonVisible, arVisible }: Props) {
           </Text>
         </View>
       )}
+    </View>
+  );
+}
+
+// Large, centred, two lines at most, over a dark band: readable from the
+// seat at a glance, like film subtitles. Only the piece being said, never the
+// whole answer.
+function DriveSubtitles({ assistant, landscape }: { assistant: ReturnType<typeof useDriveAssistant>; landscape: boolean }) {
+  const subs = assistant.subtitles;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!subs?.startedAt) return;
+    const id = setInterval(() => setNow(Date.now()), 200);
+    return () => clearInterval(id);
+  }, [subs?.startedAt]);
+
+  let text: string | null = null;
+  let tone: 'say' | 'heard' | 'status' | 'error' = 'say';
+  if (assistant.phase === 'speaking' && subs?.startedAt) {
+    text = subs.chunks[chunkAt(subs.chunks, now - subs.startedAt)] ?? null;
+  } else if (assistant.phase === 'listening') {
+    // The last words heard, not the whole phrase.
+    text = assistant.heard ? assistant.heard.split(/\s+/).slice(-8).join(' ') : 'Te escucho…';
+    tone = assistant.heard ? 'heard' : 'status';
+  } else if (assistant.phase === 'thinking') {
+    text = `${assistant.busyWith ?? 'Pensando'}…`;
+    tone = 'status';
+  } else if (assistant.error) {
+    text = assistant.error;
+    tone = 'error';
+  }
+  if (!text) return null;
+
+  const size = tone === 'say' || tone === 'heard' ? (landscape ? 26 : 30) : 20;
+  const color = tone === 'error' ? COLORS.amber : tone === 'say' ? COLORS.text : tone === 'heard' ? COLORS.mint : COLORS.muted;
+  return (
+    <View pointerEvents="none" className="self-center mb-3 px-5 py-2 rounded-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.72)', maxWidth: landscape ? 620 : '96%' }}>
+      <Text
+        numberOfLines={2}
+        className="text-center"
+        style={{ color, fontSize: size, lineHeight: size * 1.25, fontFamily: 'IBMPlexMono_700Bold' }}
+      >
+        {text}
+      </Text>
     </View>
   );
 }
