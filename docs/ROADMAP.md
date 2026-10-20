@@ -60,7 +60,7 @@ el código queda, apagado (la cámara solo se monta con el ajuste "Cámara en ma
 Estado al cerrar: el detector corre (corregido el orden de las funciones worklet) pero no se validó que
 detecte; la captura de cuadros para el maestro queda apagada (copiar ~3,6 MB por cuadro al hilo JS
 trababa la cámara y cerraba la app en `libworklets`).
-| **Historial** | Conversaciones: botón junto a "nueva" ✅, compartir ✅; lista agrupada por fecha, buscador, una línea por conversación. **Mis viajes**: automático con la app abierta y el OBD conectado (sin OBD no graba); vista tipo historial de Google Maps; exportar/compartir | **siguiente** (2026-10-20) |
+| **Historial** | Conversaciones: botón junto a "nueva" ✅, compartir ✅; lista agrupada por fecha y buscador (pendiente). **Mis viajes** ✅ código (2026-10-20): automático con la app abierta y el OBD conectado, lista simple, detalle con mapa por velocidad, paradas, consumo, códigos, GPX. **Traccar** ✅ en la K16 ([server/traccar](../server/traccar/README.md)): posición en vivo opcional vía `obdient-tools` (`/tools/v1/track`), web en la red local | ⏳ probar en un viaje |
 | M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
 | M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM | ✅ código, servicio y ruta `/tools` en la K16 (2026-10-19) · falta probar en el teléfono |
 | M9 | Diagnóstico del fabricante (UDS solo lectura). Datos de marca vía **gemelo del adaptador** en modo laboratorio ([ADR-0009](ADR/0009-gemelo-del-adaptador-modo-laboratorio.md)) | pendiente · después de cerrar la navegación |

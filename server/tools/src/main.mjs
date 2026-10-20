@@ -37,6 +37,14 @@ const app = createApp({
     if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
     return weatherFromApi(await res.json());
   },
+  // Live position into Traccar's OsmAnd port (docker, server/traccar), local only.
+  track: async (query) => {
+    const res = await fetch(`${env.TRACCAR_OSMAND_URL ?? 'http://127.0.0.1:5055'}/?${query}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!res.ok) throw new Error(`Traccar HTTP ${res.status}`);
+  },
   log,
 });
 

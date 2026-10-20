@@ -6,6 +6,7 @@
 //   /tools/v1/dollar      {}                         → { rates, updated, source }
 //   /tools/v1/weather     { lat, lng }               → { now, nextHours, maxRainChance, source }
 //   /tools/v1/car_price   { query, year? }           → { results, month, unit, source }
+//   /tools/v1/track       { device, points: [...] }  → { accepted }   (live position → Traccar, track.mjs)
 //   GET /tools/healthz                               → 200
 //
 // Errors: 400 bad input, 401 bad key, 429 too many, 502 a source is down,
@@ -16,14 +17,15 @@ import { toToolResults } from './results.mjs';
 import { findCars } from './queries/cars.mjs';
 import { FUEL_PRODUCTS, nearestStations } from './queries/fuel.mjs';
 import { validPoint } from './queries/geo.mjs';
+import { BadTrack, checkTrack } from './track.mjs';
 
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 30;
-const MAX_BODY = 4_096;
+const MAX_BODY = 8_192;
 
 class BadInput extends Error {}
 
-export function createApp({ search, isValidKey, data = () => null, weather = null, log = () => {}, now = () => Date.now() }) {
+export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, log = () => {}, now = () => Date.now() }) {
   const hits = new Map(); // key prefix → { start, count }
 
   function limited(who) {
@@ -75,6 +77,18 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
       if (year !== null && !/^(19|20)\d\d$/.test(year)) throw new BadInput('bad_year');
       return findCars(needData('cars'), query, year);
     },
+    async track(b) {
+      if (!track) throw Object.assign(new Error('no tracking'), { status: 503 });
+      let queries;
+      try {
+        queries = checkTrack(b, now());
+      } catch (err) {
+        if (err instanceof BadTrack) throw new BadInput(err.message);
+        throw err;
+      }
+      for (const q of queries) await track(q);
+      return { accepted: queries.length };
+    },
   };
 
   async function readJson(req) {
@@ -103,7 +117,8 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
     const auth = String(req.headers.authorization ?? '');
     const key = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
     if (!key) return [401, { error: 'missing_key' }];
-    if (limited(key.slice(0, 24))) return [429, { error: 'too_many_requests' }];
+    // Positions every few seconds have their own allowance, apart from the chat's tools.
+    if (limited(`${name === 'track' ? 'track:' : ''}${key.slice(0, 24)}`)) return [429, { error: 'too_many_requests' }];
     let valid;
     try {
       valid = await isValidKey(key);
@@ -118,7 +133,7 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
     const started = now();
     try {
       const result = await route(body);
-      log(`${name} ok in ${now() - started} ms`);
+      if (name !== 'track') log(`${name} ok in ${now() - started} ms`);
       return [200, result];
     } catch (err) {
       if (err instanceof BadInput) return [400, { error: err.message }];

@@ -1,0 +1,23 @@
+# Traccar on the K16 (decision 2026-10-20): the lab's web to see the cars live
+# and their trips. Positions only arrive through obdient-tools (/tools/v1/track,
+# checked with the account key) into the OsmAnd port, which listens on
+# localhost only. The web is on the LAN (port 8082), not on the internet.
+#
+#   cd server/traccar && docker compose up -d
+#   http://192.168.100.200:8082   (the first account created is the admin)
+
+services:
+  traccar:
+    image: traccar/traccar:6.16.0-alpine
+    container_name: obdient-traccar
+    restart: unless-stopped
+    # The entrypoint is java; without a cap the JVM may take up to a quarter of
+    # the K16's memory, which is already short.
+    command: ["-Xms128m", "-Xmx384m", "-jar", "tracker-server.jar", "conf/traccar.xml"]
+    ports:
+      - "8082:8082"            # web, LAN
+      - "127.0.0.1:5055:5055"  # OsmAnd, only obdient-tools
+    volumes:
+      - ./conf/traccar.xml:/opt/traccar/conf/traccar.xml:ro
+      - ./data:/opt/traccar/data
+      - ./logs:/opt/traccar/logs

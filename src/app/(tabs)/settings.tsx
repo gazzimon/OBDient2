@@ -15,6 +15,7 @@ import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
 import { DEFAULT_ENDPOINTS, useSettingsStore } from '@/store/settingsStore';
 import { PermissionsPanel } from '@/presentation/components/permissions/PermissionsPanel';
+import { newDeviceId } from '@/domain/trips/live-track';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -106,6 +107,20 @@ export default function SettingsScreen() {
           <Text className="text-brand-text font-mono text-sm ml-3 flex-1">Ver mis viajes</Text>
           <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
         </Pressable>
+
+        <Row label="Posición en vivo (laboratorio)">
+          <Switch
+            value={s.liveTracking}
+            onValueChange={(on) => s.setLiveTracking(on, s.trackingDevice || newDeviceId())}
+            trackColor={{ true: COLORS.mintDark }}
+            thumbColor={COLORS.text}
+          />
+        </Row>
+        <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-6">
+          {s.liveTracking
+            ? `Mientras manejás con el adaptador, la posición va a la web de Traccar del laboratorio (red local: 192.168.100.200:8082). Este teléfono es el dispositivo ${s.trackingDevice}.`
+            : 'Apagado. Encendido, la posición del auto se ve en vivo en la web de Traccar del laboratorio.'}
+        </Text>
 
         <SectionHeader title="Registro técnico (desarrollo)" />
         <Row label="Grabar registro técnico al navegar">
