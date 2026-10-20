@@ -63,7 +63,7 @@ trababa la cámara y cerraba la app en `libworklets`).
 | Historial | Conversaciones: botón junto a "nueva" ✅, lista agrupada por fecha, buscador, una línea por conversación. **Mis viajes**: automático con la app abierta y el OBD conectado (sin OBD no graba); vista tipo historial de Google Maps (lista por día, recorrido en el mapa, km, tiempo, consumo, códigos) | después de la prueba manejando |
 | M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
 | M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM | ✅ código, servicio y ruta `/tools` en la K16 (2026-10-19) · falta probar en el teléfono |
-| M9 | Diagnóstico del fabricante (UDS solo lectura) | pendiente |
+| M9 | Diagnóstico del fabricante (UDS solo lectura). Datos de marca vía **gemelo del adaptador** en modo laboratorio ([ADR-0009](ADR/0009-gemelo-del-adaptador-modo-laboratorio.md)) | pendiente · después de cerrar la navegación |
 | Después | Modo manejo sin chat (voz de ida y vuelta, palabra "OBDient"), animaciones de espera, base de conocimiento ampliada | ideas |
 
 **Herramientas del asistente (24, 2026-10-19).** Auto: read_pids, sample_pids, read_dtcs,
