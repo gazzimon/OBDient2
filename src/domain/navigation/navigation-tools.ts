@@ -7,7 +7,7 @@
 // geocoder, GPS and navigation controller.
 
 import { distanceM, type LatLng } from '@/domain/geo/geo';
-import type { FuelProduct, ToolCall, ToolErrorCode, ToolOutcome } from '@/domain/assistant/tools';
+import type { FuelProduct, MapPin, ToolCall, ToolErrorCode, ToolOutcome } from '@/domain/assistant/tools';
 import { instructionEs } from '@/domain/navigation/guidance';
 import { findMapLink, isShortLink, parseMapLink } from '@/domain/navigation/map-links';
 import { findByText, parseCorner, withDistance, type FoundPlace } from '@/domain/navigation/places';
@@ -163,6 +163,7 @@ export class NavigationTools {
       ok: true,
       data: { stations, cheapest: cheapestResult, dataUpdated: updated },
       summary: stations.length ? `${stations.length} estaciones cerca` : 'No hay estaciones cerca',
+      places: pins(this.results),
     };
   }
 
@@ -230,6 +231,7 @@ export class NavigationTools {
       ok: true,
       data: { results, ...(cornerMissing ? { corner: 'not_found' } : {}) },
       summary: results.length ? `${results.length} resultados para "${call.query}"` : `Sin resultados para "${call.query}"`,
+      places: pins(this.results),
     };
   }
 
@@ -312,3 +314,15 @@ function fail(error: Extract<ToolOutcome, { ok: false }>['error'], message: stri
 }
 
 const same = (a: FuelStation, b: FuelStation) => a.location.lat === b.location.lat && a.location.lng === b.location.lng;
+
+// The numbered results, for the chat's map card.
+function pins(results: readonly FoundPlace[]): MapPin[] {
+  return results.map((p, i) => ({
+    n: i + 1,
+    name: p.name,
+    detail: p.detail,
+    lat: p.location.lat,
+    lng: p.location.lng,
+    distanceKm: p.distanceKm,
+  }));
+}

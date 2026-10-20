@@ -15,6 +15,7 @@ import type { ChatItem } from '@/domain/assistant/conversation';
 import { SEE_ON_MAP, suggest } from '@/domain/assistant/suggestions';
 import { ChatBubble } from '@/presentation/components/assistant/ChatBubble';
 import { ErrorRow } from '@/presentation/components/assistant/ErrorRow';
+import { PlacesCard } from '@/presentation/components/assistant/PlacesCard';
 import { ToolRow } from '@/presentation/components/assistant/ToolRow';
 import { EmailSignIn } from '@/presentation/components/feedback/EmailSignIn';
 import { useAccount } from '@/presentation/hooks/useAccount';
@@ -56,6 +57,8 @@ export default function AssistantScreen() {
   const moving = useOBDStore((s) => (s.parameters.SPEED?.value ?? 0) > MOVING_KMH);
 
   const items = conversation?.items ?? [];
+  // Only the newest map card draws a live map.
+  const lastPlacesId = [...items].reverse().find((i) => i.kind === 'tool' && i.places?.length)?.id ?? null;
   const streamingId = runningId != null && runningId === conversation?.id ? items[items.length - 1]?.id : null;
 
   // Follow the conversation as it grows and as the answer streams in.
@@ -185,7 +188,12 @@ export default function AssistantScreen() {
                     <ChatBubble role="assistant" text={item.text} at={item.at} cancelled={item.cancelled} streaming={item.id === streamingId} />
                   );
                 case 'tool':
-                  return <ToolRow name={item.name} status={item.status} detail={item.detail} />;
+                  return (
+                    <>
+                      <ToolRow name={item.name} status={item.status} detail={item.detail} />
+                      {item.places?.length ? <PlacesCard id={item.id} pins={item.places} live={item.id === lastPlacesId} /> : null}
+                    </>
+                  );
                 case 'error': {
                   const retry = item.retryText;
                   return <ErrorRow text={item.text} onRetry={retry && !running ? () => submit(retry) : undefined} />;
@@ -364,13 +372,28 @@ function Suggestions({
           <Text className="text-brand-text font-mono text-xs">{e}</Text>
         </Pressable>
       ))}
-      <Pressable
-        onPress={mapFirst ? () => onPick(SEE_ON_MAP) : onGoTo}
-        className="flex-row items-center gap-2 bg-brand-surface border border-brand-border rounded-2xl px-4 py-3 mb-2 active:opacity-60"
-      >
-        <MaterialCommunityIcons name="map-marker-outline" size={16} color={COLORS.mint} />
-        <Text className="text-brand-mint font-mono text-xs">{mapFirst ? SEE_ON_MAP : 'Ir a una dirección…'}</Text>
-      </Pressable>
+      {mapFirst ? (
+        // The destination is on the map already: one big, obvious way there.
+        <Pressable
+          onPress={() => router.navigate('/')}
+          accessibilityRole="button"
+          className="flex-row items-center justify-center gap-2 rounded-2xl h-12 mb-2 active:opacity-70"
+          style={{ backgroundColor: COLORS.mint }}
+        >
+          <MaterialCommunityIcons name="map-outline" size={20} color={COLORS.bg} />
+          <Text className="font-mono-bold text-sm" style={{ color: COLORS.bg }}>
+            {SEE_ON_MAP}
+          </Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          onPress={onGoTo}
+          className="flex-row items-center gap-2 bg-brand-surface border border-brand-border rounded-2xl px-4 py-3 mb-2 active:opacity-60"
+        >
+          <MaterialCommunityIcons name="map-marker-outline" size={16} color={COLORS.mint} />
+          <Text className="text-brand-mint font-mono text-xs">Ir a una dirección…</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
