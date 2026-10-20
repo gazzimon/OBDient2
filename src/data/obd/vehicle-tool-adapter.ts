@@ -120,6 +120,19 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     this.now = deps.now ?? (() => Date.now());
   }
 
+  // The VIN for "Mis viajes" and the lab's tracking (VIN = the car, decision
+  // 2026-10-20): read once per session with 09 02; null if the car does not give it.
+  async ensureVin(): Promise<string | null> {
+    const s = this.session();
+    if (!s?.sessionInfo) return null;
+    if (this.vins.has(s)) return this.vins.get(s)!;
+    try {
+      return await this.diag(s, (send, can) => this.vinFor(s, send, can));
+    } catch {
+      return null;
+    }
+  }
+
   // Every mode-01 PID the car announced that the app knows how to read.
   // The VIN this session already read (codes, freeze frame, vehicle info), or null.
   knownVin(): string | null {

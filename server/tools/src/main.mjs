@@ -11,6 +11,7 @@ import { newApiKeyCheck } from './keys.mjs';
 import { weatherFromApi, weatherUrl } from './queries/weather.mjs';
 import { searxng } from './searxng.mjs';
 import { createApp, listen } from './server.mjs';
+import { keyOwnerLookup } from './key-owners.mjs';
 import { attachStt } from './stt-proxy.mjs';
 
 function readEnv(file) {
@@ -37,6 +38,8 @@ const app = createApp({
     if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
     return weatherFromApi(await res.json());
   },
+  // Driver of each position: the account's email (written by obdient-auth at login).
+  ownerOf: keyOwnerLookup(env.KEY_OWNERS_FILE ?? join(homedir(), '.local/share/obdient/key-owners.json')),
   // Live position into Traccar's OsmAnd port (docker, server/traccar), local only.
   track: async (query) => {
     const res = await fetch(`${env.TRACCAR_OSMAND_URL ?? 'http://127.0.0.1:5055'}/?${query}`, {

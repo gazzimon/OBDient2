@@ -13,7 +13,7 @@
 import { useSyncExternalStore } from 'react';
 import { container } from '@/data/container';
 import { TripStore } from '@/data/trips/trip-store';
-import { TrackQueue, newDeviceId, trackDue } from '@/domain/trips/live-track';
+import { TrackQueue, deviceIdFor, newDeviceId, trackDue } from '@/domain/trips/live-track';
 import { END_AFTER_MS, TripBuilder, type Trip } from '@/domain/trips/trip-builder';
 import { useEgoStore } from '@/store/egoStore';
 import { useOBDStore } from '@/store/obdStore';
@@ -63,6 +63,8 @@ class MyTripsRecorder {
 
   private begin(): void {
     void container.sensors.acquire();
+    // VIN = the car: read it once the session settles, for the trip and the lab.
+    setTimeout(() => void container.vehicleTools.ensureVin(), 4_000);
     this.timer = setInterval(() => this.sample(), SAMPLE_MS);
   }
 
@@ -99,11 +101,11 @@ class MyTripsRecorder {
   private track(now: number, lat: number, lng: number, kmh: number, bearing: number | null, acc: number): void {
     // Always on while the adapter is connected (decision 2026-10-20, lab vehicle
     // monitoring). Before Google Play: an explicit consent screen (ROADMAP).
-    let trackingDevice = useSettingsStore.getState().trackingDevice;
-    if (!trackingDevice) {
-      trackingDevice = newDeviceId();
-      useSettingsStore.getState().setLiveTracking(true, trackingDevice);
-    }
+    // Device = the adapter (its Bluetooth address); a random id only if unknown.
+    const settings = useSettingsStore.getState();
+    let trackingDevice = deviceIdFor(settings.lastDeviceId) ?? settings.trackingDevice;
+    if (!trackingDevice) trackingDevice = newDeviceId();
+    if (trackingDevice !== settings.trackingDevice) settings.setLiveTracking(true, trackingDevice);
     if (!trackDue(this.lastTrackAt, now, kmh)) return;
     this.lastTrackAt = now;
     const p = useOBDStore.getState().parameters;
@@ -118,7 +120,7 @@ class MyTripsRecorder {
     put('voltage', fresh(p.VOLTAGE));
     const maf = fresh(p.MAF);
     put('fuelLph', maf !== undefined ? maf * MAF_TO_LPH : undefined);
-    this.queue.push({ t: now, lat, lng, kmh: Math.round(kmh), bearing, acc: Math.round(acc), obd });
+    this.queue.push({ t: now, lat, lng, kmh: Math.round(kmh), bearing, acc: Math.round(acc), obd, vin: container.vehicleTools.knownVin() });
     void this.flush(trackingDevice);
   }
 

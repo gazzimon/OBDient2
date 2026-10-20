@@ -1,4 +1,4 @@
-import { BATCH, MAX_QUEUED, TrackQueue, newDeviceId, trackDue } from '@/domain/trips/live-track';
+import { BATCH, MAX_QUEUED, TrackQueue, deviceIdFor, newDeviceId, trackDue } from '@/domain/trips/live-track';
 
 const p = (t: number) => ({ t, lat: -27, lng: -55, kmh: 30, bearing: 90, acc: 5 });
 
@@ -13,6 +13,9 @@ describe('live track', () => {
 
   it('device ids are what Traccar accepts', () => {
     expect(newDeviceId()).toMatch(/^obd_[a-z0-9]{8}$/);
+    // The adapter's Bluetooth address (Android gives the MAC).
+    expect(deviceIdFor('00:1D:A5:68:98:8B')).toBe('obd_001da568988b');
+    expect(deviceIdFor(null)).toBeNull();
   });
 
   it('queues while offline, sends oldest first in batches, drops the oldest beyond the cap', () => {

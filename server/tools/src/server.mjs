@@ -25,7 +25,7 @@ const MAX_BODY = 8_192;
 
 class BadInput extends Error {}
 
-export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, log = () => {}, now = () => Date.now() }) {
+export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, ownerOf = () => null, log = () => {}, now = () => Date.now() }) {
   const hits = new Map(); // key prefix → { start, count }
 
   function limited(who) {
@@ -77,11 +77,11 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
       if (year !== null && !/^(19|20)\d\d$/.test(year)) throw new BadInput('bad_year');
       return findCars(needData('cars'), query, year);
     },
-    async track(b) {
+    async track(b, key) {
       if (!track) throw Object.assign(new Error('no tracking'), { status: 503 });
       let queries;
       try {
-        queries = checkTrack(b, now());
+        queries = checkTrack(b, now(), ownerOf(key));
       } catch (err) {
         if (err instanceof BadTrack) throw new BadInput(err.message);
         throw err;
@@ -132,7 +132,7 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
     if (!body) return [400, { error: 'bad_body' }];
     const started = now();
     try {
-      const result = await route(body);
+      const result = await route(body, key);
       if (name !== 'track') log(`${name} ok in ${now() - started} ms`);
       return [200, result];
     } catch (err) {

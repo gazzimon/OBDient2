@@ -15,7 +15,7 @@ import { AccountUnavailable } from './newapi.mjs';
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 20;
 
-export function createApp({ verify, accounts, model, publicBaseUrl, log = () => {}, now = () => Date.now() }) {
+export function createApp({ verify, accounts, model, publicBaseUrl, owners = null, log = () => {}, now = () => Date.now() }) {
   const hits = new Map(); // ip → { start, count }
 
   function limited(ip) {
@@ -56,10 +56,19 @@ export function createApp({ verify, accounts, model, publicBaseUrl, log = () => 
     try {
       if (route === 'DELETE /auth/v1/account') {
         await accounts.remove(account.uid);
+        if (account.email) owners?.forget(account.email);
         log(`account removed (${account.provider ?? '?'})`);
         return [204, null];
       }
       const apiKey = await accounts.tokenFor(account.uid);
+      // Driver = email for the lab's tracking (only a hash of the key is kept).
+      if (account.email) {
+        try {
+          owners?.remember(apiKey, account.email);
+        } catch (err) {
+          log(`key owners not saved: ${err.message}`);
+        }
+      }
       return [200, { apiKey, model, baseUrl: publicBaseUrl }];
     } catch (err) {
       if (err instanceof AccountUnavailable) return [403, { error: err.reason }];

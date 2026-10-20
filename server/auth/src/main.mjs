@@ -8,6 +8,7 @@ import { firebaseVerifier } from './firebase.mjs';
 import { magicVerifier } from './magic.mjs';
 import { newApiAccounts } from './newapi.mjs';
 import { createApp, listen } from './server.mjs';
+import { keyOwners } from './key-owners.mjs';
 
 function readEnv(file) {
   if (statSync(file).mode & 0o077) throw new Error(`${file} must be private: chmod 600 ${file}`);
@@ -35,6 +36,7 @@ const app = createApp({
   }),
   model,
   publicBaseUrl: env.PUBLIC_LLM_URL ?? 'https://obdient.duckdns.org/llm/v1',
+  owners: keyOwners(env.KEY_OWNERS_FILE ?? join(homedir(), '.local/share/obdient/key-owners.json')),
   log,
 });
 
