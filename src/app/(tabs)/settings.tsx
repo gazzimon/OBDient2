@@ -83,6 +83,15 @@ export default function SettingsScreen() {
           Fundación{s.trackingDevice ? ` (dispositivo ${s.trackingDevice})` : ''}.
         </Text>
 
+        <SectionHeader title="Laboratorio" />
+        <Row label="Modo laboratorio (diagnóstico avanzado)">
+          <Switch value={s.labMode} onValueChange={s.setLabMode} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
+        </Row>
+        <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-6">
+          Habilita barrer los módulos del auto y, con el auto detenido, enviar comandos de solo lectura al bus (UDS/STN)
+          desde el chat. No escribe, borra ni reprograma nada. Para desarrollo de M9.
+        </Text>
+
         <SectionHeader title="Registro técnico (desarrollo)" />
         <Row label="Grabar registro técnico al navegar">
           <Switch value={s.recordTrips} onValueChange={s.setRecordTrips} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />

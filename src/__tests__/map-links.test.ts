@@ -141,7 +141,7 @@ describe('notes phrases', () => {
   });
   it('a greeting offline is answered and not noted', async () => {
     const a = new OfflineAssistant({ supportedPids: () => [], execute: async () => ({ ok: false, error: 'not_connected', message: '' }) });
-    const ctx = { connected: false, protocol: null, supportedPids: 0, moving: false, speedKmh: null, navigating: false };
+    const ctx = { connected: false, protocol: null, supportedPids: 0, moving: false, speedKmh: null, navigating: false, labMode: false };
     expect(await a.handle({ id: 'n', at: 0, text: 'Hola', photos: 0 }, ctx)).toEqual({ kind: 'answer', intent: 'small_talk', text: SMALL_TALK_REPLY });
   });
 });

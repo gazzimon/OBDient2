@@ -4,7 +4,7 @@ import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import type { LlmPort, LlmRequest, LlmResult } from '@/domain/ports/llm.port';
 import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 
-const STOPPED: AssistantContext = { connected: true, protocol: 'CAN 29/500', supportedPids: 4, moving: false, speedKmh: 0, navigating: false };
+const STOPPED: AssistantContext = { connected: true, protocol: 'CAN 29/500', supportedPids: 4, moving: false, speedKmh: 0, navigating: false, labMode: false };
 const MOVING: AssistantContext = { ...STOPPED, moving: true, speedKmh: 40 };
 
 const call = (name: string, args: object | string = {}, id = '') => ({

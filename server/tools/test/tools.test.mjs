@@ -156,3 +156,56 @@ test('track: driver from the key owners (hash → email), VIN passed on', async 
     server.close();
   }
 });
+
+test('web_fetch: SSRF guard blocks private and non-http', async () => {
+  const { assertPublicUrl, isPrivateAddress, readable, domainWeight } = await import('../src/fetch-page.mjs');
+  assert.equal(isPrivateAddress('127.0.0.1'), true);
+  assert.equal(isPrivateAddress('192.168.100.200'), true);
+  assert.equal(isPrivateAddress('169.254.1.1'), true);
+  assert.equal(isPrivateAddress('8.8.8.8'), false);
+  const resolvePublic = async () => [{ address: '140.82.121.3' }];
+  const resolvePrivate = async () => [{ address: '127.0.0.1' }];
+  await assert.rejects(() => assertPublicUrl('http://localhost/x', resolvePublic), /no público/);
+  await assert.rejects(() => assertPublicUrl('file:///etc/passwd', resolvePublic), /http/);
+  await assert.rejects(() => assertPublicUrl('http://new-api/v1', resolvePrivate), /privada/);
+  await assert.rejects(() => assertPublicUrl('http://192.168.100.200:3000', resolvePublic), /privada/);
+  assert.ok(await assertPublicUrl('https://github.com/x', resolvePublic));
+  assert.equal(readable('<html><head><style>x</style></head><body><p>Hola</p><script>evil()</script></body>'), 'Hola');
+  assert.ok(domainWeight('github.com') > domainWeight('spam.example'));
+});
+
+test('web_fetch route: reads text, follows allowlist, blocks private via guard', async () => {
+  const { makeFetchPage } = await import('../src/fetch-page.mjs');
+  const resolve = async (h) => [{ address: h === 'evil.test' ? '127.0.0.1' : '140.82.121.3' }];
+  const fetchFn = async () => ({ ok: true, status: 200, headers: new Map([['content-type', 'text/html']]), arrayBuffer: async () => Buffer.from('<body><p>PID 0x221E1C = oil life</p></body>') });
+  fetchFn.prototype = {};
+  const fetchPage = makeFetchPage({ fetchFn: async (u) => { const m = new Map([['content-type', 'text/html']]); return { ok: true, status: 200, headers: m, arrayBuffer: async () => Buffer.from('<body><p>DID F190 VIN</p></body>') }; }, resolve });
+  const app = createApp({ search: async () => [], isValidKey: async () => true, fetchPage });
+  const server = await listen(app, 0);
+  try {
+    const base = `http://127.0.0.1:${server.address().port}/tools/v1`;
+    const r = await fetch(`${base}/web_fetch`, { method: 'POST', headers: { Authorization: 'Bearer k' }, body: JSON.stringify({ url: 'https://github.com/x' }) });
+    assert.equal(r.status, 200);
+    assert.match((await r.json()).text, /DID F190 VIN/);
+    const bad = await fetch(`${base}/web_fetch`, { method: 'POST', headers: { Authorization: 'Bearer k' }, body: JSON.stringify({ url: 'http://evil.test' }) });
+    assert.equal(bad.status, 400);
+  } finally {
+    server.close();
+  }
+});
+
+test('knowledge: report merges, lookup returns facts for the vehicle and the make', async () => {
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { knowledgeStore } = await import('../src/knowledge.mjs');
+  const k = knowledgeStore(join(mkdtempSync(join(tmpdir(), 'kb-')), 'knowledge.json'));
+  k.report({ make: 'Ford', model: 'Focus', year: 2015, vin: '9BFZ', protocol: 'CAN29', modules: [{ id: '29:10', reqHeader: '18DA10F1', rxHeader: '18DAF110', label: 'PCM' }] });
+  k.report({ make: 'Ford', model: 'Focus', year: 2015, modules: [{ id: '29:28', reqHeader: '18DA28F1', rxHeader: '18DAF128', label: 'ABS' }] });
+  k.report({ make: 'Ford', model: 'Ranger', year: 2020, modules: [{ id: '29:10', reqHeader: '18DA10F1', rxHeader: '18DAF110', label: 'PCM' }] });
+  const r = k.lookup({ make: 'Ford', model: 'Focus', year: 2015 });
+  assert.equal(r.exact.modules.length, 2);
+  assert.equal(r.sameMake.length, 1);
+  assert.equal(r.sameMake[0].key, 'ford/ranger/2020');
+  assert.equal(k.lookup({ make: 'Ford', vin: '9BFZ' }).byVin.key, 'ford/focus/2015');
+});

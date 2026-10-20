@@ -194,6 +194,7 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
     const decision = evaluatePolicy(call, {
       moving: opts.context.moving,
       navigating: opts.context.navigating,
+      labMode: opts.context.labMode,
       clearsThisConversation: (opts.clearsSoFar ?? 0) + clears,
     });
     if (decision.kind === 'deny') return refuse(refusal(decision.error, decision.message));

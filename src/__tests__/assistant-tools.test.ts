@@ -70,7 +70,7 @@ describe('parseToolCall', () => {
 });
 
 describe('tool policy', () => {
-  const stopped = { moving: false, navigating: false, clearsThisConversation: 0 };
+  const stopped = { moving: false, navigating: false, labMode: false, clearsThisConversation: 0 };
   const moving = { ...stopped, moving: true };
   const decide = (call: ToolCall, ctx = stopped) => evaluatePolicy(call, ctx).kind;
 
@@ -88,7 +88,7 @@ describe('tool policy', () => {
   it('keeps the bench away from driving and navigation', () => {
     expect(decide({ name: 'run_adapter_bench' })).toBe('allow');
     expect(decide({ name: 'run_adapter_bench' }, moving)).toBe('deny');
-    expect(decide({ name: 'run_adapter_bench' }, { ...stopped, navigating: true })).toBe('deny');
+    expect(decide({ name: 'run_adapter_bench' }, { ...stopped, navigating: true, labMode: false })).toBe('deny');
   });
 
   it('asks before clearing codes, once per conversation, never while moving', () => {

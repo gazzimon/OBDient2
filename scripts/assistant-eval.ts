@@ -154,7 +154,7 @@ function vehicle(car: Car): VehicleToolsPort {
   };
 }
 
-const STOPPED: AssistantContext = { connected: true, protocol: 'ISO 15765-4 CAN 29/500', supportedPids: 34, moving: false, speedKmh: 0, navigating: false };
+const STOPPED: AssistantContext = { connected: true, protocol: 'ISO 15765-4 CAN 29/500', supportedPids: 34, moving: false, speedKmh: 0, navigating: false, labMode: false };
 const MOVING: AssistantContext = { ...STOPPED, moving: true, speedKmh: 52, navigating: true };
 const OFFLINE: AssistantContext = { ...STOPPED, connected: false, protocol: null, supportedPids: 0 };
 

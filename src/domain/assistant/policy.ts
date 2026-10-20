@@ -28,6 +28,11 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   stop_navigation: 'read',
   where_am_i: 'read',
   web_search: 'read',
+  web_fetch: 'read',
+  knowledge_lookup: 'read',
+  // Use the bus in exclusive mode (like the adapter bench); car stopped.
+  scan_modules: 'exclusive',
+  obd_command: 'exclusive',
   fuel_prices: 'read',
   dollar_rate: 'read',
   weather: 'read',
@@ -44,6 +49,8 @@ export const SAMPLE_SECONDS_WHILE_MOVING = 5;
 export interface PolicyContext {
   readonly moving: boolean;
   readonly navigating: boolean;
+  // "Modo laboratorio": the free read-command tool is only available then.
+  readonly labMode: boolean;
   // Successful clears in this conversation: one is enough.
   readonly clearsThisConversation: number;
 }
@@ -71,6 +78,15 @@ export function evaluatePolicy(call: ToolCall, ctx: PolicyContext): PolicyDecisi
     case 'run_adapter_bench':
       if (ctx.moving) return deny('not_allowed_while_moving', 'La prueba del adaptador se hace con el auto detenido.');
       if (ctx.navigating) return deny('not_allowed_while_moving', 'La prueba del adaptador pausa la telemetría: terminá la navegación primero.');
+      return ALLOW;
+    case 'scan_modules':
+      if (ctx.moving) return deny('not_allowed_while_moving', 'El barrido de módulos se hace con el auto detenido.');
+      if (ctx.navigating) return deny('not_allowed_while_moving', 'El barrido pausa la telemetría: terminá la navegación primero.');
+      return ALLOW;
+    case 'obd_command':
+      if (!ctx.labMode) return deny('not_supported', 'Enviar comandos sueltos al auto está en Modo laboratorio (Ajustes).');
+      if (ctx.moving) return deny('not_allowed_while_moving', 'Los comandos al bus se mandan con el auto detenido.');
+      if (ctx.navigating) return deny('not_allowed_while_moving', 'Terminá la navegación primero.');
       return ALLOW;
     case 'clear_dtcs':
       if (ctx.moving) return deny('not_allowed_while_moving', 'Los códigos se borran con el auto detenido.');

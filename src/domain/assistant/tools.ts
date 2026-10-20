@@ -30,6 +30,10 @@ export const TOOL_NAMES = [
   'stop_navigation',
   'where_am_i',
   'web_search',
+  'web_fetch',
+  'scan_modules',
+  'obd_command',
+  'knowledge_lookup',
   'fuel_prices',
   'dollar_rate',
   'weather',
@@ -67,6 +71,14 @@ export type ToolCall =
   | { readonly name: 'where_am_i' }
   // The web, through obdient-tools (SearXNG): short results, never whole pages.
   | { readonly name: 'web_search'; readonly query: string }
+  // Reads the full text of a public page (SearXNG gives the URL, this reads it).
+  | { readonly name: 'web_fetch'; readonly url: string }
+  // Lab: which modules of this car answer (read-only probes 3E/22 F190).
+  | { readonly name: 'scan_modules' }
+  // Lab (Modo laboratorio): a free READ command/frame; writes are blocked.
+  | { readonly name: 'obd_command'; readonly command: string; readonly header: string | null }
+  // The lab's shared facts about what a car supports.
+  | { readonly name: 'knowledge_lookup'; readonly make: string | null; readonly model: string | null; readonly year: number | null }
   // Nearest stations and prices (Secretaría de Energía data, daily).
   | { readonly name: 'fuel_prices'; readonly product: FuelProduct | null }
   | { readonly name: 'dollar_rate' }
@@ -116,7 +128,7 @@ export interface MapPin {
 }
 
 export type ToolOutcome =
-  | { readonly ok: true; readonly data: unknown; readonly summary: string; readonly places?: readonly MapPin[] }
+  | { readonly ok: true; readonly data: unknown; readonly summary: string; readonly places?: readonly MapPin[]; readonly knowledge?: Record<string, unknown> }
   | { readonly ok: false; readonly error: ToolErrorCode; readonly message: string };
 
 // PIDs the model may ask for: what the car supports, in catalogue order. Battery
@@ -260,6 +272,49 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
         type: 'object',
         properties: { query: { type: 'string', minLength: 2, maxLength: 200 } },
         required: ['query'],
+        additionalProperties: false,
+      },
+    ),
+    fn(
+      'web_fetch',
+      'Lee el texto completo de una página pública (la URL sale de web_search). Usala cuando el fragmento no alcanza: ' +
+        'IDs CAN, DIDs o PIDs propietarios en GitHub, foros, documentación de OBDLink. No inventes direcciones de módulos: ' +
+        'leé la fuente o medí en el auto.',
+      { type: 'object', properties: { url: { type: 'string', minLength: 8, maxLength: 400 } }, required: ['url'], additionalProperties: false },
+    ),
+    fn(
+      'scan_modules',
+      'Barrido de módulos del auto (como el árbol de FORScan): recorre las direcciones y dice cuáles responden (ABS, airbag, ' +
+        'caja, tablero, carrocería…), con solo lecturas (3E y 22 F190). El auto tiene que estar detenido. Lo que responde ' +
+        'queda en la base del laboratorio.',
+      NO_ARGS,
+    ),
+    fn(
+      'obd_command',
+      'Solo en Modo laboratorio: envía UNA trama o comando de LECTURA al auto y devuelve la respuesta cruda. Libre para leer ' +
+        '(19, 22, 23, 24, 3E, 10 01, modos OBD, encabezados ATSH/ATCRA, STPX); bloqueado todo lo que escribe, borra, flashea, ' +
+        'reinicia o desbloquea. El auto detenido.',
+      {
+        type: 'object',
+        properties: {
+          command: { type: 'string', minLength: 2, maxLength: 60, description: 'La trama o comando: "1902FF", "22 F1 90", "ATI".' },
+          header: { type: 'string', maxLength: 8, description: 'Dirección del módulo (ATSH), p. ej. "7E0" o "18DA10F1".' },
+        },
+        required: ['command'],
+        additionalProperties: false,
+      },
+    ),
+    fn(
+      'knowledge_lookup',
+      'Qué se sabe en el laboratorio sobre un auto: módulos que responden, direcciones y DIDs ya descubiertos, de este modelo ' +
+        'y de la misma marca. Consultalo antes de barrer o explorar, para no empezar de cero.',
+      {
+        type: 'object',
+        properties: {
+          make: { type: 'string', maxLength: 40, description: 'Marca: "Ford".' },
+          model: { type: 'string', maxLength: 40 },
+          year: { type: 'integer', minimum: 1990, maximum: 2100 },
+        },
         additionalProperties: false,
       },
     ),
@@ -413,6 +468,30 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       if (typeof q !== 'string' || q.trim().length < 2 || q.length > 200) return bad('"query" debe tener entre 2 y 200 caracteres.');
       return { ok: true, call: { name, query: q.trim() } };
     }
+    case 'web_fetch': {
+      const extra = only('url');
+      if (extra) return bad(extra);
+      const u = a.url;
+      if (typeof u !== 'string' || !/^https?:\/\//i.test(u.trim()) || u.length > 400) return bad('"url" debe ser una dirección http(s).');
+      return { ok: true, call: { name, url: u.trim() } };
+    }
+    case 'obd_command': {
+      const extra = only('command', 'header');
+      if (extra) return bad(extra);
+      const cmd = a.command;
+      if (typeof cmd !== 'string' || cmd.trim().length < 2 || cmd.length > 60) return bad('"command" debe ser la trama o el comando.');
+      const h = a.header;
+      if (h !== undefined && (typeof h !== 'string' || !/^[0-9A-Fa-f]{3,8}$/.test(h.trim()))) return bad('"header" es la dirección del módulo en hexadecimal.');
+      return { ok: true, call: { name, command: cmd.trim(), header: typeof h === 'string' ? h.trim().toUpperCase() : null } };
+    }
+    case 'knowledge_lookup': {
+      const extra = only('make', 'model', 'year');
+      if (extra) return bad(extra);
+      const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+      const y = a.year;
+      if (y !== undefined && (typeof y !== 'number' || !Number.isInteger(y) || y < 1990 || y > 2100)) return bad('"year" debe ser un año.');
+      return { ok: true, call: { name, make: str(a.make, 40), model: str(a.model, 40), year: (y as number | undefined) ?? null } };
+    }
     case 'fuel_prices': {
       const extra = only('product');
       if (extra) return bad(extra);
@@ -466,6 +545,7 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
     case 'start_navigation':
     case 'route_status':
     case 'stop_navigation':
+    case 'scan_modules':
     case 'where_am_i': {
       const extra = only();
       return extra ? bad(extra) : { ok: true, call: { name } };

@@ -16,7 +16,7 @@ import { AssistantService, type AccountCredentials } from '@/data/assistant/assi
 import { LlmHttpError } from '@/data/llm/openai-chat-client';
 import { CHAT_STORE_VERSION, useChatStore } from '@/store/chatStore';
 
-const CTX: AssistantContext = { connected: true, protocol: 'CAN 29/500', supportedPids: 4, moving: false, speedKmh: 0, navigating: false };
+const CTX: AssistantContext = { connected: true, protocol: 'CAN 29/500', supportedPids: 4, moving: false, speedKmh: 0, navigating: false, labMode: false };
 const say = (content: string): LlmResult => ({ content, toolCalls: [], finishReason: 'stop' });
 const car: VehicleToolsPort = {
   supportedPids: () => ['RPM'],

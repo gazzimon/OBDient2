@@ -12,6 +12,8 @@ import { weatherFromApi, weatherUrl } from './queries/weather.mjs';
 import { searxng } from './searxng.mjs';
 import { createApp, listen } from './server.mjs';
 import { keyOwnerLookup } from './key-owners.mjs';
+import { makeFetchPage } from './fetch-page.mjs';
+import { knowledgeStore } from './knowledge.mjs';
 import { attachStt } from './stt-proxy.mjs';
 
 function readEnv(file) {
@@ -40,6 +42,9 @@ const app = createApp({
   },
   // Driver of each position: the account's email (written by obdient-auth at login).
   ownerOf: keyOwnerLookup(env.KEY_OWNERS_FILE ?? join(homedir(), '.local/share/obdient/key-owners.json')),
+  // Full-page reader for the agent (SSRF-guarded), and the lab's shared facts.
+  fetchPage: makeFetchPage(),
+  knowledge: knowledgeStore(env.KNOWLEDGE_FILE ?? join(homedir(), '.local/share/obdient/knowledge.json')),
   // Live position into Traccar's OsmAnd port (docker, server/traccar), local only.
   track: async (query) => {
     const res = await fetch(`${env.TRACCAR_OSMAND_URL ?? 'http://127.0.0.1:5055'}/?${query}`, {
