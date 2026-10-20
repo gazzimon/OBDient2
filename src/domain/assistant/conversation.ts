@@ -9,7 +9,7 @@
 import type { ApiMessage } from '@/domain/ports/llm.port';
 import type { AgentEvent, TurnResult } from './agent-loop';
 import { MAX_NOTES, type OfflineNote } from './offline';
-import type { ToolName } from './tools';
+import type { MapPin, ToolName } from './tools';
 
 export type ToolStatus = 'running' | 'ok' | 'failed' | 'refused';
 
@@ -32,6 +32,8 @@ export type ChatItem =
       readonly status: ToolStatus;
       // One line for the row: the tool's summary or the reason it did not run.
       readonly detail: string | null;
+      // Places it found, for the map card under the row.
+      readonly places?: readonly MapPin[];
     }
   | { readonly kind: 'error'; readonly id: string; readonly at: number; readonly text: string; readonly retryText: string | null };
 
@@ -98,7 +100,13 @@ export function applyEvent(c: Conversation, e: AgentEvent, now: number, answerId
     case 'tool_start':
       return { ...c, items: [...c.items, { kind: 'tool', id: e.id, at: now, name: e.call.name, status: 'running', detail: null }] };
     case 'tool_end':
-      return updateTool(c, e.id, e.outcome.ok ? 'ok' : 'failed', e.outcome.ok ? e.outcome.summary : e.outcome.message);
+      return updateTool(
+        c,
+        e.id,
+        e.outcome.ok ? 'ok' : 'failed',
+        e.outcome.ok ? e.outcome.summary : e.outcome.message,
+        e.outcome.ok && e.outcome.places?.length ? e.outcome.places : undefined,
+      );
     case 'tool_refused':
       return {
         ...c,
@@ -176,8 +184,11 @@ export function upsertConversation(list: readonly Conversation[], c: Conversatio
 // The answer's bubbles: answerId, then answerId.1, answerId.2… after tool rows.
 const isAnswerPart = (id: string, answerId: string) => id === answerId || id.startsWith(`${answerId}.`);
 
-function updateTool(c: Conversation, id: string, status: ToolStatus, detail: string | null): Conversation {
-  return { ...c, items: c.items.map((i) => (i.kind === 'tool' && i.id === id ? { ...i, status, detail } : i)) };
+function updateTool(c: Conversation, id: string, status: ToolStatus, detail: string | null, places?: readonly MapPin[]): Conversation {
+  return {
+    ...c,
+    items: c.items.map((i) => (i.kind === 'tool' && i.id === id ? { ...i, status, detail, ...(places ? { places } : {}) } : i)),
+  };
 }
 
 function withoutPhotos(m: ApiMessage): ApiMessage {

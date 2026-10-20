@@ -104,8 +104,19 @@ export type ToolErrorCode =
   // The car answered with a refusal (7F); the message carries the reason.
   | 'rejected_by_car';
 
+// A numbered point the chat can show on a map (search and fuel results).
+// For the screen only: the model gets `data`, never this.
+export interface MapPin {
+  readonly n: number;
+  readonly name: string;
+  readonly detail: string;
+  readonly lat: number;
+  readonly lng: number;
+  readonly distanceKm: number | null;
+}
+
 export type ToolOutcome =
-  | { readonly ok: true; readonly data: unknown; readonly summary: string }
+  | { readonly ok: true; readonly data: unknown; readonly summary: string; readonly places?: readonly MapPin[] }
   | { readonly ok: false; readonly error: ToolErrorCode; readonly message: string };
 
 // PIDs the model may ask for: what the car supports, in catalogue order. Battery

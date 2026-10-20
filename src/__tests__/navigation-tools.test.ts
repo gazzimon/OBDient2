@@ -94,6 +94,9 @@ describe('NavigationTools', () => {
     const { t, state, calls } = tools();
     const found = await t.execute({ name: 'search_place', query: 'Uruguay 1223' }, signal);
     expect(found).toMatchObject({ ok: true, data: { results: [{ result: 1, name: 'Uruguay 1223 CABA', distanceKm: 1.2 }, { result: 2 }] } });
+    // The chat's map card gets the points; the model's data does not carry them.
+    expect(found.ok && found.places?.map((p) => p.n)).toEqual([1, 2]);
+    expect(JSON.stringify(found.ok ? found.data : null)).not.toContain('lat');
 
     const shown = await t.execute({ name: 'set_destination', result: 1 }, signal);
     expect(shown).toEqual({

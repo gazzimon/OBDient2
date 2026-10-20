@@ -10,6 +10,7 @@ import * as Location from 'expo-location';
 import { Camera, GeoJSONSource, Layer, Map, NativeUserLocation, type CameraRef } from '@maplibre/maplibre-react-native';
 import { container } from '@/data/container';
 import type { Place } from '@/domain/navigation/route';
+import { PinsLayer, pinsBounds } from '@/presentation/components/map/PinsLayer';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { formatDistance, formatDuration } from '@/presentation/format';
 import { useSensorsWhileFocused } from '@/presentation/hooks/useSensors';
@@ -75,6 +76,15 @@ export default function RouteScreen() {
     centered.current = true;
     centerOn(ego.position.lat, ego.position.lng);
   }, [ego, route]);
+
+  // The assistant's places ("Ver en el mapa"): framed, numbered, pick one.
+  const candidates = useNavStore((s) => s.candidates);
+  useEffect(() => {
+    const b = pinsBounds(candidates);
+    if (!b || destination) return;
+    centered.current = true;
+    cameraRef.current?.fitBounds(b, { padding: { top: 160, bottom: 300, left: 50, right: 50 }, duration: 600 });
+  }, [candidates, destination]);
 
   // Frame the whole route when it arrives.
   useEffect(() => {
@@ -174,6 +184,7 @@ export default function RouteScreen() {
             />
           </GeoJSONSource>
         )}
+        {!destination && candidates.length > 0 && <PinsLayer id="candidates" pins={candidates} />}
       </Map>
 
       {/* Search */}
@@ -229,8 +240,37 @@ export default function RouteScreen() {
         </Pressable>
       )}
 
+      {/* The assistant's places: pick one to plan the route. */}
+      {!destination && candidates.length > 0 && (
+        <View className="absolute bottom-4 left-4 right-4 bg-brand-surface border border-brand-border rounded-2xl overflow-hidden">
+          <View className="flex-row items-center justify-between px-4 pt-3 pb-1">
+            <Text className="text-brand-muted font-mono text-xs">Lugares del asistente</Text>
+            <Pressable onPress={() => useNavStore.getState().setCandidates([])} hitSlop={8} accessibilityLabel="Cerrar">
+              <MaterialCommunityIcons name="close" size={18} color={COLORS.muted} />
+            </Pressable>
+          </View>
+          {candidates.map((c) => (
+            <Pressable
+              key={c.n}
+              onPress={() => pick({ name: c.name, detail: c.detail, location: { lat: c.lat, lng: c.lng } })}
+              className="flex-row items-center px-4 py-2.5 border-t border-brand-border active:opacity-60"
+            >
+              <View className="w-6 h-6 rounded-full items-center justify-center mr-3" style={{ backgroundColor: COLORS.mint }}>
+                <Text className="font-mono-bold text-xs" style={{ color: COLORS.bg }}>
+                  {c.n}
+                </Text>
+              </View>
+              <Text className="text-brand-text font-mono text-xs flex-1" numberOfLines={1}>
+                {c.name}
+              </Text>
+              <Text className="text-brand-mint font-mono text-xs ml-2">Ir</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
       {/* Free driving: the driving view without a destination. */}
-      {!destination && (
+      {!destination && candidates.length === 0 && (
         <Pressable
           onPress={() => router.push('/drive')}
           className="absolute bottom-6 self-center flex-row items-center gap-2 bg-brand-surface border border-brand-teal rounded-full px-5 py-3 active:opacity-60"
