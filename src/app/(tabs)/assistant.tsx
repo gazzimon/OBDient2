@@ -25,6 +25,7 @@ import { useChatStore } from '@/store/chatStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
 import { ensurePermission } from '@/presentation/services/permissions';
+import { shareConversation } from '@/presentation/services/share-conversation';
 
 // Above this OBD speed the chat is only the microphone (Modo manejo).
 const MOVING_KMH = 8;
@@ -403,9 +404,17 @@ function ConversationList({ visible, onClose }: { visible: boolean; onClose: () 
               </Pressable>
               <Pressable
                 hitSlop={8}
+                accessibilityLabel="Compartir la conversación"
+                onPress={() => void shareConversation(item).catch(() => Alert.alert('No se pudo compartir la conversación.'))}
+                className="pl-3 active:opacity-60"
+              >
+                <MaterialCommunityIcons name="share-variant-outline" size={18} color={COLORS.muted} />
+              </Pressable>
+              <Pressable
+                hitSlop={8}
                 disabled={running}
                 onPress={() => useChatStore.getState().remove(item.id)}
-                className="pl-3 active:opacity-60"
+                className="pl-4 active:opacity-60"
               >
                 <MaterialCommunityIcons name="trash-can-outline" size={18} color={COLORS.muted} />
               </Pressable>
