@@ -65,12 +65,19 @@ export function stageFor(distanceM: number, speedMps: number): Stage | null {
   return null;
 }
 
+// "Near" right after "far" is the same thing said twice: seen on the road
+// (2026-10-19) when a maneuver shows up at the edge between the two, e.g.
+// "En 250 m…" and a second later "En 200 m…".
+const NEAR_AFTER_FAR_MS = 15_000;
+
 export class Announcer {
   private spoken = new Set<string>();
+  private farAt = new Map<number, number>();
 
   // Returns the phrase to speak now, or null. Keyed per maneuver+stage so a
-  // jittering distance never repeats an announcement.
-  next(maneuver: Maneuver | null, distanceM: number | null, speedMps: number): string | null {
+  // jittering distance never repeats an announcement. Arrival itself is said
+  // by the navigation controller, once.
+  next(maneuver: Maneuver | null, distanceM: number | null, speedMps: number, nowMs = Date.now()): string | null {
     if (!maneuver || distanceM == null) return null;
     const stage = stageFor(distanceM, speedMps);
     if (!stage) return null;
@@ -80,14 +87,21 @@ export class Announcer {
     if (this.spoken.has(key)) return null;
     this.spoken.add(key);
 
+    if (stage === 'far') this.farAt.set(maneuver.routeOffsetM, nowMs);
+    if (stage === 'near') {
+      const far = this.farAt.get(maneuver.routeOffsetM);
+      if (far != null && nowMs - far < NEAR_AFTER_FAR_MS) return null;
+    }
+
     const text = instructionEs(maneuver);
-    if (stage === 'now') return text;
+    if (stage === 'now') return maneuver.type === 'arrive' ? null : text;
     if (maneuver.type === 'arrive') return `En ${distanceEs(distanceM)}, llegarás a tu destino`;
     return `En ${distanceEs(distanceM)}, ${lowerFirst(text)}`;
   }
 
   reset(): void {
     this.spoken = new Set();
+    this.farAt = new Map();
   }
 }
 
