@@ -3,7 +3,7 @@
 
 import { useSyncExternalStore } from 'react';
 import * as Speech from 'expo-speech';
-import { VoiceArbiter, type Speaker } from '@/domain/voice/voice-arbiter';
+import { VoiceArbiter, type SoundMode, type Speaker } from '@/domain/voice/voice-arbiter';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const speaker: Speaker = {
@@ -21,5 +21,13 @@ export function useVoiceMuted(): boolean {
   return useSyncExternalStore(
     (cb) => voice.onMuted(cb),
     () => voice.isMuted(),
+  );
+}
+
+// The drive view's three-state sound button.
+export function useSoundMode(): SoundMode {
+  return useSyncExternalStore(
+    (cb) => voice.onMuted(cb),
+    () => voice.soundMode(),
   );
 }

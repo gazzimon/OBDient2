@@ -15,3 +15,18 @@ export function useLandscapeWhileFocused(): void {
     }, []),
   );
 }
+
+// The driving map: any orientation the phone is in (mounted upright or
+// sideways); back to portrait on leave. The AR camera needs landscape.
+export function useDriveOrientationWhileFocused(landscape: boolean): void {
+  useFocusEffect(
+    useCallback(() => {
+      void (landscape
+        ? ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
+        : ScreenOrientation.unlockAsync());
+      return () => {
+        void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      };
+    }, [landscape]),
+  );
+}

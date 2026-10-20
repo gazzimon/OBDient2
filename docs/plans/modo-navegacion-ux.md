@@ -97,6 +97,14 @@ izquierda y el mapa ocupa el resto). Se sigue la del teléfono.
 | **F6 Viajes** | Pausa automática en paradas, corte por motor apagado, resumen al llegar → base de *Mis viajes* | M | no |
 | Después | Tránsito (HERE), compartir llegada, voz del asistente en manejo | — | — |
 
+**Estado F1 (2026-10-19, código; falta verlo en el teléfono):** cartel con "luego" y toque para repetir;
+riel izquierdo con 🎤 (el asistente escucha y **responde en voz** por el árbitro, prioridad más baja, y en
+una tarjeta 12 s), 🔊 de tres estados (`VoiceArbiter.setMode`: todo / solo alertas / silencio, una
+alerta crítica siempre habla) y 3D/2D con el punto de GPS; velocidad abajo a la derecha; barra con ✕
+(confirma si hay ruta), tiempo · km · llegada y ⋯ (sonido, 3D/2D, Terminar viaje); manejo libre; sin
+cámara salvo con el ajuste "Cámara en manejo" (entonces horizontal fija, como antes); orientación libre.
+El botón ⚠ pasa a F3 (sin velocidad ni detector no hay qué elegir).
+
 Cada fase se prueba en el teléfono con el APK standalone (o el Dev por cable) antes de la siguiente.
 F1 y F2 no necesitan build: son JS.
 

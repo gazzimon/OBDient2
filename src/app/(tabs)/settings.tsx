@@ -110,7 +110,7 @@ export default function SettingsScreen() {
           <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
         </Pressable>
 
-        <Row label="Guía AR sobre la cámara (en prueba)">
+        <Row label="Cámara en manejo: guía AR y detector (en prueba)">
           <Switch value={s.driveAr} onValueChange={s.setDriveAr} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
 

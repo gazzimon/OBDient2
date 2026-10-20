@@ -12,6 +12,10 @@
 //   Settings decides which alerts speak at all; the voice switch, everything.
 
 export type VoicePriority = 'critical' | 'alert' | 'maneuver' | 'assistant';
+
+// The drive view's sound button: everything, only alerts, or silence (a
+// critical alert still speaks: it is about not crashing).
+export type SoundMode = 'all' | 'alerts' | 'silent';
 export type AlertVoiceLevel = 'all' | 'critical' | 'off';
 
 const RANK: Readonly<Record<VoicePriority, number>> = { critical: 3, alert: 2, maneuver: 1, assistant: 0 };
@@ -45,8 +49,8 @@ export class VoiceArbiter {
   private current: (Utterance & { readonly token: number }) | null = null;
   private waiting: Utterance[] = [];
   private token = 0;
-  private muted = false;
-  private readonly listeners = new Set<(muted: boolean) => void>();
+  private mode: SoundMode = 'all';
+  private readonly listeners = new Set<(mode: SoundMode) => void>();
 
   constructor(
     private readonly speaker: Speaker,
@@ -68,24 +72,30 @@ export class VoiceArbiter {
   }
 
   isMuted(): boolean {
-    return this.muted;
+    return this.mode === 'silent';
   }
 
   setMuted(muted: boolean): void {
-    if (muted === this.muted) return;
-    this.muted = muted;
-    if (muted) {
-      this.waiting = this.waiting.filter((w) => w.priority === 'critical');
-      if (this.current && this.current.priority !== 'critical') {
-        this.speaker.stop();
-        this.current = null;
-        this.next();
-      }
-    }
-    for (const l of this.listeners) l(muted);
+    this.setMode(muted ? 'silent' : 'all');
   }
 
-  onMuted(listener: (muted: boolean) => void): () => void {
+  soundMode(): SoundMode {
+    return this.mode;
+  }
+
+  setMode(mode: SoundMode): void {
+    if (mode === this.mode) return;
+    this.mode = mode;
+    this.waiting = this.waiting.filter((w) => this.allowed(w.priority));
+    if (this.current && !this.allowed(this.current.priority)) {
+      this.speaker.stop();
+      this.current = null;
+      this.next();
+    }
+    for (const l of this.listeners) l(mode);
+  }
+
+  onMuted(listener: (mode: SoundMode) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -103,7 +113,9 @@ export class VoiceArbiter {
       const level = this.settings.alertLevel();
       if (level === 'off' || (level === 'critical' && p === 'alert')) return false;
     }
-    return !this.muted || p === 'critical';
+    if (this.mode === 'silent') return p === 'critical';
+    if (this.mode === 'alerts') return p === 'critical' || p === 'alert';
+    return true;
   }
 
   private start(u: Utterance): void {

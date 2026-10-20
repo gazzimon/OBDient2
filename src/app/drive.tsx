@@ -20,7 +20,7 @@ import { DriveHud } from '@/presentation/components/ar/DriveHud';
 import { DetectionOverlay } from '@/presentation/components/ar/DetectionOverlay';
 import { DriveMap } from '@/presentation/components/ar/DriveMap';
 import { useDetector } from '@/presentation/hooks/useDetector';
-import { useLandscapeWhileFocused } from '@/presentation/hooks/useLandscape';
+import { useDriveOrientationWhileFocused } from '@/presentation/hooks/useLandscape';
 import { useSensorsWhileFocused } from '@/presentation/hooks/useSensors';
 import { navigation } from '@/presentation/services/navigation-controller';
 import { useNavStore } from '@/store/navStore';
@@ -52,12 +52,16 @@ const PIP_TAP: ViewStyle = { ...PIP_BOX, zIndex: 10, elevation: 10 };
 
 export default function DriveScreen() {
   useKeepAwake();
-  useLandscapeWhileFocused();
   useSensorsWhileFocused();
   const router = useRouter();
   const route = useNavStore((s) => s.route);
   const [ribbonVisible, setRibbonVisible] = useState(false);
+  // The camera (AR guidance, detector) only when turned on in Settings: off,
+  // the screen is the map alone — lighter, and any orientation.
+  const cameraOn = useSettingsStore((s) => s.driveAr);
+  useDriveOrientationWhileFocused(cameraOn);
   const [mapPrimary, setMapPrimary] = useState(() => !useSettingsStore.getState().driveAr);
+  const mapMain = !cameraOn || mapPrimary;
 
   // On-device detector (E4) on the same camera session as the AR preview.
   const detectorEnabled = useSettingsStore((s) => s.detectorEnabled);
@@ -69,8 +73,8 @@ export default function DriveScreen() {
   // made the preview stutter and crashed natively in worklets (2026-10-19).
   // Back when frames are encoded on the camera thread itself.
   const captureFrames = false;
-  const { frameOutput } = useDetector(manifest, detectorDelegate, detectorEnabled, captureFrames);
-  const useOutput = detectorEnabled || captureFrames;
+  const { frameOutput } = useDetector(manifest, detectorDelegate, cameraOn && detectorEnabled, captureFrames);
+  const useOutput = cameraOn && (detectorEnabled || captureFrames);
   const outputs = useMemo(() => (useOutput ? [frameOutput] : []), [useOutput, frameOutput]);
 
   const exit = () => {
@@ -84,28 +88,32 @@ export default function DriveScreen() {
     <View className="flex-1 bg-black">
       {/* Full screen: the clock and battery would sit on the HUD's buttons. */}
       <StatusBar hidden />
-      <View style={mapPrimary ? PIP : FULL}>
-        <CameraStage outputs={outputs}>
-          {({ width, height }) => (
-            <>
-              <ArOverlay width={width} height={height} onRibbonVisible={setRibbonVisible} />
-              {detectorEnabled && <DetectionOverlay width={width} height={height} />}
-            </>
-          )}
-        </CameraStage>
+      {cameraOn && (
+        <View style={mapMain ? PIP : FULL}>
+          <CameraStage outputs={outputs}>
+            {({ width, height }) => (
+              <>
+                <ArOverlay width={width} height={height} onRibbonVisible={setRibbonVisible} />
+                {detectorEnabled && <DetectionOverlay width={width} height={height} />}
+              </>
+            )}
+          </CameraStage>
+        </View>
+      )}
+      <View style={mapMain ? FULL : PIP}>
+        <DriveMap primary={mapMain} />
       </View>
-      <View style={mapPrimary ? FULL : PIP}>
-        <DriveMap primary={mapPrimary} />
-      </View>
-      <DriveHud onExit={exit} ribbonVisible={ribbonVisible} arVisible={!mapPrimary} />
-      <AlertFlash />
+      <DriveHud onExit={exit} ribbonVisible={ribbonVisible} arVisible={!mapMain} />
+      {cameraOn && <AlertFlash />}
       {/* Tap target over the floating window, above everything else. */}
-      <Pressable
-        onPress={() => setMapPrimary((m) => !m)}
-        style={PIP_TAP}
-        accessibilityRole="button"
-        accessibilityLabel={mapPrimary ? 'Mostrar la cámara' : 'Mostrar el mapa'}
-      />
+      {cameraOn && (
+        <Pressable
+          onPress={() => setMapPrimary((m) => !m)}
+          style={PIP_TAP}
+          accessibilityRole="button"
+          accessibilityLabel={mapMain ? 'Mostrar la cámara' : 'Mostrar el mapa'}
+        />
+      )}
     </View>
   );
 }

@@ -92,13 +92,13 @@ describe('voice arbiter', () => {
 
   it('tells listeners when muted changes, and stopAll clears everything', () => {
     const { v, log } = setup();
-    const seen: boolean[] = [];
+    const seen: string[] = [];
     const off = v.onMuted((m) => seen.push(m));
     v.setMuted(true);
     v.setMuted(true);
     off();
     v.setMuted(false);
-    expect(seen).toEqual([true]);
+    expect(seen).toEqual(['silent']);
     v.say('a', 'assistant');
     v.say('b', 'assistant');
     v.stopAll();
@@ -112,5 +112,19 @@ describe('forSpeech', () => {
     const long = 'Una frase corta. '.repeat(40);
     expect(forSpeech(long, 100).length).toBeLessThanOrEqual(100);
     expect(forSpeech(long, 100).endsWith('.')).toBe(true);
+  });
+
+  it('"only alerts" keeps alerts and drops guidance and the assistant', () => {
+    const spoken: string[] = [];
+    const v = new VoiceArbiter(
+      { speak: (t, _o, done) => { spoken.push(t); done(); }, stop: () => {} },
+      { voiceOn: () => true, alertLevel: () => 'all' },
+    );
+    v.setMode('alerts');
+    v.say('girá a la derecha', 'maneuver');
+    v.say('la batería está bien', 'assistant');
+    v.say('peatón adelante', 'alert');
+    expect(spoken).toEqual(['peatón adelante']);
+    expect(v.isMuted()).toBe(false);
   });
 });
