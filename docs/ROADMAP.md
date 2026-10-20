@@ -53,6 +53,10 @@ Se avanza con **E4 (detector en el teléfono)**.
 **Decisión 2026-10-19 (cámara):** se deja de invertir en la navegación por cámara. Con el APK standalone se
 hace la prueba manejando; si la cámara sale mal, la guía AR, el detector YOLO y Qwen-Drive se cierran en
 esta etapa y vuelven más adelante. Requisito nuevo: **la app tiene que correr en teléfonos de gama baja**.
+**Resultado (prueba manejando con el APK, 2026-10-19): cerrado para esta etapa.** YOLO detectó cualquier
+cosa y sus avisos no fueron acertados. La guía AR, el detector y Qwen-Drive pasan a la **siguiente etapa**;
+el código queda, apagado (la cámara solo se monta con el ajuste "Cámara en manejo"). Foco de esta etapa:
+**el agente conversacional y la navegación** (plan en [plans/modo-navegacion-ux.md](plans/modo-navegacion-ux.md)).
 Estado al cerrar: el detector corre (corregido el orden de las funciones worklet) pero no se validó que
 detecte; la captura de cuadros para el maestro queda apagada (copiar ~3,6 MB por cuadro al hilo JS
 trababa la cámara y cerraba la app en `libworklets`).
