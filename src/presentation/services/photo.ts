@@ -26,10 +26,16 @@ export async function pickPhoto(source: PhotoSource): Promise<Photo | null> {
   const asset = res.canceled ? null : res.assets[0];
   if (!asset) return null;
 
-  const context = ImageManipulator.ImageManipulator.manipulate(asset.uri);
+  return photoFrom(asset.uri, asset.width, asset.height);
+}
+
+// A picture (picker or the dashboard camera) made ready for the model: at most
+// MAX_SIDE on its long side, JPEG, and as a data URL.
+export async function photoFrom(uri: string, width: number, height: number): Promise<Photo | null> {
+  const context = ImageManipulator.ImageManipulator.manipulate(uri);
   // Only shrink: resize() with one side keeps the ratio, and would also enlarge.
-  if (Math.max(asset.width, asset.height) > MAX_SIDE) {
-    context.resize(asset.width >= asset.height ? { width: MAX_SIDE, height: null } : { width: null, height: MAX_SIDE });
+  if (Math.max(width, height) > MAX_SIDE) {
+    context.resize(width >= height ? { width: MAX_SIDE, height: null } : { width: null, height: MAX_SIDE });
   }
   const image = await context.renderAsync();
   const saved = await image.saveAsync({ format: ImageManipulator.SaveFormat.JPEG, compress: JPEG_QUALITY, base64: true });

@@ -50,6 +50,13 @@ Se avanza con **E4 (detector en el teléfono)**.
 | **Manejo** | **Modo manejo** (F1 del [plan](plans/modo-navegacion-ux.md)): mapa 3D/2D, cartel con "luego", riel (hablar, sonido en 3 estados, GPS), barra de viaje y acciones rápidas; YOLO fuera (rama `etapa-camara`); mapa en el chat, animaciones de espera, teclado | ✅ cerrado como MVP (2026-10-20), con detalles estéticos pendientes · F2–F6 siguen en el plan |
 | — | APK standalone y prueba todo junto manejando | **ahora** (2026-10-19) |
 
+**Decisión 2026-10-20 (cámara, cierre):** la guía AR sale del código (preservada en la rama
+`etapa-camara`, igual que YOLO) junto con VisionCamera, la calibración y la pantalla de cámaras. La
+navegación es solo mapa. La cámara pasa al **Tablero** como una vista más (`Medidores | Cámara`, con
+`expo-camera`): la imagen, km/h y RPM grandes, temperatura y batería, aviso "mirá la calle" en
+movimiento, y el asistente igual que en manejo (🎤, subtítulos, escucha continua) más 📷: la foto va al
+asistente con la pregunta que se diga.
+
 **Decisión 2026-10-19 (cámara):** se deja de invertir en la navegación por cámara. Con el APK standalone se
 hace la prueba manejando; si la cámara sale mal, la guía AR, el detector YOLO y Qwen-Drive se cierran en
 esta etapa y vuelven más adelante. Requisito nuevo: **la app tiene que correr en teléfonos de gama baja**.

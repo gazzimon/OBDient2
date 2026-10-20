@@ -15,6 +15,8 @@
 //   while it thinks stops the turn.
 // - With the sound off (or only alerts) the answer is only subtitles, paced as
 //   if spoken.
+// - A photo (the dashboard camera) goes with the next question: "¿qué es esa
+//   luz?"; if nothing is said, it asks what the picture shows.
 // Tools work as in the chat: it is the same agent turn.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -59,6 +61,8 @@ function maneuverSoon(): boolean {
   return d != null && d < MANEUVER_GUARD_M;
 }
 
+const PHOTO_QUESTION = '¿Qué ves en esta foto?';
+
 const wordCount = (chunks: readonly string[]) => chunks.join(' ').split(/\s+/).filter(Boolean).length;
 
 export function useDriveAssistant() {
@@ -69,6 +73,8 @@ export function useDriveAssistant() {
   // A conversation is open: after each answer it listens again.
   const open = useRef(false);
   const silentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Photos waiting for the next question (data URLs).
+  const photos = useRef<string[]>([]);
 
   const setPhase = (p: DrivePhase) => {
     phaseRef.current = p;
@@ -101,7 +107,9 @@ export function useDriveAssistant() {
 
   async function answer(text: string) {
     setPhase('thinking');
-    await sendSpoken(text);
+    const images = photos.current;
+    photos.current = [];
+    await sendSpoken(text, images);
     const said = capWords(forSpeech(lastAnswer()));
     if (!said || !open.current) return end();
     const chunks = subtitleChunks(said);
@@ -134,7 +142,10 @@ export function useDriveAssistant() {
     micIdleRef.current = micIdle;
   }, [micIdle]);
   useEffect(() => {
-    if (micIdle && phaseRef.current === 'listening') end();
+    if (!micIdle || phaseRef.current !== 'listening') return;
+    // A photo and nothing said: ask what it shows.
+    if (photos.current.length) void answer(PHOTO_QUESTION);
+    else end();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [micIdle]);
 
@@ -175,8 +186,20 @@ export function useDriveAssistant() {
     return last?.kind === 'tool' && last.status === 'running' ? toolLabel(last.name) : null;
   });
 
+  // A photo for the assistant: it listens for the question that goes with it.
+  const askAboutPhoto = useCallback((dataUrl: string) => {
+    photos.current = [dataUrl];
+    if (phaseRef.current === 'speaking') voice.cancel('assistant');
+    if (phaseRef.current === 'thinking') return;
+    open.current = true;
+    if (phaseRef.current !== 'listening') listen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return {
     talk,
+    askAboutPhoto,
+    hasPhoto: () => photos.current.length > 0,
     phase,
     running,
     heard: mic.partial,
