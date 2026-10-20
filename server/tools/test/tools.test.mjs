@@ -82,3 +82,41 @@ test('rate limit per key', async () => {
   for (let i = 0; i < 31; i++) last = await call(app);
   assert.equal(last.status, 429);
 });
+
+test('track: checked points become OsmAnd queries for Traccar', async () => {
+  const { checkTrack } = await import('../src/track.mjs');
+  const now = Date.UTC(2026, 9, 20, 12);
+  const [q] = checkTrack({ device: 'obd_lab1', points: [{ t: now, lat: -27.37, lng: -55.89, kmh: 37.04, bearing: 90.4, acc: 4.6, obd: { rpm: 1800, coolant: 88, evil: 'x' } }] }, now);
+  const p = new URLSearchParams(q);
+  assert.equal(p.get('id'), 'obd_lab1');
+  assert.equal(p.get('lon'), '-55.89');
+  assert.equal(p.get('timestamp'), String(now / 1000));
+  assert.equal(p.get('speed'), '20.00'); // knots
+  assert.equal(p.get('bearing'), '90');
+  assert.equal(p.get('rpm'), '1800');
+  assert.equal(p.get('evil'), null);
+  assert.throws(() => checkTrack({ device: 'x', points: [{ t: now, lat: 0, lng: 0 }] }, now), /bad_device/);
+  assert.throws(() => checkTrack({ device: 'obd_lab1', points: [{ t: now - 3 * 86_400_000, lat: -27, lng: -55 }] }, now), /bad_time/);
+  assert.throws(() => checkTrack({ device: 'obd_lab1', points: [{ t: now, lat: -27, lng: -55, kmh: -4 }] }, now), /bad_value/);
+  assert.throws(() => checkTrack({ device: 'obd_lab1', points: [] }, now), /bad_points/);
+});
+
+test('track route: valid key, forwards each point, own allowance', async () => {
+  const sent = [];
+  const now = Date.now();
+  const app = createApp({ search: async () => [], isValidKey: async (k) => k === 'sk-ok', track: async (q) => sent.push(q) });
+  const server = await listen(app, 0);
+  const url = `http://127.0.0.1:${server.address().port}/tools/v1/track`;
+  const post = (key, body) => fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: JSON.stringify(body) });
+  const body = { device: 'obd_lab1', points: [{ t: now, lat: -27.37, lng: -55.89 }, { t: now + 1000, lat: -27.371, lng: -55.89 }] };
+  try {
+    assert.equal((await post('sk-bad', body)).status, 401);
+    const ok = await post('sk-ok', body);
+    assert.equal(ok.status, 200);
+    assert.deepEqual(await ok.json(), { accepted: 2 });
+    assert.equal(sent.length, 2);
+    assert.equal((await post('sk-ok', { device: 'obd_lab1', points: [{ t: now, lat: 99, lng: 0 }] })).status, 400);
+  } finally {
+    server.close();
+  }
+});

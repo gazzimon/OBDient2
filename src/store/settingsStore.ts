@@ -68,6 +68,10 @@ interface SettingsState {
   recordTrips: boolean;
   // "Mis viajes": a summary of each trip, recorded with the app open and the adapter connected.
   recordMyTrips: boolean;
+  // Live position to the lab's Traccar (off by default: where the car is, is personal).
+  liveTracking: boolean;
+  // Traccar device id of this phone ("obd_" + 8 characters), made when first turned on.
+  trackingDevice: string;
   disclaimerAccepted: boolean;
   // "Not now" on the first-run sign-in: the app works without an account.
   accountPromptDismissed: boolean;
@@ -86,6 +90,7 @@ interface SettingsState {
   setAlertVoice: (level: AlertVoiceLevel) => void;
   setRecordTrips: (on: boolean) => void;
   setRecordMyTrips: (on: boolean) => void;
+  setLiveTracking: (on: boolean, device?: string) => void;
   setDisclaimerAccepted: (on: boolean) => void;
   setAccountPromptDismissed: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
@@ -104,6 +109,8 @@ export const useSettingsStore = create<SettingsState>()(
       alertVoice: 'all',
       recordTrips: true,
       recordMyTrips: true,
+      liveTracking: false,
+      trackingDevice: '',
       disclaimerAccepted: false,
       accountPromptDismissed: false,
       debugOverlay: false,
@@ -118,6 +125,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAlertVoice: (level) => set({ alertVoice: level }),
       setRecordTrips: (on) => set({ recordTrips: on }),
       setRecordMyTrips: (on) => set({ recordMyTrips: on }),
+      setLiveTracking: (on, device) => set((s) => ({ liveTracking: on, trackingDevice: device ?? s.trackingDevice })),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setAccountPromptDismissed: (on) => set({ accountPromptDismissed: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
@@ -138,6 +146,8 @@ export const useSettingsStore = create<SettingsState>()(
         alertVoice: s.alertVoice,
         recordTrips: s.recordTrips,
         recordMyTrips: s.recordMyTrips,
+        liveTracking: s.liveTracking,
+        trackingDevice: s.trackingDevice,
         disclaimerAccepted: s.disclaimerAccepted,
         accountPromptDismissed: s.accountPromptDismissed,
         debugOverlay: s.debugOverlay,

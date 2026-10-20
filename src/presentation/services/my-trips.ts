@@ -5,10 +5,15 @@
 // the trouble codes read during it.
 //
 // The app must be open (decision 2026-10-19): no background location.
+//
+// The same samples feed the live position for the lab's Traccar when turned
+// on (decision 2026-10-20): every 5 s moving, every minute stopped, queued
+// while there is no signal, through obdient-tools (checked with the account key).
 
 import { useSyncExternalStore } from 'react';
 import { container } from '@/data/container';
 import { TripStore } from '@/data/trips/trip-store';
+import { TrackQueue, trackDue } from '@/domain/trips/live-track';
 import { END_AFTER_MS, TripBuilder, type Trip } from '@/domain/trips/trip-builder';
 import { useEgoStore } from '@/store/egoStore';
 import { useOBDStore } from '@/store/obdStore';
@@ -30,6 +35,9 @@ class MyTripsRecorder {
   private timer: ReturnType<typeof setInterval> | null = null;
   private ticks = 0;
   private started = false;
+  private readonly queue = new TrackQueue();
+  private lastTrackAt: number | null = null;
+  private sending = false;
 
   start(): void {
     if (this.started) return;
@@ -72,6 +80,7 @@ class MyTripsRecorder {
     const p = useOBDStore.getState().parameters;
     const speed = p.SPEED && now - p.SPEED.timestamp.getTime() < FRESH_MS ? p.SPEED.value : ego.speedMps * 3.6;
     const maf = p.MAF && now - p.MAF.timestamp.getTime() < FRESH_MS ? p.MAF.value : null;
+    this.track(now, ego.position.lat, ego.position.lng, speed, ego.headingValid ? ego.headingDeg : null, ego.gpsAccuracyM);
     const ev = this.builder.push({
       t: now,
       lat: ego.position.lat,
@@ -84,6 +93,45 @@ class MyTripsRecorder {
       if (ev.trip) void this.keep(ev.trip);
     } else if (++this.ticks % DRAFT_EVERY === 0) {
       trips.saveDraft(this.builder.current);
+    }
+  }
+
+  private track(now: number, lat: number, lng: number, kmh: number, bearing: number | null, acc: number): void {
+    const { liveTracking, trackingDevice } = useSettingsStore.getState();
+    if (!liveTracking || !trackingDevice || !trackDue(this.lastTrackAt, now, kmh)) return;
+    this.lastTrackAt = now;
+    const p = useOBDStore.getState().parameters;
+    const fresh = (v: { value: number; timestamp: Date } | undefined) => (v && now - v.timestamp.getTime() < FRESH_MS ? v.value : undefined);
+    const obd: Record<string, number> = {};
+    const put = (k: string, v: number | undefined) => {
+      if (v !== undefined) obd[k] = Math.round(v * 10) / 10;
+    };
+    put('rpm', fresh(p.RPM));
+    put('coolant', fresh(p.COOLANT_TEMP));
+    put('load', fresh(p.ENGINE_LOAD));
+    put('voltage', fresh(p.VOLTAGE));
+    const maf = fresh(p.MAF);
+    put('fuelLph', maf !== undefined ? maf * MAF_TO_LPH : undefined);
+    this.queue.push({ t: now, lat, lng, kmh: Math.round(kmh), bearing, acc: Math.round(acc), obd });
+    void this.flush(trackingDevice);
+  }
+
+  // Sends what is queued, a batch at a time; on failure it waits for the next point.
+  private async flush(device: string): Promise<void> {
+    if (this.sending) return;
+    this.sending = true;
+    try {
+      while (this.queue.size > 0) {
+        const batch = this.queue.next();
+        const r = await container.toolsClient.post('track', { device, points: batch }, AbortSignal.timeout(8_000), 'seguimiento');
+        // A batch the server will never take (bad data) is dropped, not retried forever.
+        if (!r.ok && !r.message.includes('HTTP 400')) break;
+        this.queue.sent(batch.length);
+      }
+    } catch {
+      // No signal: the points stay queued.
+    } finally {
+      this.sending = false;
     }
   }
 
