@@ -4,6 +4,8 @@ import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import * as SystemUI from 'expo-system-ui';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import {
   useFonts,
   IBMPlexMono_400Regular,
@@ -30,6 +32,8 @@ export default function RootLayout() {
   useEffect(() => {
     // Portrait everywhere except the AR screens, which lock landscape themselves.
     void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    // The window behind everything: dark, or a white strip shows while the keyboard moves.
+    void SystemUI.setBackgroundColorAsync('#0D0D0D');
     // The remembered adapter reconnects quietly; navigation never waits for it.
     void container.obd.reconnectLast();
     // Who was signed in, from SecureStore; no network.
@@ -43,7 +47,9 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    // Keyboard handling that works edge-to-edge (Android 15+), where React
+    // Native's own KeyboardAvoidingView does nothing.
+    <KeyboardProvider>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -59,6 +65,6 @@ export default function RootLayout() {
       <PermissionSheet />
       {/* Magic's code and device-approval screens (email login, ADR-0008). Last, so it draws on top. */}
       <MagicRelayer />
-    </>
+    </KeyboardProvider>
   );
 }

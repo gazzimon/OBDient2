@@ -10,7 +10,7 @@
     "android": {
       "package": "com.obdient.obdient2",
       "versionCode": 1,
-      "softwareKeyboardLayoutMode": "pan",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -129,6 +129,7 @@
         "projectId": "26823ce6-4f24-4238-b7c5-ad94c9a92424"
       }
     },
-    "owner": "gazzimons-team"
+    "owner": "gazzimons-team",
+    "backgroundColor": "#0D0D0D"
   }
 }

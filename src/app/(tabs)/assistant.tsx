@@ -5,7 +5,8 @@
 // get one; everything else in the app works without it.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Image, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -145,7 +146,7 @@ export default function AssistantScreen() {
         </View>
       </View>
 
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         {status !== 'signed-in' ? (
           <View className="flex-1 justify-center px-6">
             <MaterialCommunityIcons name="account-lock-outline" size={36} color={COLORS.mint} style={{ alignSelf: 'center' }} />
