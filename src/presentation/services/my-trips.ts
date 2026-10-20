@@ -6,14 +6,14 @@
 //
 // The app must be open (decision 2026-10-19): no background location.
 //
-// The same samples feed the live position for the lab's Traccar when turned
-// on (decision 2026-10-20): every 5 s moving, every minute stopped, queued
+// The same samples feed the live position for the lab's Traccar, always while
+// the adapter is connected (decision 2026-10-20): every 5 s moving, every minute stopped, queued
 // while there is no signal, through obdient-tools (checked with the account key).
 
 import { useSyncExternalStore } from 'react';
 import { container } from '@/data/container';
 import { TripStore } from '@/data/trips/trip-store';
-import { TrackQueue, trackDue } from '@/domain/trips/live-track';
+import { TrackQueue, newDeviceId, trackDue } from '@/domain/trips/live-track';
 import { END_AFTER_MS, TripBuilder, type Trip } from '@/domain/trips/trip-builder';
 import { useEgoStore } from '@/store/egoStore';
 import { useOBDStore } from '@/store/obdStore';
@@ -97,8 +97,14 @@ class MyTripsRecorder {
   }
 
   private track(now: number, lat: number, lng: number, kmh: number, bearing: number | null, acc: number): void {
-    const { liveTracking, trackingDevice } = useSettingsStore.getState();
-    if (!liveTracking || !trackingDevice || !trackDue(this.lastTrackAt, now, kmh)) return;
+    // Always on while the adapter is connected (decision 2026-10-20, lab vehicle
+    // monitoring). Before Google Play: an explicit consent screen (ROADMAP).
+    let trackingDevice = useSettingsStore.getState().trackingDevice;
+    if (!trackingDevice) {
+      trackingDevice = newDeviceId();
+      useSettingsStore.getState().setLiveTracking(true, trackingDevice);
+    }
+    if (!trackDue(this.lastTrackAt, now, kmh)) return;
     this.lastTrackAt = now;
     const p = useOBDStore.getState().parameters;
     const fresh = (v: { value: number; timestamp: Date } | undefined) => (v && now - v.timestamp.getTime() < FRESH_MS ? v.value : undefined);

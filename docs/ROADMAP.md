@@ -305,6 +305,11 @@ bajo, VIN "mal leído", "no tengo historial").
 - **Banco de maestros con viajes propios**: un viaje con cuadros, `make_samples.py` y los tres modelos.
 - **AR**: anclar el comienzo de la línea al auto (hoy queda corrida ~2 m por el eje de la calle y ~4°
   de rumbo).
+- **Antes de publicar en Google Play — ubicación (2026-10-20):** hoy la posición va al Traccar del
+  laboratorio siempre que el adaptador está conectado (monitoreo vehicular en desarrollo). Para Play:
+  pantalla de aviso destacado y consentimiento antes de enviar (*Prominent disclosure*), opción de
+  apagarlo, política de privacidad y declararlo en *Seguridad de los datos*. Sin ubicación en segundo
+  plano (solo con la app abierta), que es lo que Google revisa más estricto.
 - **Distribución (idea):** mini app en Lemon (1,2 M usuarios activos, apps web dentro de su billetera)
   como canal de adquisición: vender el adaptador, ver historial y VIN, chatear con el asistente. El
   núcleo (BLE, AR) no puede ser mini app: el WebView no tiene Bluetooth.
