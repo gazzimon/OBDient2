@@ -128,3 +128,46 @@ describe('forSpeech', () => {
     expect(v.isMuted()).toBe(false);
   });
 });
+
+describe('VoiceArbiter hooks', () => {
+  const make = () => {
+    const log: string[] = [];
+    let finish: (() => void) | null = null;
+    const v = new VoiceArbiter(
+      {
+        speak: (t, _o, done) => {
+          log.push(`speak ${t}`);
+          finish = done;
+        },
+        stop: () => log.push('stop'),
+      },
+      { voiceOn: () => true, alertLevel: () => 'all' },
+    );
+    return { v, log, done: () => finish?.() };
+  };
+
+  it('tells when the phrase starts and ends', () => {
+    const { v, done } = make();
+    const seen: string[] = [];
+    v.say('hola', 'assistant', { onStart: () => seen.push('start'), onEnd: (ok) => seen.push(`end ${ok}`) });
+    done();
+    expect(seen).toEqual(['start', 'end true']);
+  });
+
+  it('a maneuver cuts the assistant, which hears it was not finished', () => {
+    const { v } = make();
+    const seen: string[] = [];
+    v.say('una respuesta larga', 'assistant', { onEnd: (ok) => seen.push(`end ${ok}`) });
+    v.say('gira a la derecha', 'maneuver');
+    expect(seen).toEqual(['end false']);
+  });
+
+  it('cancel drops the assistant and lets the rest go on', () => {
+    const { v, log } = make();
+    const seen: string[] = [];
+    v.say('respuesta', 'assistant', { onEnd: (ok) => seen.push(`end ${ok}`) });
+    v.cancel('assistant');
+    expect(seen).toEqual(['end false']);
+    expect(log).toEqual(['speak respuesta', 'stop']);
+  });
+});

@@ -39,10 +39,19 @@ export interface VoiceSettings {
   readonly alertLevel: () => AlertVoiceLevel;
 }
 
+// Optional: when the phrase starts sounding, and when it is over (`spoken`
+// false if it was cut, replaced or dropped). The drive screen's subtitles
+// and its "listen again" follow these.
+export interface SayHooks {
+  readonly onStart?: () => void;
+  readonly onEnd?: (spoken: boolean) => void;
+}
+
 interface Utterance {
   readonly text: string;
   readonly priority: VoicePriority;
   readonly at: number;
+  readonly hooks?: SayHooks | undefined;
 }
 
 export class VoiceArbiter {
@@ -58,17 +67,27 @@ export class VoiceArbiter {
     private readonly now: () => number = Date.now,
   ) {}
 
-  say(text: string, priority: VoicePriority): void {
+  say(text: string, priority: VoicePriority, hooks?: SayHooks): void {
     const t = text.trim();
-    if (!t || !this.allowed(priority)) return;
-    const u: Utterance = { text: t, priority, at: this.now() };
+    if (!t || !this.allowed(priority)) return hooks?.onEnd?.(false);
+    const u: Utterance = { text: t, priority, at: this.now(), hooks };
     if (!this.current) return this.start(u);
     if (RANK[priority] > RANK[this.current.priority]) {
-      this.speaker.stop();
-      this.current = null;
+      this.cut();
       return this.start(u);
     }
-    this.waiting = [...this.waiting.filter((w) => w.priority !== priority), u];
+    this.drop((w) => w.priority === priority);
+    this.waiting = [...this.waiting, u];
+  }
+
+  // Drops what a priority is saying or waiting to say (the driver taps the
+  // microphone while the assistant talks).
+  cancel(priority: VoicePriority): void {
+    this.drop((w) => w.priority === priority);
+    if (this.current?.priority === priority) {
+      this.cut();
+      this.next();
+    }
   }
 
   isMuted(): boolean {
@@ -86,10 +105,9 @@ export class VoiceArbiter {
   setMode(mode: SoundMode): void {
     if (mode === this.mode) return;
     this.mode = mode;
-    this.waiting = this.waiting.filter((w) => this.allowed(w.priority));
+    this.drop((w) => !this.allowed(w.priority));
     if (this.current && !this.allowed(this.current.priority)) {
-      this.speaker.stop();
-      this.current = null;
+      this.cut();
       this.next();
     }
     for (const l of this.listeners) l(mode);
@@ -102,9 +120,8 @@ export class VoiceArbiter {
 
   // Everything stops (navigation ended).
   stopAll(): void {
-    this.waiting = [];
-    if (this.current) this.speaker.stop();
-    this.current = null;
+    this.drop(() => true);
+    if (this.current) this.cut();
   }
 
   private allowed(p: VoicePriority): boolean {
@@ -121,16 +138,32 @@ export class VoiceArbiter {
   private start(u: Utterance): void {
     const token = ++this.token;
     this.current = { ...u, token };
+    u.hooks?.onStart?.();
     this.speaker.speak(u.text, { rate: u.priority === 'critical' ? 1.15 : 1 }, () => {
       if (this.current?.token !== token) return;
       this.current = null;
+      u.hooks?.onEnd?.(true);
       this.next();
     });
   }
 
+  // Stops the phrase sounding now; its owner hears it was not finished.
+  private cut(): void {
+    const c = this.current;
+    this.speaker.stop();
+    this.current = null;
+    c?.hooks?.onEnd?.(false);
+  }
+
+  private drop(which: (u: Utterance) => boolean): void {
+    const gone = this.waiting.filter(which);
+    this.waiting = this.waiting.filter((w) => !which(w));
+    for (const u of gone) u.hooks?.onEnd?.(false);
+  }
+
   private next(): void {
     const now = this.now();
-    this.waiting = this.waiting.filter((w) => now - w.at <= MAX_WAIT_MS[w.priority] && this.allowed(w.priority));
+    this.drop((w) => now - w.at > MAX_WAIT_MS[w.priority] || !this.allowed(w.priority));
     if (this.waiting.length === 0) return;
     const best = this.waiting.reduce((a, b) => (RANK[b.priority] > RANK[a.priority] ? b : a));
     this.waiting = this.waiting.filter((w) => w !== best);
