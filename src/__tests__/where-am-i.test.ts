@@ -75,7 +75,7 @@ describe('where am I', () => {
   });
 
   it('the town goes in the state block, never the street', () => {
-    const block = stateBlock({ connected: false, protocol: null, supportedPids: 0, moving: false, speedKmh: null, navigating: false, place: 'Posadas, Misiones' });
+    const block = stateBlock({ connected: false, protocol: null, supportedPids: 0, moving: false, speedKmh: null, navigating: false, labMode: false, place: 'Posadas, Misiones' });
     expect(block).toBe('[estado: adaptador desconectado · auto detenido · sin navegación · en Posadas, Misiones]');
   });
 });

@@ -81,6 +81,8 @@ interface SettingsState {
   driveMap3d: boolean;
   // Tablero: the gauges, or the camera with the numbers on top.
   dashboardCamera: boolean;
+  // Modo laboratorio: free read commands to the bus (obd_command), for M9.
+  labMode: boolean;
 
   setLastDevice: (id: string, name: string | null) => void;
   setCalibration: (patch: Partial<ArCalibration>) => void;
@@ -96,6 +98,7 @@ interface SettingsState {
   setDebugOverlay: (on: boolean) => void;
   setDriveMap3d: (on: boolean) => void;
   setDashboardCamera: (on: boolean) => void;
+  setLabMode: (on: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -116,6 +119,7 @@ export const useSettingsStore = create<SettingsState>()(
       debugOverlay: false,
       driveMap3d: true,
       dashboardCamera: false,
+      labMode: false,
 
       setLastDevice: (id, name) => set({ lastDeviceId: id, lastDeviceName: name }),
       setCalibration: (patch) => set((s) => ({ calibration: { ...s.calibration, ...patch } })),
@@ -131,6 +135,7 @@ export const useSettingsStore = create<SettingsState>()(
       setDebugOverlay: (on) => set({ debugOverlay: on }),
       setDriveMap3d: (on) => set({ driveMap3d: on }),
       setDashboardCamera: (on) => set({ dashboardCamera: on }),
+      setLabMode: (on) => set({ labMode: on }),
     }),
     {
       name: 'obdient2-settings',
@@ -153,6 +158,7 @@ export const useSettingsStore = create<SettingsState>()(
         debugOverlay: s.debugOverlay,
         driveMap3d: s.driveMap3d,
         dashboardCamera: s.dashboardCamera,
+        labMode: s.labMode,
       }),
       // New calibration fields get their defaults instead of `undefined`.
       merge: (persisted, current) => {

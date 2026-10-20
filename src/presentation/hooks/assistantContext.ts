@@ -10,6 +10,7 @@ import type { AssistantContext } from '@/domain/assistant/prompt';
 import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 const OBD_MOVING_KMH = 5;
 const GPS_MOVING_KMH = 7;
@@ -28,6 +29,7 @@ export function assistantContext(): AssistantContext {
     moving,
     speedKmh,
     navigating: useNavStore.getState().status === 'navigating',
+    labMode: useSettingsStore.getState().labMode,
     place: navigationTools.lastLocality(),
   };
 }

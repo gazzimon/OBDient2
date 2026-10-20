@@ -11,7 +11,7 @@ import type { ApiMessage, LlmPort, LlmRequest } from '@/domain/ports/llm.port';
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 
-const CTX: AssistantContext = { connected: true, protocol: 'CAN 11/500', supportedPids: 4, moving: false, speedKmh: 0, navigating: false };
+const CTX: AssistantContext = { connected: true, protocol: 'CAN 11/500', supportedPids: 4, moving: false, speedKmh: 0, navigating: false, labMode: false };
 
 describe('phrase router', () => {
   it.each([

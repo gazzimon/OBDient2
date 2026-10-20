@@ -7,6 +7,8 @@
 //   /tools/v1/weather     { lat, lng }               → { now, nextHours, maxRainChance, source }
 //   /tools/v1/car_price   { query, year? }           → { results, month, unit, source }
 //   /tools/v1/track       { device, points: [...] }  → { accepted }   (live position → Traccar, track.mjs)
+//   /tools/v1/web_fetch   { url }                     → { url, domain, weight, text }   (full page, SSRF-guarded)
+//   /tools/v1/knowledge   { action:'lookup'|'report', ... } → lab-shared facts of what a car supports
 //   GET /tools/healthz                               → 200
 //
 // Errors: 400 bad input, 401 bad key, 429 too many, 502 a source is down,
@@ -18,6 +20,7 @@ import { findCars } from './queries/cars.mjs';
 import { FUEL_PRODUCTS, nearestStations } from './queries/fuel.mjs';
 import { validPoint } from './queries/geo.mjs';
 import { BadTrack, checkTrack } from './track.mjs';
+import { BadFetch } from './fetch-page.mjs';
 
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 30;
@@ -25,7 +28,7 @@ const MAX_BODY = 8_192;
 
 class BadInput extends Error {}
 
-export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, ownerOf = () => null, log = () => {}, now = () => Date.now() }) {
+export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, fetchPage = null, knowledge = null, ownerOf = () => null, log = () => {}, now = () => Date.now() }) {
   const hits = new Map(); // key prefix → { start, count }
 
   function limited(who) {
@@ -76,6 +79,26 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
       const year = b.year == null ? null : String(b.year);
       if (year !== null && !/^(19|20)\d\d$/.test(year)) throw new BadInput('bad_year');
       return findCars(needData('cars'), query, year);
+    },
+    async web_fetch(b) {
+      if (!fetchPage) throw Object.assign(new Error('no fetch'), { status: 503 });
+      const url = typeof b.url === 'string' ? b.url.trim() : '';
+      if (!url) throw new BadInput('bad_url');
+      try {
+        return await fetchPage(url);
+      } catch (err) {
+        if (err instanceof BadFetch) throw new BadInput(err.message);
+        throw Object.assign(new Error('fetch failed'), { status: 502 });
+      }
+    },
+    async knowledge(b) {
+      if (!knowledge) throw Object.assign(new Error('no knowledge'), { status: 503 });
+      try {
+        if (b.action === 'report') return knowledge.report(b);
+        return knowledge.lookup(b ?? {});
+      } catch (err) {
+        throw new BadInput(err.message === 'bad_vehicle' ? 'bad_vehicle' : 'bad_request');
+      }
     },
     async track(b, key) {
       if (!track) throw Object.assign(new Error('no tracking'), { status: 503 });

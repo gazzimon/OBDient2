@@ -69,9 +69,17 @@ const assistantTools: VehicleToolsPort = {
   execute: async (call, signal) => {
     switch (call.name) {
       case 'web_search':
+      case 'web_fetch':
+      case 'knowledge_lookup':
       case 'dollar_rate':
       case 'car_price':
         return onlineTools.execute(call, signal);
+      case 'scan_modules': {
+        const out = await vehicleTools.execute(call, signal);
+        // A scan's findings go to the lab's shared knowledge (best effort).
+        if (out.ok && out.knowledge) void onlineTools.reportKnowledge(out.knowledge, signal);
+        return out;
+      }
       case 'log_service':
       case 'read_service_log':
         return serviceTools.execute(call);

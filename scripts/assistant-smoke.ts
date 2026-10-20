@@ -78,6 +78,10 @@ function simulated(): VehicleToolsPort {
       case 'log_service':
       case 'read_service_log':
       case 'web_search':
+      case 'web_fetch':
+      case 'knowledge_lookup':
+      case 'scan_modules':
+      case 'obd_command':
         return { ok: false, error: 'not_supported', message: 'Sin navegación en el humo.' };
     }
   };
@@ -87,7 +91,7 @@ function simulated(): VehicleToolsPort {
   };
 }
 
-const STOPPED: AssistantContext = { connected: true, protocol: 'CAN 29/500', supportedPids: 34, moving: false, speedKmh: 0, navigating: false };
+const STOPPED: AssistantContext = { connected: true, protocol: 'CAN 29/500', supportedPids: 34, moving: false, speedKmh: 0, navigating: false, labMode: false };
 const MOVING: AssistantContext = { ...STOPPED, moving: true, speedKmh: 52, navigating: true };
 
 async function main() {

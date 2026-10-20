@@ -36,6 +36,8 @@ import type { FaultEvent, FaultEventInput } from '@/domain/faults/fault-history'
 import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
+import { classifyCommand } from '@/domain/obd/uds-safety';
+import { moduleAnswered, scanTargets, SCAN_IDENTIFY, SCAN_PROBE } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -182,6 +184,10 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         return this.samplePids(s, call.pids, call.seconds, signal);
       case 'read_dtcs':
         return this.readDtcs(s, call.kind);
+      case 'scan_modules':
+        return this.scanModules(s);
+      case 'obd_command':
+        return this.obdCommand(s, call.command, call.header);
       case 'read_freeze_frame':
         return this.readFreezeFrame(s);
       case 'read_readiness':
@@ -212,7 +218,9 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'read_service_log':
         return fail('not_supported', 'No la maneja el adaptador.'); // OnlineTools, ServiceTools
       case 'web_search':
-        return fail('not_supported', 'La búsqueda web no la maneja el adaptador.'); // WebSearchTool
+      case 'web_fetch':
+      case 'knowledge_lookup':
+        return fail('not_supported', 'Internet no lo maneja el adaptador.'); // OnlineTools
     }
   }
 
@@ -339,6 +347,55 @@ export class VehicleToolAdapter implements VehicleToolsPort {
 
   // Runs `work` with headers when parked (exclusive, ATH1 then back to ATH0),
   // or on the shared link without headers when moving.
+  // Lab: which modules answer. For each candidate address, set the header, ask
+  // TesterPresent (3E 00) and, if it answers, the part number (22 F190). The
+  // responders are a real fact about this car, reported to the lab knowledge.
+  private async scanModules(s: ObdSession): Promise<ToolOutcome> {
+    const info = s.sessionInfo!;
+    const bit29 = /29BIT/.test(info.protocol);
+    const vin = await this.ensureVin();
+    const found = await s.exclusive(async (port) => {
+      await quiet(port, 'ATH1');
+      const out: { id: string; reqHeader: string; rxHeader: string; label: string; identify: string | null }[] = [];
+      for (const t of scanTargets(bit29)) {
+        await quiet(port, `ATSH ${t.reqHeader}`);
+        if (bit29) await quiet(port, `ATCRA ${t.rxHeader}`);
+        const probe = await quiet(port, SCAN_PROBE, 1500);
+        if (!probe || !moduleAnswered(probe)) continue;
+        const id = await quiet(port, SCAN_IDENTIFY, 1500);
+        out.push({ id: t.id, reqHeader: t.reqHeader, rxHeader: t.rxHeader, label: t.label, identify: id && moduleAnswered(id) ? id.replace(/\s+/g, ' ').trim() : null });
+      }
+      await quiet(port, 'ATCRA').catch(() => undefined);
+      await quiet(port, 'ATH0').catch(() => undefined);
+      return out;
+    });
+    return {
+      ok: true,
+      data: { protocol: info.protocol, vin, scanned: scanTargets(bit29).length, modules: found },
+      summary: found.length ? `${found.length} módulos responden` : 'Ningún módulo respondió al barrido',
+      knowledge: { vin, protocol: info.protocol, modules: found.map((m) => ({ id: m.id, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label, partNumber: m.identify })) },
+    };
+  }
+
+  // Lab (Modo laboratorio): one free READ command. Writes are refused here too,
+  // even though the policy also gates it — defence in depth.
+  private async obdCommand(s: ObdSession, command: string, header: string | null): Promise<ToolOutcome> {
+    const verdict = classifyCommand(command);
+    if (!verdict.ok) return fail('not_supported', `Bloqueado: ${verdict.reason}. Solo lectura.`);
+    if (header) {
+      const h = classifyCommand(`ATSH${header}`);
+      if (!h.ok) return fail('invalid_arguments', 'Encabezado inválido.');
+    }
+    const raw = await s.exclusive(async (port) => {
+      await quiet(port, 'ATH1');
+      if (header) await quiet(port, `ATSH ${header}`);
+      const res = await port.send(command.replace(/\s+/g, ' ').trim(), 4000).catch((e) => `ERROR ${e instanceof Error ? e.message : String(e)}`);
+      await quiet(port, 'ATH0').catch(() => undefined);
+      return res;
+    });
+    return { ok: true, data: { command, header, raw: String(raw).replace(/\s+/g, ' ').trim() }, summary: `Respuesta: ${String(raw).replace(/\s+/g, ' ').trim().slice(0, 60)}` };
+  }
+
   private diag<T>(s: ObdSession, work: (send: Send, can: boolean) => Promise<T>): Promise<T> {
     const info = s.sessionInfo!;
     const can = isCan(info.protocol);
