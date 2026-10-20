@@ -16,7 +16,8 @@ import { SEE_ON_MAP, suggest } from '@/domain/assistant/suggestions';
 import { ChatBubble } from '@/presentation/components/assistant/ChatBubble';
 import { ErrorRow } from '@/presentation/components/assistant/ErrorRow';
 import { PlacesCard } from '@/presentation/components/assistant/PlacesCard';
-import { ToolRow } from '@/presentation/components/assistant/ToolRow';
+import { ToolRow, toolLabel } from '@/presentation/components/assistant/ToolRow';
+import { WaitingAscii } from '@/presentation/components/assistant/WaitingAscii';
 import { EmailSignIn } from '@/presentation/components/feedback/EmailSignIn';
 import { useAccount } from '@/presentation/hooks/useAccount';
 import { useAssistant } from '@/presentation/hooks/useAssistant';
@@ -58,6 +59,10 @@ export default function AssistantScreen() {
 
   const items = conversation?.items ?? [];
   // Only the newest map card draws a live map.
+  // Thinking, nothing written yet (or running a tool): the waiting animation.
+  const lastItem = items[items.length - 1];
+  const waiting = runningId != null && runningId === conversation?.id && !(lastItem?.kind === 'assistant' && lastItem.text.trim());
+  const busyWith = lastItem?.kind === 'tool' && lastItem.status === 'running' ? toolLabel(lastItem.name) : null;
   const lastPlacesId = [...items].reverse().find((i) => i.kind === 'tool' && i.places?.length)?.id ?? null;
   const streamingId = runningId != null && runningId === conversation?.id ? items[items.length - 1]?.id : null;
 
@@ -178,7 +183,7 @@ export default function AssistantScreen() {
             data={items as ChatItem[]}
             // With the position: conversations saved before 2026-10-19 repeat ids.
             keyExtractor={(i, index) => `${index}:${i.id}`}
-            ListFooterComponent={showSuggestions && !moving ? <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} mapFirst={destinationShown} /> : null}
+            ListFooterComponent={waiting ? <WaitingAscii key={runningId ?? 'w'} label={busyWith} /> : showSuggestions && !moving ? <Suggestions items={suggestions} onPick={pick} onGoTo={goTo} mapFirst={destinationShown} /> : null}
             renderItem={({ item }) => {
               switch (item.kind) {
                 case 'user':
