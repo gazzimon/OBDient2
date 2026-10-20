@@ -20,3 +20,4 @@ Cada decisión vive en un ADR con estado y fecha. Reglas, para que nada quede de
 | [0006](0006-z440-turnos-de-gpu.md) | Z440: una GPU en línea, una GPU para lotes | aceptada |
 | [0007](0007-asistente-conversacional-en-el-telefono.md) | Asistente conversacional: el loop en el teléfono, el modelo en el servidor | propuesta |
 | [0008](0008-cuentas-y-gateway-del-asistente.md) | Cuentas (Firebase) y acceso al modelo (new-api) | propuesta |
+| [0009](0009-gemelo-del-adaptador-modo-laboratorio.md) | Gemelo del adaptador: modo laboratorio con OBDient como puente (M9) | propuesta, después de la navegación |
