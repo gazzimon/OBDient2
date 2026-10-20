@@ -7,7 +7,7 @@
 // camera the starting view. Both views stay mounted and only change size and
 // layer, so the swap is instant and the camera never restarts.
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, View, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';

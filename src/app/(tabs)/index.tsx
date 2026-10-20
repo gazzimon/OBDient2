@@ -189,17 +189,27 @@ export default function RouteScreen() {
 
       {/* Search */}
       <SafeAreaView edges={['top']} className="absolute top-0 left-0 right-0 px-4 pt-2">
-        <View className="flex-row items-center bg-brand-surface border border-brand-border rounded-2xl px-4">
-          <MaterialCommunityIcons name="magnify" size={18} color={COLORS.muted} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="¿A dónde vamos?"
-            placeholderTextColor={COLORS.muted}
-            className="flex-1 text-brand-text font-mono text-sm py-3 ml-2"
-            returnKeyType="search"
-          />
-          {searching && <ActivityIndicator size="small" color={COLORS.mint} />}
+        <View className="flex-row items-center gap-2">
+          <View className="flex-1 flex-row items-center bg-brand-surface border border-brand-border rounded-2xl px-4">
+            <MaterialCommunityIcons name="magnify" size={18} color={COLORS.muted} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="¿A dónde vamos?"
+              placeholderTextColor={COLORS.muted}
+              className="flex-1 text-brand-text font-mono text-sm py-3 ml-2"
+              returnKeyType="search"
+            />
+            {searching && <ActivityIndicator size="small" color={COLORS.mint} />}
+          </View>
+          {/* Mis viajes: the trips recorded by themselves. */}
+          <Pressable
+            onPress={() => router.push('/trips')}
+            accessibilityLabel="Mis viajes"
+            className="w-12 h-12 rounded-2xl bg-brand-surface border border-brand-border items-center justify-center active:opacity-60"
+          >
+            <MaterialCommunityIcons name="map-marker-path" size={22} color={COLORS.mint} />
+          </Pressable>
         </View>
         {visible.length > 0 && (
           <FlatList

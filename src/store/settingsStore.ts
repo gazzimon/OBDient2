@@ -66,6 +66,8 @@ interface SettingsState {
   // Local trip log while navigating (domain/recording). On while the MVP is
   // being field-tested: it is how AR problems get diagnosed afterwards.
   recordTrips: boolean;
+  // "Mis viajes": a summary of each trip, recorded with the app open and the adapter connected.
+  recordMyTrips: boolean;
   disclaimerAccepted: boolean;
   // "Not now" on the first-run sign-in: the app works without an account.
   accountPromptDismissed: boolean;
@@ -83,6 +85,7 @@ interface SettingsState {
   setVoiceEnabled: (on: boolean) => void;
   setAlertVoice: (level: AlertVoiceLevel) => void;
   setRecordTrips: (on: boolean) => void;
+  setRecordMyTrips: (on: boolean) => void;
   setDisclaimerAccepted: (on: boolean) => void;
   setAccountPromptDismissed: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
@@ -100,6 +103,7 @@ export const useSettingsStore = create<SettingsState>()(
       voiceEnabled: true,
       alertVoice: 'all',
       recordTrips: true,
+      recordMyTrips: true,
       disclaimerAccepted: false,
       accountPromptDismissed: false,
       debugOverlay: false,
@@ -113,6 +117,7 @@ export const useSettingsStore = create<SettingsState>()(
       setVoiceEnabled: (on) => set({ voiceEnabled: on }),
       setAlertVoice: (level) => set({ alertVoice: level }),
       setRecordTrips: (on) => set({ recordTrips: on }),
+      setRecordMyTrips: (on) => set({ recordMyTrips: on }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setAccountPromptDismissed: (on) => set({ accountPromptDismissed: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
@@ -132,6 +137,7 @@ export const useSettingsStore = create<SettingsState>()(
         voiceEnabled: s.voiceEnabled,
         alertVoice: s.alertVoice,
         recordTrips: s.recordTrips,
+        recordMyTrips: s.recordMyTrips,
         disclaimerAccepted: s.disclaimerAccepted,
         accountPromptDismissed: s.accountPromptDismissed,
         debugOverlay: s.debugOverlay,
