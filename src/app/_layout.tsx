@@ -21,6 +21,7 @@ import { restoreAccount } from '@/presentation/hooks/useAccount';
 import { NAVIGATION_TOOL_NAMES, navigationTools } from '@/presentation/services/navigation-tools';
 import { container } from '@/data/container';
 import { MagicRelayer } from '@/data/auth/magic-identity';
+import { myTrips } from '@/presentation/services/my-trips';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -40,6 +41,8 @@ export default function RootLayout() {
     void restoreAccount();
     // "Llevame a…" from the assistant drives the navigation.
     container.setNavigationTools(NAVIGATION_TOOL_NAMES, navigationTools);
+    // "Mis viajes": records by itself while the adapter is connected.
+    myTrips.start();
   }, []);
 
   if (!fontsLoaded) {

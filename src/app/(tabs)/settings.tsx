@@ -90,7 +90,24 @@ export default function SettingsScreen() {
           <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
         </Pressable>
 
-        <SectionHeader title="Viajes grabados" />
+        <SectionHeader title="Mis viajes" />
+        <Row label="Guardar mis viajes">
+          <Switch value={s.recordMyTrips} onValueChange={s.setRecordMyTrips} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
+        </Row>
+        <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-2">
+          Con el adaptador conectado y la app abierta, cada viaje queda con su recorrido, distancia, tiempos,
+          paradas y consumo estimado. Solo en este teléfono.
+        </Text>
+        <Pressable
+          onPress={() => router.push('/trips')}
+          className="flex-row items-center bg-brand-surface rounded-2xl px-4 py-3 mb-6 active:opacity-60"
+        >
+          <MaterialCommunityIcons name="map-marker-path" size={18} color={COLORS.mint} />
+          <Text className="text-brand-text font-mono text-sm ml-3 flex-1">Ver mis viajes</Text>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
+        </Pressable>
+
+        <SectionHeader title="Registro técnico (desarrollo)" />
         <Row label="Grabar registro técnico al navegar">
           <Switch value={s.recordTrips} onValueChange={s.setRecordTrips} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
