@@ -83,13 +83,6 @@
         }
       ],
       "expo-sharing",
-      [
-        "react-native-fast-tflite",
-        {
-          "enableAndroidGpuLibraries": true
-        }
-      ],
-      "react-native-zip-archive",
       "expo-asset",
       [
         "expo-secure-store",
