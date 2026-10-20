@@ -26,7 +26,6 @@ import { COLORS } from '@/presentation/theme';
 import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
-import { usePerceptionStore } from '@/store/perceptionStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -373,20 +372,16 @@ function Tile({ icon, label, onPress }: { icon: IconName; label: string; onPress
   );
 }
 
-// Field-testing aid: sources and the detector, only in Dev or with "Datos técnicos".
+// Field-testing aid: the sources, only in Dev or with "Datos técnicos".
 function TechChips() {
   const ego = useEgoStore((s) => s.ego);
   const pose = useEgoStore((s) => s.pose);
   const obdState = useOBDStore((s) => s.connectionState);
   const obdHz = useOBDStore((s) => s.speedRateHz);
-  const det = usePerceptionStore((s) => s.status);
-  const stats = usePerceptionStore((s) => s.stats);
-  const seen = usePerceptionStore((s) => s.objects.length);
   const items = [
     `GPS ${ego ? `±${ego.gpsAccuracyM.toFixed(0)}m` : '—'}`,
     `IMU ${pose ? 'ok' : '—'}`,
     `OBD ${obdState === 'connected' ? `${obdHz.toFixed(0)}Hz` : '—'}`,
-    ...(det !== 'off' ? [`YOLO ${stats ? `${stats.fps.toFixed(0)}fps ${seen}obj` : det}`] : []),
   ];
   return (
     <View pointerEvents="none" className="absolute right-3 top-1/3">

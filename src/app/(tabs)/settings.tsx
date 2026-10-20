@@ -1,56 +1,35 @@
 // Preferences, AR calibration entry point and service endpoints.
 
 import { useCallback, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
-import { DETECTOR_MODELS } from '@/data/perception/detector-model';
 import type { TripFileInfo } from '@/data/recording/trip-recorder';
 import { EmailSignIn } from '@/presentation/components/feedback/EmailSignIn';
 import { useAccount } from '@/presentation/hooks/useAccount';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
-import { usePerceptionStore } from '@/store/perceptionStore';
 import { DEFAULT_ENDPOINTS, useSettingsStore } from '@/store/settingsStore';
-import type { AlertVoiceLevel } from '@/domain/voice/voice-arbiter';
 import { PermissionsPanel } from '@/presentation/components/permissions/PermissionsPanel';
-
-const DELEGATES = [
-  { id: 'android-gpu', label: 'GPU' },
-  { id: 'nnapi', label: 'NNAPI' },
-  { id: 'cpu', label: 'CPU' },
-] as const;
 
 export default function SettingsScreen() {
   const router = useRouter();
   const s = useSettingsStore();
-  const stats = usePerceptionStore((p) => p.stats);
   const [endpoints, setEndpoints] = useState({
     routingUrl: s.routingUrl,
     geocoderUrl: s.geocoderUrl,
     mapStyleUrl: s.mapStyleUrl,
   });
   const [trips, setTrips] = useState<TripFileInfo[]>([]);
-  // Trip being packed into a .zip for sharing (frames make it take a moment).
-  const [packing, setPacking] = useState<string | null>(null);
   const shareTrip = async (t: TripFileInfo) => {
     try {
-      if (t.frames === 0) {
-        await Sharing.shareAsync(container.trips.uri(t.name), { mimeType: 'text/plain', dialogTitle: t.name });
-        return;
-      }
-      setPacking(t.name);
-      const uri = await container.trips.archive(t.name);
-      setPacking(null);
-      await Sharing.shareAsync(uri, { mimeType: 'application/zip', dialogTitle: t.name });
+      await Sharing.shareAsync(container.trips.uri(t.name), { mimeType: 'text/plain', dialogTitle: t.name });
     } catch (err) {
       console.warn('[Settings] trip not shared:', err);
-    } finally {
-      setPacking(null);
     }
   };
   const refreshTrips = useCallback(() => {
@@ -77,20 +56,6 @@ export default function SettingsScreen() {
         <Row label="Instrucciones por voz">
           <Switch value={s.voiceEnabled} onValueChange={s.setVoiceEnabled} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
-        <Text className="text-brand-muted font-mono text-xs mt-1 mb-2">Alertas habladas del detector</Text>
-        <View className="flex-row gap-2 mb-4">
-          {ALERT_VOICE.map((a) => (
-            <Pressable
-              key={a.id}
-              onPress={() => s.setAlertVoice(a.id)}
-              className={`flex-1 rounded-xl py-2 items-center border ${
-                s.alertVoice === a.id ? 'border-brand-teal' : 'border-brand-border'
-              } active:opacity-60`}
-            >
-              <Text className={`font-mono text-xs ${s.alertVoice === a.id ? 'text-brand-teal' : 'text-brand-muted'}`}>{a.label}</Text>
-            </Pressable>
-          ))}
-        </View>
         <Row label="Datos técnicos sobre la AR">
           <Switch value={s.debugOverlay} onValueChange={s.setDebugOverlay} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
@@ -110,54 +75,9 @@ export default function SettingsScreen() {
           <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
         </Pressable>
 
-        <Row label="Cámara en manejo: guía AR y detector (en prueba)">
+        <Row label="Guía AR sobre la cámara (en pausa)">
           <Switch value={s.driveAr} onValueChange={s.setDriveAr} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
         </Row>
-
-        <SectionHeader title="Detector" />
-        <Row label="Alertas de vehículos y peatones">
-          <Switch
-            value={s.detectorEnabled}
-            onValueChange={(on) => s.setDetector({ detectorEnabled: on })}
-            trackColor={{ true: COLORS.mintDark }}
-            thumbColor={COLORS.text}
-          />
-        </Row>
-        <View className="flex-row gap-2 mb-2">
-          {DETECTOR_MODELS.map((m) => (
-            <Pressable
-              key={m.id}
-              onPress={() => s.setDetector({ detectorModelId: m.id })}
-              className={`flex-1 rounded-xl py-2 items-center border ${
-                s.detectorModelId === m.id ? 'border-brand-teal' : 'border-brand-border'
-              } active:opacity-60`}
-            >
-              <Text className={`font-mono text-[11px] ${s.detectorModelId === m.id ? 'text-brand-teal' : 'text-brand-muted'}`}>
-                {m.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View className="flex-row gap-2 mb-2">
-          {DELEGATES.map((d) => (
-            <Pressable
-              key={d.id}
-              onPress={() => s.setDetector({ detectorDelegate: d.id })}
-              className={`flex-1 rounded-xl py-2 items-center border ${
-                s.detectorDelegate === d.id ? 'border-brand-teal' : 'border-brand-border'
-              } active:opacity-60`}
-            >
-              <Text className={`font-mono text-xs ${s.detectorDelegate === d.id ? 'text-brand-teal' : 'text-brand-muted'}`}>
-                {d.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
-          {stats
-            ? `Último uso: ${stats.inferenceMs.toFixed(0)} ms por imagen (modelo), ${stats.frameMs.toFixed(0)} ms en total, ${stats.fps.toFixed(1)} img/s · ${stats.delegate}`
-            : 'Acelerador del modelo. Las estadísticas aparecen después de usar la guía AR.'}
-        </Text>
         <Pressable
           onPress={() => router.push('/cameras')}
           className="flex-row items-center bg-brand-surface rounded-2xl px-4 py-3 mb-6 active:opacity-60"
@@ -178,19 +98,6 @@ export default function SettingsScreen() {
           GPS, sensores, OBD y progreso de ruta, solo en este teléfono. Sirve para reproducir un viaje y depurar la
           AR. Unos 10 MB por hora.
         </Text>
-        <Row label="Guardar cuadros de la cámara">
-          <Switch
-            value={s.recordFrames}
-            onValueChange={s.setRecordFrames}
-            disabled={!s.recordTrips}
-            trackColor={{ true: COLORS.mintDark }}
-            thumbColor={COLORS.text}
-          />
-        </Row>
-        <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
-          Ráfagas de 7 cuadros cada 2 s, junto al registro, para probar los modelos maestros en la Z440. Alrededor de
-          1,7 GB por hora; se borran con el viaje.
-        </Text>
         {trips.length === 0 ? (
           <Text className="text-brand-muted font-mono text-xs mb-6">Todavía no hay viajes grabados.</Text>
         ) : (
@@ -201,21 +108,16 @@ export default function SettingsScreen() {
                 <View className="ml-3 flex-1">
                   <Text className="text-brand-text font-mono text-xs">{t.name}</Text>
                   <Text className="text-brand-muted font-mono text-[10px]">
-                    {(t.sizeBytes / 1e6).toFixed(1)} MB{t.frames > 0 ? ` · ${t.frames} cuadros` : ''}
+                    {(t.sizeBytes / 1e6).toFixed(1)} MB
                   </Text>
                 </View>
                 <Pressable
                   hitSlop={8}
                   accessibilityLabel={`Compartir ${t.name}`}
-                  disabled={packing != null}
                   onPress={() => void shareTrip(t)}
                   className="mr-4 active:opacity-60"
                 >
-                  {packing === t.name ? (
-                    <ActivityIndicator size="small" color={COLORS.mint} />
-                  ) : (
-                    <MaterialCommunityIcons name="share-variant-outline" size={18} color={COLORS.text} />
-                  )}
+                  <MaterialCommunityIcons name="share-variant-outline" size={18} color={COLORS.text} />
                 </Pressable>
                 <Pressable
                   hitSlop={8}
@@ -310,13 +212,6 @@ function AccountSection() {
     </>
   );
 }
-
-// Which detector alerts speak (M5). The flash on screen always shows.
-const ALERT_VOICE: readonly { id: AlertVoiceLevel; label: string }[] = [
-  { id: 'all', label: 'Todas' },
-  { id: 'critical', label: 'Solo críticas' },
-  { id: 'off', label: 'Ninguna' },
-];
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (

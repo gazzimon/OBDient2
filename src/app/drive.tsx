@@ -12,14 +12,10 @@ import { Pressable, View, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { StatusBar } from 'expo-status-bar';
-import { detectorModel } from '@/data/perception/detector-model';
-import { AlertFlash } from '@/presentation/components/ar/AlertFlash';
 import { ArOverlay } from '@/presentation/components/ar/ArOverlay';
 import { CameraStage } from '@/presentation/components/ar/CameraStage';
 import { DriveHud } from '@/presentation/components/ar/DriveHud';
-import { DetectionOverlay } from '@/presentation/components/ar/DetectionOverlay';
 import { DriveMap } from '@/presentation/components/ar/DriveMap';
-import { useDetector } from '@/presentation/hooks/useDetector';
 import { useDriveOrientationWhileFocused } from '@/presentation/hooks/useLandscape';
 import { useSensorsWhileFocused } from '@/presentation/hooks/useSensors';
 import { navigation } from '@/presentation/services/navigation-controller';
@@ -63,20 +59,6 @@ export default function DriveScreen() {
   const [mapPrimary, setMapPrimary] = useState(() => !useSettingsStore.getState().driveAr);
   const mapMain = !cameraOn || mapPrimary;
 
-  // On-device detector (E4) on the same camera session as the AR preview.
-  const detectorEnabled = useSettingsStore((s) => s.detectorEnabled);
-  const detectorDelegate = useSettingsStore((s) => s.detectorDelegate);
-  const detectorModelId = useSettingsStore((s) => s.detectorModelId);
-  const manifest = useMemo(() => detectorModel(detectorModelId), [detectorModelId]);
-  // Frames for the teacher models ride on the same output, detector or not.
-  // Off for now: handing whole frames (~3.6 MB) from the camera thread to JS
-  // made the preview stutter and crashed natively in worklets (2026-10-19).
-  // Back when frames are encoded on the camera thread itself.
-  const captureFrames = false;
-  const { frameOutput } = useDetector(manifest, detectorDelegate, cameraOn && detectorEnabled, captureFrames);
-  const useOutput = cameraOn && (detectorEnabled || captureFrames);
-  const outputs = useMemo(() => (useOutput ? [frameOutput] : []), [useOutput, frameOutput]);
-
   const exit = () => {
     if (route) navigation.stop();
     // After a reload the drive screen may be the only one: back to the map.
@@ -90,11 +72,10 @@ export default function DriveScreen() {
       <StatusBar hidden />
       {cameraOn && (
         <View style={mapMain ? PIP : FULL}>
-          <CameraStage outputs={outputs}>
+          <CameraStage>
             {({ width, height }) => (
               <>
                 <ArOverlay width={width} height={height} onRibbonVisible={setRibbonVisible} />
-                {detectorEnabled && <DetectionOverlay width={width} height={height} />}
               </>
             )}
           </CameraStage>
@@ -104,7 +85,6 @@ export default function DriveScreen() {
         <DriveMap primary={mapMain} />
       </View>
       <DriveHud onExit={exit} ribbonVisible={ribbonVisible} arVisible={!mapMain} />
-      {cameraOn && <AlertFlash />}
       {/* Tap target over the floating window, above everything else. */}
       {cameraOn && (
         <Pressable

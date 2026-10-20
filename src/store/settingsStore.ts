@@ -66,8 +66,6 @@ interface SettingsState {
   // Local trip log while navigating (domain/recording). On while the MVP is
   // being field-tested: it is how AR problems get diagnosed afterwards.
   recordTrips: boolean;
-  // Camera frames in the trip log (bursts, ~1.7 GB/h) for the teacher models.
-  recordFrames: boolean;
   disclaimerAccepted: boolean;
   // "Not now" on the first-run sign-in: the app works without an account.
   accountPromptDismissed: boolean;
@@ -77,11 +75,6 @@ interface SettingsState {
   driveAr: boolean;
   // Driving map: tilted 3D following the course, or flat 2D north up.
   driveMap3d: boolean;
-  // On-device detector (E4): alerts for vehicles, pedestrians, cyclists.
-  detectorEnabled: boolean;
-  // Accelerator for the detector; the bench says which one is fastest.
-  detectorDelegate: 'android-gpu' | 'nnapi' | 'cpu';
-  detectorModelId: string;
 
   setLastDevice: (id: string, name: string | null) => void;
   setCalibration: (patch: Partial<ArCalibration>) => void;
@@ -90,13 +83,11 @@ interface SettingsState {
   setVoiceEnabled: (on: boolean) => void;
   setAlertVoice: (level: AlertVoiceLevel) => void;
   setRecordTrips: (on: boolean) => void;
-  setRecordFrames: (on: boolean) => void;
   setDisclaimerAccepted: (on: boolean) => void;
   setAccountPromptDismissed: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
   setDriveAr: (on: boolean) => void;
   setDriveMap3d: (on: boolean) => void;
-  setDetector: (patch: Partial<Pick<SettingsState, 'detectorEnabled' | 'detectorDelegate' | 'detectorModelId'>>) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -109,15 +100,11 @@ export const useSettingsStore = create<SettingsState>()(
       voiceEnabled: true,
       alertVoice: 'all',
       recordTrips: true,
-      recordFrames: true,
       disclaimerAccepted: false,
       accountPromptDismissed: false,
       debugOverlay: false,
       driveAr: false,
       driveMap3d: true,
-      detectorEnabled: true,
-      detectorDelegate: 'android-gpu',
-      detectorModelId: 'yolo11n-fp16',
 
       setLastDevice: (id, name) => set({ lastDeviceId: id, lastDeviceName: name }),
       setCalibration: (patch) => set((s) => ({ calibration: { ...s.calibration, ...patch } })),
@@ -126,13 +113,11 @@ export const useSettingsStore = create<SettingsState>()(
       setVoiceEnabled: (on) => set({ voiceEnabled: on }),
       setAlertVoice: (level) => set({ alertVoice: level }),
       setRecordTrips: (on) => set({ recordTrips: on }),
-      setRecordFrames: (on) => set({ recordFrames: on }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setAccountPromptDismissed: (on) => set({ accountPromptDismissed: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
       setDriveAr: (on) => set({ driveAr: on }),
       setDriveMap3d: (on) => set({ driveMap3d: on }),
-      setDetector: (patch) => set(patch),
     }),
     {
       name: 'obdient2-settings',
@@ -147,15 +132,11 @@ export const useSettingsStore = create<SettingsState>()(
         voiceEnabled: s.voiceEnabled,
         alertVoice: s.alertVoice,
         recordTrips: s.recordTrips,
-        recordFrames: s.recordFrames,
         disclaimerAccepted: s.disclaimerAccepted,
         accountPromptDismissed: s.accountPromptDismissed,
         debugOverlay: s.debugOverlay,
         driveAr: s.driveAr,
         driveMap3d: s.driveMap3d,
-        detectorEnabled: s.detectorEnabled,
-        detectorDelegate: s.detectorDelegate,
-        detectorModelId: s.detectorModelId,
       }),
       // New calibration fields get their defaults instead of `undefined`.
       merge: (persisted, current) => {
