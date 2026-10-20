@@ -6,6 +6,10 @@
 // sample for debugging. This keeps what a driver wants to see later: where,
 // when, how far, how fast, how much fuel, where it stopped.
 //
+// - Distance from the speed × time, like an odometer (the OBD speed when it is
+//   fresh): the GPS can freeze with the screen off — seen on the road
+//   2026-10-20, trips of several km left with ~0 m and thrown away — and the
+//   speed keeps arriving. Positions only draw the path.
 // - Starts when the car moves (≥ 5 km/h).
 // - A stop is ≥ 2 min below 3 km/h: it is kept as a stop, adds no distance.
 // - Ends after 15 min stopped, or when the adapter goes (engine off).
@@ -64,7 +68,9 @@ const POINT_EVERY_M = 20;
 const POINT_EVERY_MS = 30_000;
 const MIN_TRIP_M = 200;
 const MIN_TRIP_S = 60;
-// A gap longer than this between samples (app paused) adds no distance.
+// Longer than this between samples, the app was paused (screen off, another
+// app): the speed in between is unknown, so only the straight line between the
+// two positions counts.
 const MAX_GAP_MS = 10_000;
 
 export function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
@@ -161,10 +167,11 @@ export class TripBuilder {
     d.stillAt = null;
 
     if (!gap) {
-      if (d.last) d.distanceM += distanceM(d.last, s);
+      d.distanceM += (s.kmh / 3.6) * (dt / 1000);
       d.movingS += dt / 1000;
       if (d.fuelL != null && s.fuelLph != null) d.fuelL += (s.fuelLph * dt) / 3_600_000;
     }
+    else if (d.last) d.distanceM += distanceM(d.last, s);
     if (d.fuelL == null && s.fuelLph != null) d.fuelL = 0;
     d.last = { lat: s.lat, lng: s.lng };
     d.lastMovingAt = s.t;

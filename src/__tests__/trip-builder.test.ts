@@ -75,4 +75,23 @@ describe('TripBuilder', () => {
     drive(b, 0, 120, -34, 36, null);
     expect(b.finish()!.fuelL).toBeNull();
   });
+
+  it('counts the distance from the speed when the GPS freezes (screen off, seen on the road)', () => {
+    const b = builder();
+    for (let i = 0; i < 120; i++) b.push({ t: i * 1000, lat: -34, lng: -58, kmh: 36, fuelLph: null });
+    const trip = b.finish()!;
+    expect(trip).not.toBeNull();
+    expect(trip.distanceM).toBeGreaterThan(1150);
+  });
+
+  it('after a pause of the app, the straight line between the positions counts', () => {
+    const b = builder();
+    const lat = drive(b, 0, 60, -34);
+    // 60 s without samples, then ~600 m further on.
+    const later = lat + 60 * DEG_PER_10M;
+    b.push({ t: 120_000, lat: later, lng: -58, kmh: 36, fuelLph: null });
+    drive(b, 121_000, 30, later);
+    const trip = b.finish()!;
+    expect(trip.distanceM).toBeGreaterThan(590 + 600 + 290);
+  });
 });
