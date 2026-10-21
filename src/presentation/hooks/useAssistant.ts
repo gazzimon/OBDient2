@@ -39,6 +39,7 @@ const ERROR_TEXT: Record<AssistantError, string> = {
   rate_limited: 'El asistente está con muchos pedidos. Probá en un minuto.',
   timeout: 'El asistente no respondió a tiempo.',
   offline: 'Sin conexión con el asistente. Revisá los datos móviles o el Wi‑Fi.',
+  too_long: 'La conversación se hizo demasiado larga para el asistente. Empezá una conversación nueva (el historial queda guardado).',
   server: 'El asistente tuvo un problema. Probá de nuevo en un rato.',
 };
 

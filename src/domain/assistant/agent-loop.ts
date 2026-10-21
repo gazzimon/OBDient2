@@ -13,7 +13,7 @@
 
 import type { ApiMessage, ApiToolCall, AssembledToolCall, LlmPort } from '@/domain/ports/llm.port';
 import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
-import { estimateTokens, trimHistory } from './history';
+import { estimateChars, estimateTokens, trimHistory } from './history';
 import { evaluatePolicy, TOOL_LEVEL } from './policy';
 import { maxTokensFor, SYSTEM_PROMPT, userMessage, type AssistantContext } from './prompt';
 import { INTERNAL_MARKER, MarkerFilter } from './stream-filter';
@@ -23,8 +23,20 @@ import { parseToolCall, toolSchemas, type ToolCall, type ToolOutcome } from './t
 export const MAX_MODEL_CALLS = 4;
 export const MAX_TOOLS_PER_ROUND = 6;
 export const MEMO_MS = 10_000;
-// 16k context − system and tools (~1.4k) − answer (~0.6k) − margin.
-export const HISTORY_BUDGET_TOKENS = 10_000;
+// The model's window (vLLM --max-model-len, ADR-0006).
+export const CONTEXT_TOKENS = 16_384;
+// Kept free for what the turn itself adds: each round of tools costs ~300 tokens
+// (measured 2026-10-21) and a page read or a text search, 1–3k. If it is not
+// enough, the call fails with "context length" and is retried with less history.
+export const TURN_RESERVE_TOKENS = 3_000;
+const MIN_HISTORY_TOKENS = 1_000;
+
+// The provider said the prompt does not fit (new-api / vLLM: "This model's
+// maximum context length is 16384 tokens…", HTTP 400).
+export function isContextOverflow(err: unknown): boolean {
+  const e = err as { status?: unknown; message?: unknown } | null;
+  return e?.status === 400 && /context.length|context_length/i.test(String(e.message ?? ''));
+}
 
 export type AgentEvent =
   | { readonly type: 'text'; readonly delta: string }
@@ -88,7 +100,6 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
   const tools = toolSchemas(supported);
   const summary = summaryMessages(opts.summary);
   const summaryTokens = summary.reduce((sum, m) => sum + estimateTokens(m), 0);
-  const { kept, dropped } = trimHistory(opts.history, HISTORY_BUDGET_TOKENS - summaryTokens);
 
   const prompt = userMessage(opts.text, opts.context);
   const added: ApiMessage[] = [
@@ -99,6 +110,15 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
         : prompt,
     },
   ];
+
+  // What fits is what is left of the window after the instructions, the tool
+  // definitions (they grow with every tool), this question and the answer —
+  // not a fixed number, which went stale when the tools did.
+  const fixedTokens = estimateChars(SYSTEM_PROMPT.length) + estimateChars(JSON.stringify(tools).length) + summaryTokens + added.reduce((sum, m) => sum + estimateTokens(m), 0);
+  const historyBudget = (squeeze: number) =>
+    Math.max(MIN_HISTORY_TOKENS, Math.floor((CONTEXT_TOKENS - maxTokensFor(opts.context) - fixedTokens - TURN_RESERVE_TOKENS) * squeeze));
+  let squeeze = 1;
+  let { kept, dropped } = trimHistory(opts.history, historyBudget(squeeze));
   const outcomes: ToolOutcome[] = [];
   let clears = 0;
   let invalidCalls = 0;
@@ -141,6 +161,18 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
       if (rest) emit({ type: 'text', delta: rest });
     } catch (err) {
       if (signal.aborted) return finish(true);
+      // It still did not fit (the estimate is a guess): drop more of the oldest
+      // turns and ask again, without the user seeing anything. If there is
+      // nothing left to drop, it is a real error.
+      if (isContextOverflow(err) && squeeze > 0.25) {
+        const before = kept.length;
+        squeeze /= 2;
+        ({ kept, dropped } = trimHistory(opts.history, historyBudget(squeeze)));
+        if (kept.length < before) {
+          round -= 1;
+          continue;
+        }
+      }
       throw err;
     }
     modelCalls += 1;

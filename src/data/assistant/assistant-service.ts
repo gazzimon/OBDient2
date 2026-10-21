@@ -14,6 +14,7 @@ import type { ApiMessage, LlmPort } from '@/domain/ports/llm.port';
 import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { LlmCredentials } from '@/data/auth/account-service';
 import { LlmHttpError } from '@/data/llm/openai-chat-client';
+import { isContextOverflow } from '@/domain/assistant/agent-loop';
 
 export type AssistantError =
   | 'no_account' // not signed in: the screen offers Google
@@ -22,6 +23,7 @@ export type AssistantError =
   | 'rate_limited'
   | 'timeout'
   | 'offline'
+  | 'too_long' // the conversation does not fit the model's window (not a connection problem)
   | 'server';
 
 export interface AccountCredentials {
@@ -130,6 +132,7 @@ function classify(err: unknown): { error: AssistantError; detail?: string } {
     if (err.status === 401) return { error: 'unauthorized' };
     if (err.status === 403) return { error: 'disabled' };
     if (err.status === 429) return { error: 'rate_limited' };
+    if (isContextOverflow(err)) return { error: 'too_long' };
     return { error: 'server', detail: `HTTP ${err.status}` };
   }
   // fetch failing to connect: TypeError ("Network request failed").
