@@ -37,7 +37,7 @@ import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
-import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, moduleAnswered, protocolToPreset, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, type Bus, type ScanTarget } from '@/domain/obd/module-scan';
+import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, moduleAnswered, protocolToPreset, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -359,70 +359,101 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     const bit29 = /29BIT/.test(info.protocol);
     const isStn = info.identity.stn != null;
     const vin = await this.ensureVin();
-    const buses: Bus[] = isStn ? ['HS', 'MS', 'SW'] : ['HS'];
 
     type Found = ScanTarget & { bus: Bus; identify: string | null };
-    const found = await s.exclusive(async (port) => {
+    const result = await s.exclusive(async (port) => {
       await quiet(port, 'ATH1');
+      // Which path: the B33-U vendor UDS set (firmware does ISO-TP) if it takes
+      // AT UDS1, else the STN/ELM header path.
+      const udsAt = (await quiet(port, 'AT UDS1')) != null;
+      const path: ScanPath = udsAt ? 'uds-at' : 'stn';
+
+      // Which buses are reachable: HS always; MS/SW only on STN that accept the
+      // preset (the B14 has no SW-CAN, so STP 63 returns '?').
+      const buses: Bus[] = ['HS'];
+      if (isStn && !udsAt) {
+        for (const bus of ['MS', 'SW'] as Bus[]) {
+          const ok = await quiet(port, `STP ${bit29 ? BUS_PRESET[bus].bit29 : BUS_PRESET[bus].bit11}`);
+          if (ok != null && !/\?|ERR/i.test(ok)) buses.push(bus);
+        }
+        // Restore HS before scanning (the probes above left us on SW).
+        await quiet(port, `STP ${protocolToPreset(info.protocol)}`);
+        await quiet(port, 'STPO');
+        await quiet(port, 'ATH1');
+      }
+
       const out: Found[] = [];
       const seen = new Set<string>();
-      const identify = async (t: ScanTarget) => {
-        await quiet(port, `ATSH ${t.reqHeader}`);
-        if (/^18/.test(t.reqHeader)) await quiet(port, `ATCRA ${t.rxHeader}`);
-        const id = await quiet(port, SCAN_IDENTIFY, 1500);
-        return id && moduleAnswered(id) ? id.replace(/\s+/g, ' ').trim() : null;
-      };
       try {
         for (const bus of buses) {
-          // Switch bus (HS is the current protocol; MS/SW need STP+STPO).
           if (bus !== 'HS') {
-            const ok = await quiet(port, `STP ${bit29 ? BUS_PRESET[bus].bit29 : BUS_PRESET[bus].bit11}`);
-            if (ok == null) continue;
+            await quiet(port, `STP ${bit29 ? BUS_PRESET[bus].bit29 : BUS_PRESET[bus].bit11}`);
             await quiet(port, 'STPO');
             await quiet(port, 'ATH1');
           }
-          // 1) Functional broadcast: everyone answers at once.
-          await quiet(port, `ATSH ${bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11}`);
-          await quiet(port, 'ATCRA').catch(() => undefined);
-          const broadcast = await quiet(port, FUNCTIONAL_PROBE, 2500);
-          const candidates = broadcast ? respondersFrom(broadcast, bit29) : [];
-          // 2) Fill with the seeded list for ones that did not answer the broadcast.
-          for (const t of scanTargets(bit29)) if (!candidates.some((c) => c.id === t.id)) candidates.push(t);
+          const candidates = [...scanTargets(bit29)];
+          // STN: a functional broadcast finds modules no list has.
+          if (path === 'stn') {
+            await quiet(port, `ATSH ${bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11}`);
+            await quiet(port, 'ATCRA').catch(() => undefined);
+            const broadcast = await quiet(port, FUNCTIONAL_PROBE, 2500);
+            for (const r of broadcast ? respondersFrom(broadcast, bit29) : []) if (!candidates.some((c) => c.id === r.id)) candidates.unshift(r);
+          }
           for (const t of candidates) {
             if (seen.has(`${bus}:${t.id}`)) continue;
-            await quiet(port, `ATSH ${t.reqHeader}`);
-            if (/^18/.test(t.reqHeader)) await quiet(port, `ATCRA ${t.rxHeader}`);
-            else await quiet(port, 'ATCRA').catch(() => undefined);
-            const probe = await quiet(port, SCAN_PROBE, 1200);
-            if (!probe || !moduleAnswered(probe)) continue;
+            let present: boolean;
+            let identify: string | null = null;
+            if (path === 'uds-at') {
+              const probe = await quiet(port, urhCommand(t.reqHeader, t.rxHeader, SCAN_PROBE), 1500);
+              present = probe != null && udsReply(probe, SCAN_PROBE) !== '';
+              if (present) {
+                const id = await quiet(port, urhCommand(t.reqHeader, t.rxHeader, SCAN_IDENTIFY), 1500);
+                identify = id ? udsReply(id, SCAN_IDENTIFY) || null : null;
+              }
+            } else {
+              await quiet(port, `ATSH ${t.reqHeader}`);
+              if (/^18/.test(t.reqHeader)) await quiet(port, `ATCRA ${t.rxHeader}`);
+              else await quiet(port, 'ATCRA').catch(() => undefined);
+              const probe = await quiet(port, SCAN_PROBE, 1200);
+              present = probe != null && moduleAnswered(probe);
+              if (present) {
+                const id = await quiet(port, SCAN_IDENTIFY, 1500);
+                identify = id && moduleAnswered(id) ? id.replace(/\s+/g, ' ').trim() : null;
+              }
+            }
+            if (!present) continue;
             seen.add(`${bus}:${t.id}`);
-            out.push({ ...t, bus, identify: await identify(t) });
+            out.push({ ...t, bus, identify });
           }
         }
       } finally {
-        // Back to the car's own bus/protocol, whatever happened above.
         if (buses.length > 1) {
           await quiet(port, `STP ${protocolToPreset(info.protocol)}`).catch(() => undefined);
           await quiet(port, 'STPO').catch(() => undefined);
         }
+        if (udsAt) await quiet(port, 'AT UDS0').catch(() => undefined);
         await quiet(port, 'ATCRA').catch(() => undefined);
         await quiet(port, 'ATH0').catch(() => undefined);
       }
-      return out;
+      return { out, path, buses };
     });
 
+    const { out: found, path, buses } = result;
     const byBus = (b: Bus) => found.filter((m) => m.bus === b).length;
+    const adapter = info.identity.stn ?? info.identity.elm ?? 'adaptador';
     return {
       ok: true,
       data: {
+        adapter,
+        path: path === 'uds-at' ? 'UDS por firmware (AT URH)' : 'STN/ELM (encabezados)',
         protocol: info.protocol,
         vin,
         buses: buses.map((b) => ({ bus: b, label: BUS_PRESET[b].label, modules: byBus(b) })),
         modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, label: m.label, partNumber: m.identify })),
       },
       summary: found.length
-        ? `${found.length} módulos: ${buses.filter((b) => byBus(b)).map((b) => `${byBus(b)} en ${b}`).join(', ')}`
-        : 'Ningún módulo respondió',
+        ? `${found.length} módulos (${adapter}): ${buses.filter((b) => byBus(b)).map((b) => `${byBus(b)} en ${b}`).join(', ')}`
+        : `Ningún módulo respondió (${adapter})`,
       knowledge: {
         vin,
         protocol: info.protocol,
