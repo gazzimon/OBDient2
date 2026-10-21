@@ -34,6 +34,7 @@ export const TOOL_NAMES = [
   'scan_modules',
   'obd_command',
   'knowledge_lookup',
+  'docs_search',
   'fuel_prices',
   'dollar_rate',
   'weather',
@@ -80,6 +81,8 @@ export type ToolCall =
   | { readonly name: 'obd_command'; readonly command: string; readonly header: string | null }
   // The lab's shared facts about what a car supports.
   | { readonly name: 'knowledge_lookup'; readonly make: string | null; readonly model: string | null; readonly year: number | null }
+  // The lab's text base: pages already read and manuals, by words and by meaning.
+  | { readonly name: 'docs_search'; readonly query: string }
   // Nearest stations and prices (Secretaría de Energía data, daily).
   | { readonly name: 'fuel_prices'; readonly product: FuelProduct | null }
   | { readonly name: 'dollar_rate' }
@@ -328,6 +331,20 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
       },
     ),
     fn(
+      'docs_search',
+      'Busca en los textos que el laboratorio ya leyó (páginas web y manuales de los adaptadores, datasheets, notas): ' +
+        'sintaxis de comandos, identificadores, procedimientos. Devuelve fragmentos con su fuente y la fecha en que se leyó. ' +
+        'Usala antes de buscar en la web. No tiene precios ni nada que cambie a diario: para eso están sus herramientas en vivo.',
+      {
+        type: 'object',
+        properties: {
+          query: { type: 'string', minLength: 2, maxLength: 200, description: 'La pregunta o los términos, con los códigos tal cual ("STCFCPA", "F187", "18DA10F1").' },
+        },
+        required: ['query'],
+        additionalProperties: false,
+      },
+    ),
+    fn(
       'fuel_prices',
       'Estaciones de servicio más cercanas al auto con su marca, dirección, distancia y precio por litro (con cuántos ' +
         'días tiene el dato), y la más barata cerca. Datos oficiales de la Secretaría de Energía. Los resultados quedan ' +
@@ -500,6 +517,13 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       const y = a.year;
       if (y !== undefined && (typeof y !== 'number' || !Number.isInteger(y) || y < 1990 || y > 2100)) return bad('"year" debe ser un año.');
       return { ok: true, call: { name, make: str(a.make, 40), model: str(a.model, 40), year: (y as number | undefined) ?? null } };
+    }
+    case 'docs_search': {
+      const extra = only('query');
+      if (extra) return bad(extra);
+      const q = a.query;
+      if (typeof q !== 'string' || q.trim().length < 2 || q.length > 200) return bad('"query" debe tener entre 2 y 200 caracteres.');
+      return { ok: true, call: { name, query: q.trim() } };
     }
     case 'fuel_prices': {
       const extra = only('product');

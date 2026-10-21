@@ -184,3 +184,22 @@ OBD, el par pedido→respuesta lo define el fabricante; solo 29 bits "normal fix
 
 Pendiente: identificación por marca (`22 F187`, GMLAN `1A`, KWP `21 80`), tiempo de espera corto, y
 barrer las direcciones de la marca en MS/SW-CAN según el fabricante.
+
+## Base de textos del laboratorio (2026-10-21)
+
+Lo que `web_fetch` lee y los manuales que se carguen quedan en una base común (`server/tools`, SQLite en
+`~/.local/share/obdient/docs.sqlite`) que el asistente consulta con `docs_search`.
+- **Búsqueda híbrida:** palabras exactas (FTS5: `713`, `F187`, `P0420`, `STCFCPA` son una palabra; `0x713` se
+  indexa también como `713`) y significado (Qwen3-Embedding-0.6B en la Z440, `docker-compose` perfil `embed`,
+  puerto 8003, ~3 GB de la GPU1), fusionadas por rango. Sin el servicio de embeddings busca solo por palabras.
+- **Todo es del laboratorio:** sin privado/compartido. Cada usuario borra solo lo que subió; el resto, con
+  `scripts/docs-admin.mjs`.
+- **Filtro por párrafo, nunca por documento** (`doc-filter.mjs`): tapa patente, VIN, DNI, CUIT, email,
+  teléfono, CBU y tarjeta; descarta párrafos con precios o pies de licencia (así una norma ISO no se indexa, sin
+  "rechazarla"); clasificador opcional con Qwen3.8 (`DOCS_CLASSIFY=1`) para subidas de usuarios, que si falla
+  descarta la subida. Lo que pasó va solo al log del servidor; la app no lo muestra.
+- **Lo que cambia a diario no se guarda:** las páginas web vencen a los 30 días y el asistente tiene la regla
+  de usar siempre las herramientas en vivo para precios, dólar, combustible y clima.
+- Lo guardado se limpia de `<>` y backticks y el asistente lo trata como texto de terceros.
+- Pendiente: carga de PDFs (`pdftotext` + Qwen3.8 para tablas y escaneos, con verificación de códigos hex) y
+  el botón de adjuntar en la app.

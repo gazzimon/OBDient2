@@ -73,6 +73,7 @@ const assistantTools: VehicleToolsPort = {
       case 'web_search':
       case 'web_fetch':
       case 'knowledge_lookup':
+      case 'docs_search':
       case 'dollar_rate':
       case 'car_price':
         return onlineTools.execute(call, signal);
