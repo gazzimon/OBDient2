@@ -168,5 +168,19 @@ y **Fiat** (29 bits: motor 10, ABS 28, columna 30, carrocería 40; de AlfaOBD v�
 
 **Por qué los barridos no encontraban nada:** `scan_modules` solo prueba 7E0–7E7, una lista fija de 29
 bits y la difusión 7DF; a 7DF responden solo los módulos OBD (motor, caja). Los demás están en
-direcciones propias de cada marca. Siguiente paso: que el barrido sume las direcciones de la base para
-la marca del auto.
+direcciones propias de cada marca.
+
+**Barrido con las direcciones de la marca (2026-10-21)**, validado con ISO 15765-2 (§10.3.2: fuera de
+OBD, el par pedido→respuesta lo define el fabricante; solo 29 bits "normal fixed" lo fija) y la FRPM
+(§12):
+1. La marca sale del VIN (WMI, `domain/obd/vin-make.ts`) o la pasa el asistente; se suman hasta 32
+   direcciones de la base, del mismo ancho de ID que el protocolo.
+2. `ATCRA <respuesta>` en cada módulo, también en 11 bits: el filtro por defecto solo deja pasar 7E8–7EF.
+3. Control de flujo al ID de pedido del módulo cuando el automático (RxID − 8, o el intercambio de 29
+   bits) no lo alcanza: `STCFCPA` en STN (se borran los pares con `STCFCPC` antes de cada módulo, porque
+   un par propio apaga el automático para los demás IDs) y `ATFCSH`/`SD 30 00 00`/`SM 1` en ELM.
+4. El reporte al laboratorio lleva la marca (sin marca el servidor lo rechazaba, y ningún barrido se
+   había guardado).
+
+Pendiente: identificación por marca (`22 F187`, GMLAN `1A`, KWP `21 80`), tiempo de espera corto, y
+barrer las direcciones de la marca en MS/SW-CAN según el fabricante.

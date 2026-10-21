@@ -37,7 +37,8 @@ import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
-import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, moduleAnswered, protocolToPreset, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
+import { makeFromVin } from '@/domain/obd/vin-make';
+import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, moduleAnswered, needsFlowPair, protocolToPreset, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -74,6 +75,8 @@ export interface VehicleToolDeps {
   readonly history?: FaultHistorySink;
   // Driving: diagnostic reads skip headers and never pause the telemetry.
   readonly moving?: () => boolean;
+  // scan_modules: the addresses the lab knows for a make (obdient-tools).
+  readonly knownTargets?: (make: string, model: string | null, signal: AbortSignal) => Promise<ScanTarget[]>;
   readonly sleep?: (ms: number) => Promise<void>;
   readonly now?: () => number;
 }
@@ -185,7 +188,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'read_dtcs':
         return this.readDtcs(s, call.kind);
       case 'scan_modules':
-        return this.scanModules(s);
+        return this.scanModules(s, call.make, call.model, signal);
       case 'obd_command':
         return this.obdCommand(s, call.command, call.header);
       case 'read_freeze_frame':
@@ -354,11 +357,15 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   // 22 F190. Only one CAN channel is active at a time, so the bus is switched
   // with STP/STPO and HS is restored at the end. Every module found is a real
   // fact about this car — bus and address — saved to the lab knowledge.
-  private async scanModules(s: ObdSession): Promise<ToolOutcome> {
+  private async scanModules(s: ObdSession, givenMake: string | null, model: string | null, signal: AbortSignal): Promise<ToolOutcome> {
     const info = s.sessionInfo!;
     const bit29 = /29BIT/.test(info.protocol);
     const isStn = info.identity.stn != null;
     const vin = await this.ensureVin();
+    // The make's own addresses (ABS, airbag, body…): OBD's 7E0–7E7 and the
+    // 7DF broadcast only reach engine and gearbox.
+    const make = givenMake?.toLowerCase() ?? makeFromVin(vin);
+    const makeTargets = make && this.deps.knownTargets ? await this.deps.knownTargets(make, model, signal).catch(() => []) : [];
 
     type Found = ScanTarget & { bus: Bus; identify: string | null };
     const result = await s.exclusive(async (port) => {
@@ -384,6 +391,24 @@ export class VehicleToolAdapter implements VehicleToolsPort {
 
       const out: Found[] = [];
       const seen = new Set<string>();
+      let skipped = 0;
+      let elmFlow = false;
+      // FlowControl to the module's own request ID when the adapter's default
+      // (RxID − 8, or 29-bit swap) misses it. On the STN a custom pair turns the
+      // default off for every other ID, so pairs are cleared before each module.
+      const flowFor = async (t: ScanTarget) => {
+        if (isStn) {
+          await quiet(port, 'STCFCPC');
+          if (needsFlowPair(t)) await quiet(port, `STCFCPA ${t.reqHeader}, ${t.rxHeader}`);
+        } else if (needsFlowPair(t)) {
+          await quiet(port, `ATFCSH ${t.reqHeader}`);
+          await quiet(port, 'ATFCSD 30 00 00');
+          elmFlow = (await quiet(port, 'ATFCSM 1')) != null;
+        } else if (elmFlow) {
+          await quiet(port, 'ATFCSM 0');
+          elmFlow = false;
+        }
+      };
       try {
         for (const bus of buses) {
           if (bus !== 'HS') {
@@ -391,15 +416,17 @@ export class VehicleToolAdapter implements VehicleToolsPort {
             await quiet(port, 'STPO');
             await quiet(port, 'ATH1');
           }
-          const candidates = [...scanTargets(bit29)];
+          const generic = [...scanTargets(bit29)];
           // STN: a functional broadcast finds modules no list has.
           if (path === 'stn') {
             await quiet(port, `ATSH ${bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11}`);
             await quiet(port, 'ATCRA').catch(() => undefined);
             const broadcast = await quiet(port, FUNCTIONAL_PROBE, 2500);
-            for (const r of broadcast ? respondersFrom(broadcast, bit29) : []) if (!candidates.some((c) => c.id === r.id)) candidates.unshift(r);
+            for (const r of broadcast ? respondersFrom(broadcast, bit29) : []) if (!generic.some((c) => c.id === r.id)) generic.unshift(r);
           }
-          for (const t of candidates) {
+          const merged = mergeTargets(generic, makeTargets, bit29);
+          skipped = merged.skipped;
+          for (const t of merged.targets) {
             if (seen.has(`${bus}:${t.id}`)) continue;
             let present: boolean;
             let identify: string | null = null;
@@ -412,8 +439,10 @@ export class VehicleToolAdapter implements VehicleToolsPort {
               }
             } else {
               await quiet(port, `ATSH ${t.reqHeader}`);
-              if (/^18/.test(t.reqHeader)) await quiet(port, `ATCRA ${t.rxHeader}`);
-              else await quiet(port, 'ATCRA').catch(() => undefined);
+              // Only this module's answer; the default filter takes 7E8–7EF only,
+              // so VW 77D, GM 641 or PSA 652 were dropped.
+              await quiet(port, `ATCRA ${t.rxHeader}`);
+              await flowFor(t);
               const probe = await quiet(port, SCAN_PROBE, 1200);
               present = probe != null && moduleAnswered(probe);
               if (present) {
@@ -432,13 +461,15 @@ export class VehicleToolAdapter implements VehicleToolsPort {
           await quiet(port, 'STPO').catch(() => undefined);
         }
         if (udsAt) await quiet(port, 'AT UDS0').catch(() => undefined);
+        if (isStn) await quiet(port, 'STCFCPC').catch(() => undefined);
+        else if (elmFlow) await quiet(port, 'ATFCSM 0').catch(() => undefined);
         await quiet(port, 'ATCRA').catch(() => undefined);
         await quiet(port, 'ATH0').catch(() => undefined);
       }
-      return { out, path, buses };
+      return { out, path, buses, skipped };
     });
 
-    const { out: found, path, buses } = result;
+    const { out: found, path, buses, skipped } = result;
     const byBus = (b: Bus) => found.filter((m) => m.bus === b).length;
     const adapter = info.identity.stn ?? info.identity.elm ?? 'adaptador';
     return {
@@ -448,17 +479,27 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         path: path === 'uds-at' ? 'UDS por firmware (AT URH)' : 'STN/ELM (encabezados)',
         protocol: info.protocol,
         vin,
+        make: make ?? 'desconocida (no se probaron direcciones de marca ni se guardó en el laboratorio)',
+        makeAddresses: makeTargets.length,
+        ...(skipped ? { skippedOtherIdWidth: skipped } : {}),
         buses: buses.map((b) => ({ bus: b, label: BUS_PRESET[b].label, modules: byBus(b) })),
         modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, label: m.label, partNumber: m.identify })),
       },
       summary: found.length
         ? `${found.length} módulos (${adapter}): ${buses.filter((b) => byBus(b)).map((b) => `${byBus(b)} en ${b}`).join(', ')}`
         : `Ningún módulo respondió (${adapter})`,
-      knowledge: {
-        vin,
-        protocol: info.protocol,
-        modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label, partNumber: m.identify })),
-      },
+      // The lab keys facts by make: without it the server refuses the report.
+      ...(make
+        ? {
+            knowledge: {
+              make,
+              ...(model ? { model } : {}),
+              vin,
+              protocol: info.protocol,
+              modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label, partNumber: m.identify })),
+            },
+          }
+        : {}),
     };
   }
 

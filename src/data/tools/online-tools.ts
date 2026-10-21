@@ -2,6 +2,7 @@
 // plain, short fields; nothing here needs the phone's position.
 
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
+import type { ScanTarget } from '@/domain/obd/module-scan';
 import type { ToolsClient } from './tools-client';
 
 interface WebResult {
@@ -18,6 +19,27 @@ export class OnlineTools {
   // Saves a module scan into the lab's shared knowledge (fire and forget).
   async reportKnowledge(rec: Record<string, unknown>, signal: AbortSignal): Promise<void> {
     await this.client.post('knowledge', { action: 'report', ...rec }, signal, 'La base del laboratorio').catch(() => undefined);
+  }
+
+  // The addresses the lab knows for a make (this model first, then the rest of
+  // the make), for scan_modules to probe. Offline or unknown → none.
+  async scanTargets(make: string, model: string | null, signal: AbortSignal): Promise<ScanTarget[]> {
+    type Mod = { id?: string; reqHeader?: string; rxHeader?: string; label?: string; sub?: string };
+    const r = await this.client.post<{ exact?: { modules?: Mod[] } | null; close?: { modules?: Mod[] }[]; sameMake?: Mod[] }>(
+      'knowledge',
+      { action: 'lookup', make, ...(model ? { model } : {}) },
+      signal,
+      'La base del laboratorio',
+    );
+    if (!r.ok) return [];
+    const mods = [...(r.data.exact?.modules ?? []), ...(r.data.close ?? []).flatMap((c) => c.modules ?? []), ...(r.data.sameMake ?? [])];
+    const out = new Map<string, ScanTarget>();
+    for (const m of mods) {
+      // Extended addressing (a sub-address byte, Toyota) is not probed yet.
+      if (!m.id || m.sub || !m.reqHeader || !m.rxHeader || !/^([0-9A-F]{3}|[0-9A-F]{8})$/.test(m.reqHeader) || !/^([0-9A-F]{3}|[0-9A-F]{8})$/.test(m.rxHeader)) continue;
+      if (!out.has(m.id)) out.set(m.id, { id: m.id, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label ?? 'módulo' });
+    }
+    return [...out.values()];
   }
 
   async execute(call: Extract<ToolCall, { name: 'web_search' | 'web_fetch' | 'knowledge_lookup' | 'dollar_rate' | 'car_price' }>, signal: AbortSignal): Promise<ToolOutcome> {
