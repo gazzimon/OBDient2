@@ -31,6 +31,7 @@
     "expo-camera": "~56.0.8",
     "expo-constants": "~56.0.27",
     "expo-dev-client": "~56.0.27",
+    "expo-document-picker": "~56.0.4",
     "expo-font": "~56.0.7",
     "expo-haptics": "~56.0.3",
     "expo-image-manipulator": "~56.0.26",
