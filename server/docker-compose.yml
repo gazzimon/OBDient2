@@ -122,6 +122,48 @@ services:
       driver: json-file
       options: {max-size: "50m", max-file: "3"}
 
+  # Embeddings (M9, 2026-10-21): Qwen3-Embedding-0.6B para la base de textos del
+  # laboratorio (páginas leídas, PDFs). La app no le habla: pasa por
+  # obdient-tools en la K16. GPU1, al lado de stt: ~3 GB.
+  # Pesos: hf download Qwen/Qwen3-Embedding-0.6B --local-dir ~/models/qwen3-embedding-0.6b
+  # La arquitectura es Qwen3ForCausalLM: sin --runner/--convert vLLM lo sirve
+  # como modelo de chat. Consultas con "Instruct: …\nQuery:…"; documentos sin nada.
+  embed:
+    profiles: [embed]
+    <<: *gpu1
+    image: vllm/vllm-openai@sha256:c1c9f6fd5c109ba7f0546a59f5b2f15fb87f64c77782e90a27b648b42a8e67c3
+    container_name: embed
+    network_mode: host
+    ipc: host
+    restart: unless-stopped # si la guardia térmica lo para, NO se reinicia solo
+    environment:
+      - VLLM_API_KEY=${VLLM_API_KEY}
+      - VLLM_DISABLE_COMPILE_CACHE=1
+    volumes:
+      - /home/fiui-pss/models:/models:ro
+    command:
+      - /models/qwen3-embedding-0.6b
+      - --served-model-name=qwen3-embedding-0.6b
+      - --host=192.168.100.210
+      - --port=8003
+      - --runner=pooling
+      - --convert=embed
+      - --enforce-eager
+      # Fragmentos de ~1 página; 8k alcanza y deja la caché chica.
+      - --max-model-len=8192
+      # ~3 GB de 24: stt usa 0.70; la suma queda debajo de 0.85.
+      - --gpu-memory-utilization=0.12
+      - --max-num-seqs=16
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://192.168.100.210:8003/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+    logging:
+      driver: json-file
+      options: {max-size: "20m", max-file: "3"}
+
   # ── CPU: rutas y búsqueda (perfil propio: sigue en pie aunque se pare lo de GPU) ──
   # Datos preparados por server/maps/prepare.sh en ~/obdient-stack/maps.
   # Solo LAN: la K16 (Caddy) es la única entrada desde internet.

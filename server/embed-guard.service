@@ -1,0 +1,11 @@
+# Guardia térmica de los embeddings (embed) (copia del patrón de ~/.config/systemd/user/vllm-guard.service).
+# Instalar: cp server/embed-guard.service ~/.config/systemd/user/ &&
+#           systemctl --user daemon-reload && systemctl --user enable --now embed-guard
+[Unit]
+Description=Guardia térmica de embed (OBDient2)
+[Service]
+ExecStart=%h/serve/guard.sh embed
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=default.target
