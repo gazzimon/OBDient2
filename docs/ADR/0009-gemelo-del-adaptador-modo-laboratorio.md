@@ -83,3 +83,37 @@ Herramienta de PC (FORScan en Wine, scripts UDS) ── COM ── puerto virtua
 3. Prueba con el B35 en el auto: OBDient ↔ gemelo ↔ un script UDS de lectura; luego FORScan en Wine
    si hay un Ford o Mazda.
 4. MCP de solo lectura sobre el gemelo.
+
+## M9 multi-marca — por implementar próximamente (2026-10-20)
+
+Base ya hecha (commit 476a240): `scan_modules` (barrido por lista 11/29 bits + `22 F190`),
+`obd_command` (lectura libre con clasificador), base de hechos del laboratorio, `web_fetch`,
+`knowledge_lookup`. Falta, para correr varias marcas:
+
+1. **Barrido por difusión funcional**: una sola petición a `7DF` (11 bits) o `18DB33F1` (29 bits) y
+   responden todos los módulos del bus a la vez — descubre módulos que no están en ninguna lista,
+   sin importar la marca. Es la mejora #1 para multi-marca. (Confirmado en openxc/uds-c:
+   `OBD2_FUNCTIONAL_BROADCAST_ID = 0x7DF`.)
+2. **Barrido en los tres buses del B35** (HS-CAN, MS-CAN, SW-CAN — el B35 los soporta como el OBDLink
+   MX+): conmutar de bus con el comando ST del STN (confirmar el exacto en la STN FRPM de scantool.net),
+   barrer cada uno, y **volver a HS-CAN al terminar**.
+3. **Identificar y guardar**: cada módulo que responde se identifica con `22 F190` (y DIDs de parte/
+   software) y se guarda en la base del laboratorio con **marca, bus y dirección**.
+
+**Normas de referencia:** ISO 15765-4 (direccionamiento y difusión 7DF/18DB33F1), ISO 15765-2 (ISO-TP,
+control de flujo), ISO 14229-1/-3 (UDS), ISO 15031 / SAE J1979 (OBD), SAE J2012 (códigos),
+ISO 11898-1/-2/-3 y SAE J2411 (HS/MS/SW-CAN), y la **STN FRPM** (comandos ST de conmutación de bus).
+
+**Bibliotecas evaluadas (2026-10-20) — ninguna corre en el teléfono (TS); son del servidor o referencia:**
+- **commaai/opendbc** (Python, MIT, activo): la más valiosa. Su `fw_versions`/`FW_QUERY_CONFIG` trae
+  **direcciones de módulos y DIDs de fingerprint por auto y marca** — fuente para sembrar la base. Sus
+  consultas UDS + ISO-TP, de referencia.
+- **pylessard/python-udsoncan** (Python, MIT, maduro): cliente UDS de referencia para el gemelo/réplica
+  en el servidor.
+- **mdabrowski1990/uds** (Python, MIT, activo): UDS sobre CAN/Ethernet/LIN/FlexRay/K-Line; alternativa a
+  udsoncan con K-Line (autos viejos).
+- **openxc/uds-c** (C, BSD-3, sin cambios desde 2021): UDS/OBD embebido con shims; referencia de la
+  máquina de estados y del broadcast, no dependencia (iría en firmware, no en TS/Node).
+- **kingjosephm/uds-diagnostic-tool** (Python, **sin licencia**, LLM+LangGraph sobre un PCAP): analiza
+  capturas con un agente; **no se puede reusar** (sin licencia) y no habla con el auto. Solo inspira el
+  flujo "analizar una captura", que nuestro agente ya hace en vivo.
