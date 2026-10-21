@@ -14,6 +14,8 @@ import { dirname } from 'node:path';
 
 const MAX_MODULES = 64;
 const MAX_IDS = 400;
+const MAX_CLOSE = 3;
+const MAX_SAME_MAKE = 24;
 const slug = (s) => String(s ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export function vehicleKey({ make, model, year }) {
@@ -65,17 +67,34 @@ export function knowledgeStore(file) {
       return { key, modules: next.modules.length };
     },
 
-    // Everything known for a vehicle: its exact key, plus the rest of the make.
+    // Everything known for a vehicle: its exact key, close models, plus the
+    // rest of the make condensed (each address once, with how many models use it).
     lookup(q) {
       const db = read();
       const key = vehicleKey(q);
       const makeSlug = slug(q.make);
+      const modelSlug = slug(q.model);
       const exact = key ? db.vehicles[key] : null;
-      const sameMake = Object.entries(db.vehicles)
-        .filter(([k, v]) => makeSlug && v.make === makeSlug && k !== key)
-        .map(([k, v]) => ({ key: k, modules: v.modules, protocol: v.protocol }));
+      const ofMake = Object.entries(db.vehicles).filter(([k, v]) => makeSlug && v.make === makeSlug && k !== key);
+      // opendbc names platforms ("escape-mk4"); a VIN decodes to "escape".
+      const close = exact || !modelSlug
+        ? []
+        : ofMake
+            .filter(([, v]) => v.model && (v.model.startsWith(modelSlug) || modelSlug.startsWith(v.model)))
+            .slice(0, MAX_CLOSE)
+            .map(([k, v]) => ({ key: k, modules: v.modules, protocol: v.protocol }));
+      const closeKeys = new Set(close.map((c) => c.key));
+      const byId = new Map();
+      for (const [k, v] of ofMake) {
+        if (closeKeys.has(k)) continue;
+        for (const m of v.modules ?? []) {
+          const prev = byId.get(m.id);
+          byId.set(m.id, prev ? { ...prev, seenIn: prev.seenIn + 1 } : { id: m.id, reqHeader: m.reqHeader, rxHeader: m.rxHeader, ...(m.rxAlt ? { rxAlt: m.rxAlt } : {}), ...(m.sub ? { sub: m.sub } : {}), label: m.label, seenIn: 1 });
+        }
+      }
+      const sameMake = [...byId.values()].sort((a, b) => b.seenIn - a.seenIn).slice(0, MAX_SAME_MAKE);
       const byVin = q.vin ? Object.entries(db.vehicles).find(([, v]) => (v.vins ?? []).includes(q.vin)) : null;
-      return { exact: exact ? { key, ...exact } : null, byVin: byVin ? { key: byVin[0], ...byVin[1] } : null, sameMake };
+      return { exact: exact ? { key, ...exact } : null, close, byVin: byVin ? { key: byVin[0], ...byVin[1] } : null, sameMake };
     },
   };
 }

@@ -1,0 +1,9804 @@
+{
+ "_note": "Generado por scripts/opendbc-extract.py. Direcciones de diagnóstico por plataforma; se confirman con barridos reales (scan_modules).",
+ "source": {
+  "repo": "https://github.com/commaai/opendbc",
+  "commit": "c395575",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2020, Comma.ai, Inc."
+ },
+ "vehicles": [
+  {
+   "make": "chrysler",
+   "model": "pacifica-2018",
+   "platform": "CHRYSLER_PACIFICA_2018",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:747",
+     "reqHeader": "747",
+     "rxHeader": "74F",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "4C7"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:75A",
+     "reqHeader": "75A",
+     "rxHeader": "4DA",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "chrysler",
+   "model": "pacifica-2020",
+   "platform": "CHRYSLER_PACIFICA_2020",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:747",
+     "reqHeader": "747",
+     "rxHeader": "74F",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "4C7"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:75A",
+     "reqHeader": "75A",
+     "rxHeader": "4DA",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "chrysler",
+   "model": "pacifica-2018-hybrid",
+   "platform": "CHRYSLER_PACIFICA_2018_HYBRID",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:75A",
+     "reqHeader": "75A",
+     "rxHeader": "4DA",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E2",
+     "reqHeader": "7E2",
+     "rxHeader": "7EA",
+     "label": "control híbrido",
+     "ecu": "hybrid",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "chrysler",
+   "model": "pacifica-2019-hybrid",
+   "platform": "CHRYSLER_PACIFICA_2019_HYBRID",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:75A",
+     "reqHeader": "75A",
+     "rxHeader": "4DA",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E2",
+     "reqHeader": "7E2",
+     "rxHeader": "7EA",
+     "label": "control híbrido",
+     "ecu": "hybrid",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "jeep",
+   "model": "cherokee-5th-gen",
+   "platform": "JEEP_CHEROKEE_5TH_GEN",
+   "modules": [
+    {
+     "id": "29:10",
+     "reqHeader": "18DA10F1",
+     "rxHeader": "18DAF110",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:18",
+     "reqHeader": "18DA18F1",
+     "rxHeader": "18DAF118",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:60",
+     "reqHeader": "18DA60F1",
+     "rxHeader": "18DAF160",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:C0",
+     "reqHeader": "18DAC0F1",
+     "rxHeader": "18DAF1C0",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "jeep",
+   "model": "grand-cherokee",
+   "platform": "JEEP_GRAND_CHEROKEE",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:747",
+     "reqHeader": "747",
+     "rxHeader": "74F",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "4C7"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:75A",
+     "reqHeader": "75A",
+     "rxHeader": "4DA",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "jeep",
+   "model": "grand-cherokee-2019",
+   "platform": "JEEP_GRAND_CHEROKEE_2019",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:747",
+     "reqHeader": "747",
+     "rxHeader": "74F",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "4C7"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:75A",
+     "reqHeader": "75A",
+     "rxHeader": "4DA",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ram",
+   "model": "1500-5th-gen",
+   "platform": "RAM_1500_5TH_GEN",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:747",
+     "reqHeader": "747",
+     "rxHeader": "74F",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "4C7"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:75A",
+     "reqHeader": "75A",
+     "rxHeader": "4DA",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ram",
+   "model": "hd-5th-gen",
+   "platform": "RAM_HD_5TH_GEN",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:747",
+     "reqHeader": "747",
+     "rxHeader": "74F",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "4C7"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:761",
+     "reqHeader": "761",
+     "rxHeader": "4E1",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "dodge",
+   "model": "durango",
+   "platform": "DODGE_DURANGO",
+   "modules": [
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "4C2",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:744",
+     "reqHeader": "744",
+     "rxHeader": "4C4",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:747",
+     "reqHeader": "747",
+     "rxHeader": "74F",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "4C7"
+    },
+    {
+     "id": "11:753",
+     "reqHeader": "753",
+     "rxHeader": "4D3",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:75A",
+     "reqHeader": "75A",
+     "rxHeader": "4DA",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "bronco-sport-mk1",
+   "platform": "FORD_BRONCO_SPORT_MK1",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "escape-mk4",
+   "platform": "FORD_ESCAPE_MK4",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "escape-mk4-5",
+   "platform": "FORD_ESCAPE_MK4_5",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "explorer-mk6",
+   "platform": "FORD_EXPLORER_MK6",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "expedition-mk4",
+   "platform": "FORD_EXPEDITION_MK4",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "f-150-mk14",
+   "platform": "FORD_F_150_MK14",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "f-150-lightning-mk1",
+   "platform": "FORD_F_150_LIGHTNING_MK1",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "mustang-mach-e-mk1",
+   "platform": "FORD_MUSTANG_MACH_E_MK1",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "focus-mk4",
+   "platform": "FORD_FOCUS_MK4",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "maverick-mk1",
+   "platform": "FORD_MAVERICK_MK1",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "ford",
+   "model": "ranger-mk2",
+   "platform": "FORD_RANGER_MK2",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "nbox-2g",
+   "platform": "HONDA_NBOX_2G",
+   "modules": [
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "accord",
+   "platform": "HONDA_ACCORD",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:2B",
+     "reqHeader": "18DA2BF1",
+     "rxHeader": "18DAF12B",
+     "label": "servofreno eléctrico",
+     "ecu": "electricBrakeBooster",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:61",
+     "reqHeader": "18DA61F1",
+     "rxHeader": "18DAF161",
+     "label": "HUD",
+     "ecu": "hud",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "civic",
+   "platform": "HONDA_CIVIC",
+   "modules": [
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "civic-bosch",
+   "platform": "HONDA_CIVIC_BOSCH",
+   "modules": [
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:2B",
+     "reqHeader": "18DA2BF1",
+     "rxHeader": "18DAF12B",
+     "label": "servofreno eléctrico",
+     "ecu": "electricBrakeBooster",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "civic-bosch-diesel",
+   "platform": "HONDA_CIVIC_BOSCH_DIESEL",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "crv",
+   "platform": "HONDA_CRV",
+   "modules": [
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "crv-5g",
+   "platform": "HONDA_CRV_5G",
+   "modules": [
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:2B",
+     "reqHeader": "18DA2BF1",
+     "rxHeader": "18DAF12B",
+     "label": "servofreno eléctrico",
+     "ecu": "electricBrakeBooster",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "crv-eu",
+   "platform": "HONDA_CRV_EU",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "crv-hybrid",
+   "platform": "HONDA_CRV_HYBRID",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "fit",
+   "platform": "HONDA_FIT",
+   "modules": [
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "freed",
+   "platform": "HONDA_FREED",
+   "modules": [
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "mdx-4g",
+   "platform": "ACURA_MDX_4G",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:2B",
+     "reqHeader": "18DA2BF1",
+     "rxHeader": "18DAF12B",
+     "label": "servofreno eléctrico",
+     "ecu": "electricBrakeBooster",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "mdx-4g-mmr",
+   "platform": "ACURA_MDX_4G_MMR",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "odyssey",
+   "platform": "HONDA_ODYSSEY",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "odyssey-twn",
+   "platform": "HONDA_ODYSSEY_TWN",
+   "modules": [
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "odyssey-5g-mmr",
+   "platform": "HONDA_ODYSSEY_5G_MMR",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:2B",
+     "reqHeader": "18DA2BF1",
+     "rxHeader": "18DAF12B",
+     "label": "servofreno eléctrico",
+     "ecu": "electricBrakeBooster",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "pilot",
+   "platform": "HONDA_PILOT",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "rdx",
+   "platform": "ACURA_RDX",
+   "modules": [
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "rdx-3g",
+   "platform": "ACURA_RDX_3G",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:2B",
+     "reqHeader": "18DA2BF1",
+     "rxHeader": "18DAF12B",
+     "label": "servofreno eléctrico",
+     "ecu": "electricBrakeBooster",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "rdx-3g-mmr",
+   "platform": "ACURA_RDX_3G_MMR",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "ridgeline",
+   "platform": "HONDA_RIDGELINE",
+   "modules": [
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "insight",
+   "platform": "HONDA_INSIGHT",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "hrv",
+   "platform": "HONDA_HRV",
+   "modules": [
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "hrv-3g",
+   "platform": "HONDA_HRV_3G",
+   "modules": [
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:2B",
+     "reqHeader": "18DA2BF1",
+     "rxHeader": "18DAF12B",
+     "label": "servofreno eléctrico",
+     "ecu": "electricBrakeBooster",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "ilx",
+   "platform": "ACURA_ILX",
+   "modules": [
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "e",
+   "platform": "HONDA_E",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "e-advance",
+   "platform": "HONDA_E_ADVANCE",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "civic-2022",
+   "platform": "HONDA_CIVIC_2022",
+   "modules": [
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "pilot-4g",
+   "platform": "HONDA_PILOT_4G",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "pilot-4g-mmr",
+   "platform": "HONDA_PILOT_4G_MMR",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "accord-11g",
+   "platform": "HONDA_ACCORD_11G",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "crv-6g",
+   "platform": "HONDA_CRV_6G",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "city-7g",
+   "platform": "HONDA_CITY_7G",
+   "modules": [
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "passport-4g",
+   "platform": "HONDA_PASSPORT_4G",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "honda",
+   "model": "prelude-6g",
+   "platform": "HONDA_PRELUDE_6G",
+   "modules": [
+    {
+     "id": "29:0B",
+     "reqHeader": "18DA0BF1",
+     "rxHeader": "18DAF10B",
+     "label": "selector de cambios",
+     "ecu": "shiftByWire",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "tlx-2g",
+   "platform": "ACURA_TLX_2G",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "tlx-2g-mmr",
+   "platform": "ACURA_TLX_2G_MMR",
+   "modules": [
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B5",
+     "reqHeader": "18DAB5F1",
+     "rxHeader": "18DAF1B5",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "acura",
+   "model": "adx",
+   "platform": "ACURA_ADX",
+   "modules": [
+    {
+     "id": "29:1E",
+     "reqHeader": "18DA1EF1",
+     "rxHeader": "18DAF11E",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:28",
+     "reqHeader": "18DA28F1",
+     "rxHeader": "18DAF128",
+     "label": "VSA (estabilidad)",
+     "ecu": "vsa",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:2B",
+     "reqHeader": "18DA2BF1",
+     "rxHeader": "18DAF12B",
+     "label": "servofreno eléctrico",
+     "ecu": "electricBrakeBooster",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:30",
+     "reqHeader": "18DA30F1",
+     "rxHeader": "18DAF130",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:53",
+     "reqHeader": "18DA53F1",
+     "rxHeader": "18DAF153",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:B0",
+     "reqHeader": "18DAB0F1",
+     "rxHeader": "18DAF1B0",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:EF",
+     "reqHeader": "18DAEFF1",
+     "rxHeader": "18DAF1EF",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "azera-6th-gen",
+   "platform": "HYUNDAI_AZERA_6TH_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "azera-hev-6th-gen",
+   "platform": "HYUNDAI_AZERA_HEV_6TH_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "genesis",
+   "platform": "HYUNDAI_GENESIS",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "ioniq",
+   "platform": "HYUNDAI_IONIQ",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "ioniq-phev-2019",
+   "platform": "HYUNDAI_IONIQ_PHEV_2019",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "ioniq-phev",
+   "platform": "HYUNDAI_IONIQ_PHEV",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "ioniq-ev-2020",
+   "platform": "HYUNDAI_IONIQ_EV_2020",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "ioniq-ev-ltd",
+   "platform": "HYUNDAI_IONIQ_EV_LTD",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "ioniq-hev-2022",
+   "platform": "HYUNDAI_IONIQ_HEV_2022",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "sonata",
+   "platform": "HYUNDAI_SONATA",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "sonata-lf",
+   "platform": "HYUNDAI_SONATA_LF",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "tucson",
+   "platform": "HYUNDAI_TUCSON",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "santa-fe",
+   "platform": "HYUNDAI_SANTA_FE",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "santa-fe-2022",
+   "platform": "HYUNDAI_SANTA_FE_2022",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "santa-fe-hev-2022",
+   "platform": "HYUNDAI_SANTA_FE_HEV_2022",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "santa-fe-phev-2022",
+   "platform": "HYUNDAI_SANTA_FE_PHEV_2022",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "custin-1st-gen",
+   "platform": "HYUNDAI_CUSTIN_1ST_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "stinger",
+   "platform": "KIA_STINGER",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "stinger-2022",
+   "platform": "KIA_STINGER_2022",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "palisade",
+   "platform": "HYUNDAI_PALISADE",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "veloster",
+   "platform": "HYUNDAI_VELOSTER",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "g70",
+   "platform": "GENESIS_G70",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "g70-2020",
+   "platform": "GENESIS_G70_2020",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "g80",
+   "platform": "GENESIS_G80",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "g80-2nd-gen-fl",
+   "platform": "GENESIS_G80_2ND_GEN_FL",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "g90",
+   "platform": "GENESIS_G90",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "kona",
+   "platform": "HYUNDAI_KONA",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "ceed",
+   "platform": "KIA_CEED",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "ceed-phev",
+   "platform": "KIA_CEED_PHEV",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "forte",
+   "platform": "KIA_FORTE",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "k5-2021",
+   "platform": "KIA_K5_2021",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "k5-hev-2020",
+   "platform": "KIA_K5_HEV_2020",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "kona-ev",
+   "platform": "HYUNDAI_KONA_EV",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "kona-ev-2022",
+   "platform": "HYUNDAI_KONA_EV_2022",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "kona-ev-2nd-gen",
+   "platform": "HYUNDAI_KONA_EV_2ND_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "niro-ev",
+   "platform": "KIA_NIRO_EV",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "niro-ev-2nd-gen",
+   "platform": "KIA_NIRO_EV_2ND_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "niro-phev",
+   "platform": "KIA_NIRO_PHEV",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "niro-phev-2022",
+   "platform": "KIA_NIRO_PHEV_2022",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "niro-hev-2021",
+   "platform": "KIA_NIRO_HEV_2021",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "seltos",
+   "platform": "KIA_SELTOS",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "optima-g4",
+   "platform": "KIA_OPTIMA_G4",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "optima-g4-fl",
+   "platform": "KIA_OPTIMA_G4_FL",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "optima-h",
+   "platform": "KIA_OPTIMA_H",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "optima-h-g4-fl",
+   "platform": "KIA_OPTIMA_H_G4_FL",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "elantra",
+   "platform": "HYUNDAI_ELANTRA",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "elantra-gt-i30",
+   "platform": "HYUNDAI_ELANTRA_GT_I30",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "elantra-2021",
+   "platform": "HYUNDAI_ELANTRA_2021",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "elantra-hev-2021",
+   "platform": "HYUNDAI_ELANTRA_HEV_2021",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "kona-hev",
+   "platform": "HYUNDAI_KONA_HEV",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "sonata-hybrid",
+   "platform": "HYUNDAI_SONATA_HYBRID",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "sorento",
+   "platform": "KIA_SORENTO",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "ev6",
+   "platform": "KIA_EV6",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "ioniq-5",
+   "platform": "HYUNDAI_IONIQ_5",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "ioniq-6",
+   "platform": "HYUNDAI_IONIQ_6",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "tucson-4th-gen",
+   "platform": "HYUNDAI_TUCSON_4TH_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "santa-cruz-1st-gen",
+   "platform": "HYUNDAI_SANTA_CRUZ_1ST_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "sportage-5th-gen",
+   "platform": "KIA_SPORTAGE_5TH_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "gv70-1st-gen",
+   "platform": "GENESIS_GV70_1ST_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "gv70-electrified-1st-gen",
+   "platform": "GENESIS_GV70_ELECTRIFIED_1ST_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "gv60-ev-1st-gen",
+   "platform": "GENESIS_GV60_EV_1ST_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "sorento-4th-gen",
+   "platform": "KIA_SORENTO_4TH_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "sorento-hev-4th-gen",
+   "platform": "KIA_SORENTO_HEV_4TH_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "niro-hev-2nd-gen",
+   "platform": "KIA_NIRO_HEV_2ND_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "genesis",
+   "model": "gv80",
+   "platform": "GENESIS_GV80",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "carnival-4th-gen",
+   "platform": "KIA_CARNIVAL_4TH_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "k7-2017",
+   "platform": "KIA_K7_2017",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "kia",
+   "model": "k8-hev-1st-gen",
+   "platform": "KIA_K8_HEV_1ST_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "staria-4th-gen",
+   "platform": "HYUNDAI_STARIA_4TH_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "nexo-1st-gen",
+   "platform": "HYUNDAI_NEXO_1ST_GEN",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "hyundai",
+   "model": "kona-2022",
+   "platform": "HYUNDAI_KONA_2022",
+   "modules": [
+    {
+     "id": "11:7C4",
+     "reqHeader": "7C4",
+     "rxHeader": "7CC",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D0",
+     "reqHeader": "7D0",
+     "rxHeader": "7D8",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D4",
+     "reqHeader": "7D4",
+     "rxHeader": "7DC",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "mazda",
+   "model": "cx5-2022",
+   "platform": "MAZDA_CX5_2022",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "mazda",
+   "model": "cx5",
+   "platform": "MAZDA_CX5",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "mazda",
+   "model": "cx9",
+   "platform": "MAZDA_CX9",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "mazda",
+   "model": "3",
+   "platform": "MAZDA_3",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "mazda",
+   "model": "6",
+   "platform": "MAZDA_6",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "mazda",
+   "model": "cx9-2021",
+   "platform": "MAZDA_CX9_2021",
+   "modules": [
+    {
+     "id": "11:706",
+     "reqHeader": "706",
+     "rxHeader": "70E",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:760",
+     "reqHeader": "760",
+     "rxHeader": "768",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:764",
+     "reqHeader": "764",
+     "rxHeader": "76C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "mg",
+   "model": "5-ev",
+   "platform": "MG_5_EV",
+   "modules": [
+    {
+     "id": "11:721",
+     "reqHeader": "721",
+     "rxHeader": "729",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:733",
+     "reqHeader": "733",
+     "rxHeader": "73B",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:734",
+     "reqHeader": "734",
+     "rxHeader": "73C",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "nissan",
+   "model": "altima",
+   "platform": "NISSAN_ALTIMA",
+   "modules": [
+    {
+     "id": "11:707",
+     "reqHeader": "707",
+     "rxHeader": "70F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "rxAlt": "727"
+    },
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "74A",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc",
+     "rxAlt": "762"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:D0",
+     "reqHeader": "18DAD0F1",
+     "rxHeader": "18DAF1D0",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "nissan",
+   "model": "leaf",
+   "platform": "NISSAN_LEAF",
+   "modules": [
+    {
+     "id": "11:707",
+     "reqHeader": "707",
+     "rxHeader": "70F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "rxAlt": "727"
+    },
+    {
+     "id": "11:740",
+     "reqHeader": "740",
+     "rxHeader": "748",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "760"
+    },
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "74A",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc",
+     "rxAlt": "762"
+    },
+    {
+     "id": "29:D0",
+     "reqHeader": "18DAD0F1",
+     "rxHeader": "18DAF1D0",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "nissan",
+   "model": "leaf-ic",
+   "platform": "NISSAN_LEAF_IC",
+   "modules": [
+    {
+     "id": "11:707",
+     "reqHeader": "707",
+     "rxHeader": "70F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "rxAlt": "727"
+    },
+    {
+     "id": "11:740",
+     "reqHeader": "740",
+     "rxHeader": "748",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "760"
+    },
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "74A",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc",
+     "rxAlt": "762"
+    },
+    {
+     "id": "29:D0",
+     "reqHeader": "18DAD0F1",
+     "rxHeader": "18DAF1D0",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "nissan",
+   "model": "xtrail",
+   "platform": "NISSAN_XTRAIL",
+   "modules": [
+    {
+     "id": "11:707",
+     "reqHeader": "707",
+     "rxHeader": "70F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "rxAlt": "727"
+    },
+    {
+     "id": "11:740",
+     "reqHeader": "740",
+     "rxHeader": "748",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc",
+     "rxAlt": "760"
+    },
+    {
+     "id": "11:742",
+     "reqHeader": "742",
+     "rxHeader": "74A",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc",
+     "rxAlt": "762"
+    },
+    {
+     "id": "11:743",
+     "reqHeader": "743",
+     "rxHeader": "74B",
+     "label": "tablero (IPC)",
+     "ecu": "combinationMeter",
+     "src": "opendbc",
+     "rxAlt": "763"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "29:D0",
+     "reqHeader": "18DAD0F1",
+     "rxHeader": "18DAF1D0",
+     "label": "gateway",
+     "ecu": "gateway",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "peugeot",
+   "model": "208",
+   "platform": "PSA_PEUGEOT_208",
+   "modules": [
+    {
+     "id": "11:6B6",
+     "reqHeader": "6B6",
+     "rxHeader": "6BE",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "rivian",
+   "model": "r1",
+   "platform": "RIVIAN_R1",
+   "modules": [
+    {
+     "id": "11:733",
+     "reqHeader": "733",
+     "rxHeader": "773",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "ascent",
+   "platform": "SUBARU_ASCENT",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "ascent-2023",
+   "platform": "SUBARU_ASCENT_2023",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A2",
+     "reqHeader": "7A2",
+     "rxHeader": "7AA",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A3",
+     "reqHeader": "7A3",
+     "rxHeader": "7AB",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "legacy",
+   "platform": "SUBARU_LEGACY",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "impreza",
+   "platform": "SUBARU_IMPREZA",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "impreza-2020",
+   "platform": "SUBARU_IMPREZA_2020",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "crosstrek-hybrid",
+   "platform": "SUBARU_CROSSTREK_HYBRID",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "forester",
+   "platform": "SUBARU_FORESTER",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "forester-hybrid",
+   "platform": "SUBARU_FORESTER_HYBRID",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "forester-preglobal",
+   "platform": "SUBARU_FORESTER_PREGLOBAL",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "legacy-preglobal",
+   "platform": "SUBARU_LEGACY_PREGLOBAL",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "outback-preglobal",
+   "platform": "SUBARU_OUTBACK_PREGLOBAL",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "outback-preglobal-2018",
+   "platform": "SUBARU_OUTBACK_PREGLOBAL_2018",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "outback",
+   "platform": "SUBARU_OUTBACK",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "forester-2022",
+   "platform": "SUBARU_FORESTER_2022",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "subaru",
+   "model": "outback-2023",
+   "platform": "SUBARU_OUTBACK_2023",
+   "modules": [
+    {
+     "id": "11:746",
+     "reqHeader": "746",
+     "rxHeader": "74E",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:787",
+     "reqHeader": "787",
+     "rxHeader": "78F",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A2",
+     "reqHeader": "7A2",
+     "rxHeader": "7AA",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A3",
+     "reqHeader": "7A3",
+     "rxHeader": "7AB",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "tesla",
+   "model": "model-3",
+   "platform": "TESLA_MODEL_3",
+   "modules": [
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "tesla",
+   "model": "model-y",
+   "platform": "TESLA_MODEL_Y",
+   "modules": [
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "tesla",
+   "model": "model-x",
+   "platform": "TESLA_MODEL_X",
+   "modules": [
+    {
+     "id": "11:730",
+     "reqHeader": "730",
+     "rxHeader": "738",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "avalon",
+   "platform": "TOYOTA_AVALON",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "avalon-2019",
+   "platform": "TOYOTA_AVALON_2019",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "avalon-tss2",
+   "platform": "TOYOTA_AVALON_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "camry",
+   "platform": "TOYOTA_CAMRY",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "camry-tss2",
+   "platform": "TOYOTA_CAMRY_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "chr",
+   "platform": "TOYOTA_CHR",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "chr-tss2",
+   "platform": "TOYOTA_CHR_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "corolla",
+   "platform": "TOYOTA_COROLLA",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "corolla-tss2",
+   "platform": "TOYOTA_COROLLA_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "highlander",
+   "platform": "TOYOTA_HIGHLANDER",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "highlander-tss2",
+   "platform": "TOYOTA_HIGHLANDER_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "is",
+   "platform": "LEXUS_IS",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "is-tss2",
+   "platform": "LEXUS_IS_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "prius",
+   "platform": "TOYOTA_PRIUS",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "prius-v",
+   "platform": "TOYOTA_PRIUS_V",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "rav4",
+   "platform": "TOYOTA_RAV4",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "rav4h",
+   "platform": "TOYOTA_RAV4H",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "rav4-prime",
+   "platform": "TOYOTA_RAV4_PRIME",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "rav4-tss2",
+   "platform": "TOYOTA_RAV4_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "rav4-tss2-2022",
+   "platform": "TOYOTA_RAV4_TSS2_2022",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "rav4-tss2-2023",
+   "platform": "TOYOTA_RAV4_TSS2_2023",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "sienna",
+   "platform": "TOYOTA_SIENNA",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "sienna-4th-gen",
+   "platform": "TOYOTA_SIENNA_4TH_GEN",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "cth",
+   "platform": "LEXUS_CTH",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "es-tss2",
+   "platform": "LEXUS_ES_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "es",
+   "platform": "LEXUS_ES",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "gs-f",
+   "platform": "LEXUS_GS_F",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "nx",
+   "platform": "LEXUS_NX",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "nx-tss2",
+   "platform": "LEXUS_NX_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "lc-tss2",
+   "platform": "LEXUS_LC_TSS2",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "rc",
+   "platform": "LEXUS_RC",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "rc-tss2",
+   "platform": "LEXUS_RC_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "rx",
+   "platform": "LEXUS_RX",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "rx-tss2",
+   "platform": "LEXUS_RX_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "prius-tss2",
+   "platform": "TOYOTA_PRIUS_TSS2",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "mirai",
+   "platform": "TOYOTA_MIRAI",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7D1",
+     "reqHeader": "7D1",
+     "rxHeader": "7D9",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "alphard-tss2",
+   "platform": "TOYOTA_ALPHARD_TSS2",
+   "modules": [
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "toyota",
+   "model": "yaris",
+   "platform": "TOYOTA_YARIS",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "lexus",
+   "model": "ls",
+   "platform": "LEXUS_LS",
+   "modules": [
+    {
+     "id": "11:700",
+     "reqHeader": "700",
+     "rxHeader": "708",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:750.0F",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc",
+     "sub": "0F"
+    },
+    {
+     "id": "11:750.6D",
+     "reqHeader": "750",
+     "rxHeader": "758",
+     "label": "cámara frontal",
+     "ecu": "fwdCamera",
+     "src": "opendbc",
+     "sub": "6D"
+    },
+    {
+     "id": "11:791",
+     "reqHeader": "791",
+     "rxHeader": "799",
+     "label": "DSU",
+     "ecu": "dsu",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7A1",
+     "reqHeader": "7A1",
+     "rxHeader": "7A9",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7B0",
+     "reqHeader": "7B0",
+     "rxHeader": "7B8",
+     "label": "ABS",
+     "ecu": "abs",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "arteon-mk1",
+   "platform": "VOLKSWAGEN_ARTEON_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "atlas-mk1",
+   "platform": "VOLKSWAGEN_ATLAS_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "caddy-mk3",
+   "platform": "VOLKSWAGEN_CADDY_MK3",
+   "modules": [
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "crafter-mk2",
+   "platform": "VOLKSWAGEN_CRAFTER_MK2",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "golf-mk7",
+   "platform": "VOLKSWAGEN_GOLF_MK7",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "id4-mk1",
+   "platform": "VOLKSWAGEN_ID4_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "id4-mk2",
+   "platform": "VOLKSWAGEN_ID4_MK2",
+   "modules": [
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "jetta-mk6",
+   "platform": "VOLKSWAGEN_JETTA_MK6",
+   "modules": [
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "jetta-mk7",
+   "platform": "VOLKSWAGEN_JETTA_MK7",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "passat-mk8",
+   "platform": "VOLKSWAGEN_PASSAT_MK8",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "passat-nms",
+   "platform": "VOLKSWAGEN_PASSAT_NMS",
+   "modules": [
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "polo-mk6",
+   "platform": "VOLKSWAGEN_POLO_MK6",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "sharan-mk2",
+   "platform": "VOLKSWAGEN_SHARAN_MK2",
+   "modules": [
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "taos-mk1",
+   "platform": "VOLKSWAGEN_TAOS_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "tcross-mk1",
+   "platform": "VOLKSWAGEN_TCROSS_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "tiguan-mk2",
+   "platform": "VOLKSWAGEN_TIGUAN_MK2",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "touran-mk2",
+   "platform": "VOLKSWAGEN_TOURAN_MK2",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "transporter-t61",
+   "platform": "VOLKSWAGEN_TRANSPORTER_T61",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "volkswagen",
+   "model": "troc-mk1",
+   "platform": "VOLKSWAGEN_TROC_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "audi",
+   "model": "a3-mk3",
+   "platform": "AUDI_A3_MK3",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "audi",
+   "model": "q2-mk1",
+   "platform": "AUDI_Q2_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "audi",
+   "model": "q3-mk2",
+   "platform": "AUDI_Q3_MK2",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "audi",
+   "model": "q5-mk1",
+   "platform": "AUDI_Q5_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "porsche",
+   "model": "macan-mk1",
+   "platform": "PORSCHE_MACAN_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "seat",
+   "model": "ateca-mk1",
+   "platform": "SEAT_ATECA_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "cupra",
+   "model": "born-mk1",
+   "platform": "CUPRA_BORN_MK1",
+   "modules": [
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "skoda",
+   "model": "fabia-mk4",
+   "platform": "SKODA_FABIA_MK4",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "skoda",
+   "model": "kamiq-mk1",
+   "platform": "SKODA_KAMIQ_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "skoda",
+   "model": "karoq-mk1",
+   "platform": "SKODA_KAROQ_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "skoda",
+   "model": "kodiaq-mk1",
+   "platform": "SKODA_KODIAQ_MK1",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "skoda",
+   "model": "octavia-mk3",
+   "platform": "SKODA_OCTAVIA_MK3",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  },
+  {
+   "make": "skoda",
+   "model": "superb-mk3",
+   "platform": "SKODA_SUPERB_MK3",
+   "modules": [
+    {
+     "id": "11:712",
+     "reqHeader": "712",
+     "rxHeader": "77C",
+     "label": "dirección (EPS)",
+     "ecu": "eps",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:715",
+     "reqHeader": "715",
+     "rxHeader": "77F",
+     "label": "airbag (SRS)",
+     "ecu": "srs",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:757",
+     "reqHeader": "757",
+     "rxHeader": "7C1",
+     "label": "radar frontal",
+     "ecu": "fwdRadar",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E0",
+     "reqHeader": "7E0",
+     "rxHeader": "7E8",
+     "label": "PCM (motor)",
+     "ecu": "engine",
+     "src": "opendbc"
+    },
+    {
+     "id": "11:7E1",
+     "reqHeader": "7E1",
+     "rxHeader": "7E9",
+     "label": "TCM (caja)",
+     "ecu": "transmission",
+     "src": "opendbc"
+    }
+   ]
+  }
+ ]
+}

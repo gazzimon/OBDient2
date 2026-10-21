@@ -206,6 +206,22 @@ test('knowledge: report merges, lookup returns facts for the vehicle and the mak
   const r = k.lookup({ make: 'Ford', model: 'Focus', year: 2015 });
   assert.equal(r.exact.modules.length, 2);
   assert.equal(r.sameMake.length, 1);
-  assert.equal(r.sameMake[0].key, 'ford/ranger/2020');
+  assert.deepEqual(r.sameMake[0], { id: '29:10', reqHeader: '18DA10F1', rxHeader: '18DAF110', label: 'PCM', seenIn: 1 });
   assert.equal(k.lookup({ make: 'Ford', vin: '9BFZ' }).byVin.key, 'ford/focus/2015');
+});
+
+test('knowledge: platform names match by prefix; the rest of the make is condensed', async () => {
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { knowledgeStore } = await import('../src/knowledge.mjs');
+  const k = knowledgeStore(join(mkdtempSync(join(tmpdir(), 'kb-')), 'knowledge.json'));
+  const abs = { id: '11:760', reqHeader: '760', rxHeader: '768', label: 'ABS' };
+  k.report({ make: 'ford', model: 'escape-mk4', modules: [abs] });
+  k.report({ make: 'ford', model: 'focus-mk4', modules: [abs] });
+  k.report({ make: 'ford', model: 'ranger-mk2', modules: [abs, { id: '11:730', reqHeader: '730', rxHeader: '738', label: 'EPS' }] });
+  const r = k.lookup({ make: 'Ford', model: 'Escape', year: 2021 });
+  assert.equal(r.exact, null);
+  assert.deepEqual(r.close.map((c) => c.key), ['ford/escape-mk4']);
+  assert.deepEqual(r.sameMake.map((m) => [m.id, m.seenIn]), [['11:760', 2], ['11:730', 1]]);
 });

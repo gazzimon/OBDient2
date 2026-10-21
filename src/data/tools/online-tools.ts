@@ -29,9 +29,9 @@ export class OnlineTools {
       }
       case 'knowledge_lookup': {
         const body = { action: 'lookup', ...(call.make ? { make: call.make } : {}), ...(call.model ? { model: call.model } : {}), ...(call.year ? { year: call.year } : {}) };
-        const r = await this.client.post<{ exact: unknown; byVin: unknown; sameMake: unknown[] }>('knowledge', body, signal, 'La base del laboratorio');
+        const r = await this.client.post<{ exact: unknown; close?: unknown[]; byVin: unknown; sameMake: unknown[] }>('knowledge', body, signal, 'La base del laboratorio');
         if (!r.ok) return r;
-        const known = r.data.exact != null || (r.data.sameMake?.length ?? 0) > 0;
+        const known = r.data.exact != null || (r.data.close?.length ?? 0) > 0 || (r.data.sameMake?.length ?? 0) > 0;
         return { ok: true, data: r.data, summary: known ? 'Datos del laboratorio sobre este auto' : 'El laboratorio no tiene datos de este auto todavía' };
       }
       case 'web_search': {
