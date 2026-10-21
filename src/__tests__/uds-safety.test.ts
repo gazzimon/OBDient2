@@ -71,3 +71,33 @@ describe('new tool parsing', () => {
     expect(parseToolCall('knowledge_lookup', '{"make":"Ford","model":"Focus","year":2015}', [])).toMatchObject({ ok: true, call: { make: 'Ford', year: 2015 } });
   });
 });
+
+import { BUS_PRESET, protocolToPreset, respondersFrom } from '@/domain/obd/module-scan';
+
+describe('multi-bus scan', () => {
+  it('restores the car protocol with the right STN preset', () => {
+    expect(protocolToPreset('ISO_15765_4_CAN_11BIT_500K')).toBe(33);
+    expect(protocolToPreset('ISO_15765_4_CAN_29BIT_500K')).toBe(34);
+    expect(protocolToPreset('ISO_15765_4_CAN_11BIT_250K')).toBe(35);
+    expect(BUS_PRESET.MS.bit11).toBe(53);
+    expect(BUS_PRESET.SW.bit29).toBe(64);
+  });
+
+  it('reads 11-bit responders from a functional broadcast', () => {
+    const raw = '7E8 02 7E 00\n7E9 02 7E 00\n7EA 02 7E 00';
+    const r = respondersFrom(raw, false);
+    expect(r.map((x) => x.id)).toEqual(['11:7E0', '11:7E1', '11:7E2']);
+    expect(r[0]!.rxHeader).toBe('7E8');
+  });
+
+  it('reads 29-bit responders (module = tt in 18DAF1tt)', () => {
+    const raw = '18 DA F1 10 02 7E 00\n18DAF128 02 7E 00';
+    const r = respondersFrom(raw, true);
+    expect(r.map((x) => x.id)).toEqual(['29:10', '29:28']);
+    expect(r[1]!.reqHeader).toBe('18DA28F1');
+  });
+
+  it('ignores noise lines', () => {
+    expect(respondersFrom('NO DATA\nSEARCHING...\n>', false)).toEqual([]);
+  });
+});

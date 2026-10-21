@@ -68,3 +68,56 @@ export function moduleAnswered(raw: string): boolean {
   if (/NO DATA|CAN ERROR|BUFFER|UNABLE|ERROR|TIMEOUT|^\?/.test(c)) return false;
   return /[0-9A-F]{2}/.test(c.replace(/\s/g, ''));
 }
+
+// ── Functional broadcast + multi-bus (M9, 2026-10-20) ────────────────────────
+// One request to the functional address and every module on the bus answers at
+// once — finds modules no list has, on any make (ISO 15765-4).
+
+export const FUNCTIONAL_11 = '7DF';
+export const FUNCTIONAL_29 = '18DB33F1';
+
+export type Bus = 'HS' | 'MS' | 'SW';
+
+// STN protocol presets (FRPM): ISO 15765, DLC=8. Only one CAN channel is
+// active at a time, so we switch, scan, and restore HS.
+export const BUS_PRESET: Record<Bus, { bit11: number; bit29: number; label: string }> = {
+  HS: { bit11: 33, bit29: 34, label: 'HS-CAN (500 kbps)' },
+  MS: { bit11: 53, bit29: 54, label: 'MS-CAN (125 kbps)' },
+  SW: { bit11: 63, bit29: 64, label: 'SW-CAN (33,3 kbps)' },
+};
+
+// The car's current protocol string → the STN preset to restore it with.
+export function protocolToPreset(protocol: string): number {
+  const bit29 = /29BIT|29-?BIT/.test(protocol);
+  const slow = /250K/.test(protocol);
+  if (slow) return bit29 ? 36 : 35;
+  return bit29 ? 34 : 33;
+}
+
+const FUNCTIONAL_RESPONSE = '7E'; // positive response to TesterPresent (3E + 40)
+
+// The modules that answered a functional 3E 00, from header-prefixed lines.
+// 11-bit: a line starts with 7E8–7EF (module = header − 8).
+// 29-bit: a line starts with 18DAF1{tt} (module = tt).
+export function respondersFrom(raw: string, bit29: boolean): ScanTarget[] {
+  const out = new Map<string, ScanTarget>();
+  for (const line of raw.split(/[\r\n]+/)) {
+    const c = line.replace(/\s+/g, '').toUpperCase();
+    if (!/^[0-9A-F]+$/.test(c)) continue;
+    if (bit29) {
+      if (!c.startsWith('18DAF1') || c.length < 8) continue;
+      const tt = c.slice(6, 8);
+      out.set(`29:${tt}`, { id: `29:${tt}`, reqHeader: `18DA${tt}F1`, rxHeader: `18DAF1${tt}`, label: 'módulo' });
+    } else {
+      const header = c.slice(0, 3);
+      const n = parseInt(header, 16);
+      if (!(n >= 0x7e8 && n <= 0x7ef)) continue;
+      const req = (n - 8).toString(16).toUpperCase();
+      out.set(`11:${req}`, { id: `11:${req}`, reqHeader: req, rxHeader: header, label: HINTS_11[n - 0x7e8] ?? 'módulo' });
+    }
+  }
+  return [...out.values()];
+}
+
+export const FUNCTIONAL_PROBE = '3E00';
+export { FUNCTIONAL_RESPONSE };

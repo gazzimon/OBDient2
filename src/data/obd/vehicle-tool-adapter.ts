@@ -37,7 +37,7 @@ import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
-import { moduleAnswered, scanTargets, SCAN_IDENTIFY, SCAN_PROBE } from '@/domain/obd/module-scan';
+import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, moduleAnswered, protocolToPreset, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, type Bus, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -347,33 +347,87 @@ export class VehicleToolAdapter implements VehicleToolsPort {
 
   // Runs `work` with headers when parked (exclusive, ATH1 then back to ATH0),
   // or on the shared link without headers when moving.
-  // Lab: which modules answer. For each candidate address, set the header, ask
-  // TesterPresent (3E 00) and, if it answers, the part number (22 F190). The
-  // responders are a real fact about this car, reported to the lab knowledge.
+  // Lab (M9): the module tree. On each reachable bus (HS always; MS and SW too
+  // when the adapter is an STN that supports them), a functional broadcast
+  // (3E 00 to 7DF / 18DB33F1) makes every module answer at once, then the
+  // seeded address list fills any that did not, and each one is identified with
+  // 22 F190. Only one CAN channel is active at a time, so the bus is switched
+  // with STP/STPO and HS is restored at the end. Every module found is a real
+  // fact about this car — bus and address — saved to the lab knowledge.
   private async scanModules(s: ObdSession): Promise<ToolOutcome> {
     const info = s.sessionInfo!;
     const bit29 = /29BIT/.test(info.protocol);
+    const isStn = info.identity.stn != null;
     const vin = await this.ensureVin();
+    const buses: Bus[] = isStn ? ['HS', 'MS', 'SW'] : ['HS'];
+
+    type Found = ScanTarget & { bus: Bus; identify: string | null };
     const found = await s.exclusive(async (port) => {
       await quiet(port, 'ATH1');
-      const out: { id: string; reqHeader: string; rxHeader: string; label: string; identify: string | null }[] = [];
-      for (const t of scanTargets(bit29)) {
+      const out: Found[] = [];
+      const seen = new Set<string>();
+      const identify = async (t: ScanTarget) => {
         await quiet(port, `ATSH ${t.reqHeader}`);
-        if (bit29) await quiet(port, `ATCRA ${t.rxHeader}`);
-        const probe = await quiet(port, SCAN_PROBE, 1500);
-        if (!probe || !moduleAnswered(probe)) continue;
+        if (/^18/.test(t.reqHeader)) await quiet(port, `ATCRA ${t.rxHeader}`);
         const id = await quiet(port, SCAN_IDENTIFY, 1500);
-        out.push({ id: t.id, reqHeader: t.reqHeader, rxHeader: t.rxHeader, label: t.label, identify: id && moduleAnswered(id) ? id.replace(/\s+/g, ' ').trim() : null });
+        return id && moduleAnswered(id) ? id.replace(/\s+/g, ' ').trim() : null;
+      };
+      try {
+        for (const bus of buses) {
+          // Switch bus (HS is the current protocol; MS/SW need STP+STPO).
+          if (bus !== 'HS') {
+            const ok = await quiet(port, `STP ${bit29 ? BUS_PRESET[bus].bit29 : BUS_PRESET[bus].bit11}`);
+            if (ok == null) continue;
+            await quiet(port, 'STPO');
+            await quiet(port, 'ATH1');
+          }
+          // 1) Functional broadcast: everyone answers at once.
+          await quiet(port, `ATSH ${bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11}`);
+          await quiet(port, 'ATCRA').catch(() => undefined);
+          const broadcast = await quiet(port, FUNCTIONAL_PROBE, 2500);
+          const candidates = broadcast ? respondersFrom(broadcast, bit29) : [];
+          // 2) Fill with the seeded list for ones that did not answer the broadcast.
+          for (const t of scanTargets(bit29)) if (!candidates.some((c) => c.id === t.id)) candidates.push(t);
+          for (const t of candidates) {
+            if (seen.has(`${bus}:${t.id}`)) continue;
+            await quiet(port, `ATSH ${t.reqHeader}`);
+            if (/^18/.test(t.reqHeader)) await quiet(port, `ATCRA ${t.rxHeader}`);
+            else await quiet(port, 'ATCRA').catch(() => undefined);
+            const probe = await quiet(port, SCAN_PROBE, 1200);
+            if (!probe || !moduleAnswered(probe)) continue;
+            seen.add(`${bus}:${t.id}`);
+            out.push({ ...t, bus, identify: await identify(t) });
+          }
+        }
+      } finally {
+        // Back to the car's own bus/protocol, whatever happened above.
+        if (buses.length > 1) {
+          await quiet(port, `STP ${protocolToPreset(info.protocol)}`).catch(() => undefined);
+          await quiet(port, 'STPO').catch(() => undefined);
+        }
+        await quiet(port, 'ATCRA').catch(() => undefined);
+        await quiet(port, 'ATH0').catch(() => undefined);
       }
-      await quiet(port, 'ATCRA').catch(() => undefined);
-      await quiet(port, 'ATH0').catch(() => undefined);
       return out;
     });
+
+    const byBus = (b: Bus) => found.filter((m) => m.bus === b).length;
     return {
       ok: true,
-      data: { protocol: info.protocol, vin, scanned: scanTargets(bit29).length, modules: found },
-      summary: found.length ? `${found.length} módulos responden` : 'Ningún módulo respondió al barrido',
-      knowledge: { vin, protocol: info.protocol, modules: found.map((m) => ({ id: m.id, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label, partNumber: m.identify })) },
+      data: {
+        protocol: info.protocol,
+        vin,
+        buses: buses.map((b) => ({ bus: b, label: BUS_PRESET[b].label, modules: byBus(b) })),
+        modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, label: m.label, partNumber: m.identify })),
+      },
+      summary: found.length
+        ? `${found.length} módulos: ${buses.filter((b) => byBus(b)).map((b) => `${byBus(b)} en ${b}`).join(', ')}`
+        : 'Ningún módulo respondió',
+      knowledge: {
+        vin,
+        protocol: info.protocol,
+        modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label, partNumber: m.identify })),
+      },
     };
   }
 
