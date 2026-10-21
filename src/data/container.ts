@@ -48,6 +48,8 @@ const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
     return p ? { value: p.value, at: p.timestamp.getTime() } : null;
   },
   moving: () => (useOBDStore.getState().parameters.SPEED?.value ?? 0) > MOVING_KMH,
+  // The make's addresses from the lab knowledge (onlineTools is set below).
+  knownTargets: (make, model, signal) => onlineTools.scanTargets(make, model, signal),
 });
 
 // Accounts (ADR-0008): email code login (Magic), model key from obdient-auth.

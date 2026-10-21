@@ -146,3 +146,40 @@ export function udsReply(raw: string, sentHex: string): string {
 export function urhCommand(reqHeader: string, rxHeader: string, data: string): string {
   return `AT URH ${reqHeader} ${rxHeader} ${data.replace(/\s+/g, '')}`;
 }
+
+// ── The make's own addresses (2026-10-21) ────────────────────────────────────
+// Outside OBD, the request→response pairing is the maker's (ISO 15765-2
+// §10.3.2 leaves it open): VW +0x6A, GM +0x400, PSA −0x100… Only 29-bit
+// "normal fixed" (18DAttF1 → 18DAF1tt) is defined. So each target carries its
+// response ID, and the adapter is told both.
+
+const MAX_MAKE_TARGETS = 32;
+
+// The make's targets added after the generic ones: same ID width as the live
+// protocol (the adapter sends with the protocol's width), no repeats, capped.
+export function mergeTargets(base: readonly ScanTarget[], make: readonly ScanTarget[], bit29: boolean): { targets: ScanTarget[]; skipped: number } {
+  const seen = new Set(base.map((t) => t.id));
+  const targets = [...base];
+  let skipped = 0;
+  let added = 0;
+  for (const t of make) {
+    if (seen.has(t.id)) continue;
+    if ((t.reqHeader.length === 8) !== bit29 || added >= MAX_MAKE_TARGETS) {
+      skipped += 1;
+      continue;
+    }
+    seen.add(t.id);
+    targets.push(t);
+    added += 1;
+  }
+  return { targets, skipped };
+}
+
+// Whether the adapter's default flow control misses this module: by default
+// it answers a FirstFrame on RxID − 8 (11-bit) or with the two last bytes
+// swapped (29-bit). A module elsewhere never gets the FlowControl and stops
+// after the first frame (N_Bs timeout): the part number arrives cut.
+export function needsFlowPair(t: ScanTarget): boolean {
+  if (t.reqHeader.length === 8) return t.rxHeader !== `${t.reqHeader.slice(0, 4)}${t.reqHeader.slice(6, 8)}${t.reqHeader.slice(4, 6)}`;
+  return parseInt(t.rxHeader, 16) - 8 !== parseInt(t.reqHeader, 16);
+}
