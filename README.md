@@ -1,84 +1,61 @@
 # OBDient2
 
-Navegación con realidad aumentada para el auto. Eliges un destino, montas el teléfono en el
-parabrisas y la ruta se dibuja **sobre la calle** en la imagen de la cámara, con instrucciones por
-voz. Un adaptador OBD-II (opcional) aporta la velocidad real del vehículo y estabiliza la AR al frenar
-y acelerar.
+A driving companion for Android: turn-by-turn navigation, a live OBD-II dashboard and a voice
+assistant that can read your car. Successor to OBDient.
 
-Sucesor de OBDient (repositorio hermano, app de diagnóstico): reutiliza su capa de adaptadores OBD (BLE, ELM327/STN), su sistema
-visual y sus convenciones, con un producto nuevo encima.
+**Status:** MVP, Android only. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-## Estado
+## Features
 
-MVP en construcción, **solo Android**. Ver [docs/ROADMAP.md](docs/ROADMAP.md).
+- **Drive mode**: 3D map navigation with voice guidance and rerouting.
+- **Dashboard**: RPM, speed, coolant and battery gauges, with an optional camera view.
+- **Assistant**: voice and text chat. It can search places, fuel prices and the web, and read
+  fault codes and vehicle data.
+- **Trips**: recorded automatically while the OBD adapter is connected. Includes a speed map, GPX
+  export and optional live tracking (Traccar).
+- **Diagnostics (lab)**: read-only module scan across HS/MS/SW-CAN. Writes, resets and flashing are
+  blocked.
 
-| Funciona (código + tests) | Pendiente de validar en dispositivo |
-|---|---|
-| Búsqueda de destino, cálculo de ruta, progreso, desvío y recálculo | Alineación AR real (calibración en auto) |
-| Proyección AR de la ruta (modelo pinhole + recorte) | Signos de sensores en el teléfono de pruebas |
-| Fusión GPS + IMU + OBD (posición, rumbo, cabeceo/alabeo) | Tasa real de velocidad con el Starcharm B33 |
-| Telemetría OBD con detección STN y lectura rápida en CAN | Compilación nativa (EAS) |
+Supported adapters are ELM327/STN over BLE or classic Bluetooth, including the Starcharm B14, B33-U
+and B35.
 
-## Cómo correrlo
+## Development
 
-Requiere un *development build*: la app usa módulos nativos (cámara, MapLibre, BLE) y no funciona en
-Expo Go.
+Requires a development build, because the app uses native modules and won't run in Expo Go.
 
 ```bash
 npm install
-npx eas init                                # una vez: vincula el proyecto a tu cuenta EAS
-npx eas build --profile development --platform android
-npm start                                   # con el dev build instalado en el teléfono
+npx eas build --profile development --platform android --local   # on a machine with enough RAM
+npm start
 ```
 
-Verificación local:
+Checks:
 
 ```bash
 npm run typecheck && npm test && npm run lint
 ```
 
-## Primer uso
-
-1. **Vehículo** → *Buscar adaptador* → elegir el B33. Se reconecta solo en los siguientes arranques.
-2. **Ajustes → Calibrar soporte**, con el teléfono ya montado y el auto detenido en una calle recta.
-   Alinear el horizonte y el carril dibujados con los reales.
-3. **Ruta** → buscar un destino (o mantener presionado el mapa) → *Iniciar AR*.
-
-## Registro de viaje y reproducción
-
-Con *Ajustes → Grabar registro técnico al navegar* (activado por defecto mientras se valida el MVP),
-cada navegación guarda un archivo JSONL en el teléfono. Contiene GPS, IMU a 50 Hz, velocidad OBD,
-estado fusionado, progreso de ruta y eventos. Unos 10 MB por hora, y nunca sale del teléfono por sí solo.
+Trip logs:
 
 ```bash
-npm run trips:pull                         # copia los viajes del teléfono a ./trips/ (USB, build de desarrollo)
-npm run replay -- trips/trip-XXXX.jsonl    # re-ejecuta la fusión y resume hallazgos
-npm run replay -- trips/trip-XXXX.jsonl --sign -1   # ¿se arregla invirtiendo el sensor?
+npm run trips:pull                        # copy recorded trips from the phone (USB, dev build)
+npm run replay -- trips/trip-XXXX.jsonl   # re-run sensor fusion offline
 ```
 
-El análisis detecta, entre otras cosas, un **acelerómetro con el signo invertido**. Para eso compara la
-aceleración medida a lo largo del eje de la cámara con la que se deriva de la velocidad: es la única
-forma de verlo, porque una pose en reposo no lo delata.
-
-## Estructura
+## Layout
 
 ```
 src/
-  domain/          lógica pura, sin React/Expo (testeada)
-    geo/           geodesia de área pequeña (ENU)
-    navigation/    ruta, progreso, guía por voz
-    ar/            modelo de cámara y escena AR
-    fusion/        estimadores de ego-estado, pose de cámara y signo del sensor
-    recording/     formato del registro de viaje y su reproducción
-    perception/    detección: seguimiento, distancia, TTC, escena y alertas (E4)
-  data/            adaptadores: OBD (BLE/ELM/STN), sensores, OSRM, Photon
-  presentation/    componentes, hooks, controlador de navegación
-  store/           estado (zustand + MMKV)
-  app/             pantallas (expo-router)
+  domain/        pure logic, no React (navigation, fusion, OBD, assistant, trips)
+  data/          adapters: OBD transport, sensors, routing, LLM, server tools
+  presentation/  components and hooks
+  app/           screens (expo-router)
+server/          optional self-hosted services (routing, search, STT, LLM gateway, Traccar)
+docs/ADR/        architecture decisions
 ```
 
-## Servicios y licencias
+## Maps and data
 
-Mapas: OpenFreeMap / OpenMapTiles, datos © colaboradores de OpenStreetMap. Rutas: OSRM. Búsqueda:
-Photon. Los servidores públicos por defecto **solo sirven para desarrollo**: para distribuir, ver
-[ADR-0003](docs/ADR/0003-mapas-rutas-y-licencias.md).
+Map tiles come from OpenFreeMap/OpenMapTiles (© OpenStreetMap contributors), routing from OSRM and
+geocoding from Photon. The default public servers are for development only. See
+[ADR-0003](docs/ADR/0003-mapas-rutas-y-licencias.md) before distributing.
