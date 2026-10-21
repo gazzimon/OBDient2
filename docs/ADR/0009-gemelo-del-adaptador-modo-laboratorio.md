@@ -143,3 +143,14 @@ ISO 11898-1/-2/-3 y SAE J2411 (HS/MS/SW-CAN), y la **STN FRPM** (comandos ST de 
 **leer a fondo** (números de pieza completos, datos del `22`), el camino es el **B33-U con `AT URH`**, que
 conviene implementar como ruta preferida cuando el adaptador es un B33-U (perfil `uds: 'at-ur'` ya
 existe), verificando el formato de respuesta real.
+
+## Base del laboratorio sembrada desde opendbc (2026-10-21)
+
+`server/tools/scripts/opendbc-extract.py` lee `FW_VERSIONS` y las consultas de cada marca de opendbc
+(análisis estático, sin ejecutar su código) y genera `data/opendbc-seed.json`: 232 plataformas, 1009
+módulos, 25 marcas (sin GM: opendbc no publica sus direcciones). La respuesta sigue la regla de opendbc
+(+8 en 11 bits, con los desvíos por marca: VW +0x6A, Chrysler −0x280, Nissan +0x20; 29 bits invierte
+los dos últimos bytes); las subdirecciones de Toyota quedan en `sub`. Corrigió la semilla Ford, que
+usaba 29 bits: Ford usa 11 bits (ABS 760, EPS 730). `knowledge_lookup` devuelve el modelo exacto,
+modelos parecidos por prefijo (`close`) y el resto de la marca resumido por dirección (`sameMake`, con
+`seenIn`). Son referencia: se confirman con `scan_modules`.
