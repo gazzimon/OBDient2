@@ -57,3 +57,6 @@ crash.txt
 # viajes grabados traídos del teléfono (datos de ubicación personales)
 /trips/
 __pycache__/
+
+# lab seeds from GPL/unlicensed sources (scripts/ext-extract.py), not redistributed
+server/tools/data/ext/
