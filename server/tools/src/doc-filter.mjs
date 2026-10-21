@@ -72,7 +72,8 @@ export function filterFragment(text) {
   if (LICENCE.test(text)) return { text: null, dropped: 'licencia', redactions: {} };
   const { text: covered, counts } = redact(text);
   if (isVolatile(covered)) return { text: null, dropped: 'precios', redactions: counts };
-  if (covered.replace(/\[[A-Z]+\]/g, '').trim().length < 20) return { text: null, dropped: 'vacío', redactions: counts };
+  // Nothing left but covered identifiers (or a stray character): not worth keeping.
+  if (covered.replace(/\[[A-Z]+\]/g, '').trim().length < 4) return { text: null, dropped: 'vacío', redactions: counts };
   return { text: covered, redactions: counts };
 }
 
