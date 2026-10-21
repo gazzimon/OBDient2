@@ -1,17 +1,9 @@
 {
-  "_note": "Semilla inicial de la base del laboratorio (M9, 2026-10-20). Direcciones estándar ISO 15765-4 y el set de 29 bits estilo Ford. Fuente para ampliar: commaai/opendbc (fw_versions, por auto y marca). Se reemplaza/confirma con los barridos reales (scan_modules).",
+  "_note": "Semilla de la base del laboratorio (M9). Direcciones estándar ISO 15765-4. Las de cada marca vienen de opendbc-seed.json (2026-10-21; reemplazó un set Ford de 29 bits que era incorrecto: Ford usa 11 bits, p. ej. ABS 760). Se confirman con los barridos reales (scan_modules).",
   "vehicles": [
     { "make": "generico", "model": "obd-11bit", "protocol": "ISO_15765_4_CAN_11BIT_500K", "modules": [
       { "id": "11:7E0", "bus": "HS", "reqHeader": "7E0", "rxHeader": "7E8", "label": "PCM (motor)" },
       { "id": "11:7E1", "bus": "HS", "reqHeader": "7E1", "rxHeader": "7E9", "label": "TCM (caja)" }
-    ] },
-    { "make": "ford", "model": "generico", "protocol": "ISO_15765_4_CAN_29BIT_500K", "modules": [
-      { "id": "29:10", "bus": "HS", "reqHeader": "18DA10F1", "rxHeader": "18DAF110", "label": "PCM (motor)" },
-      { "id": "29:28", "bus": "HS", "reqHeader": "18DA28F1", "rxHeader": "18DAF128", "label": "ABS" },
-      { "id": "29:58", "bus": "HS", "reqHeader": "18DA58F1", "rxHeader": "18DAF158", "label": "airbag (RCM)" },
-      { "id": "29:60", "bus": "MS", "reqHeader": "18DA60F1", "rxHeader": "18DAF160", "label": "carrocería (BCM)" },
-      { "id": "29:40", "bus": "MS", "reqHeader": "18DA40F1", "rxHeader": "18DAF140", "label": "tablero (IPC)" },
-      { "id": "29:7D", "bus": "HS", "reqHeader": "18DA7DF1", "rxHeader": "18DAF17D", "label": "dirección (PSCM)" }
     ] }
   ]
 }
