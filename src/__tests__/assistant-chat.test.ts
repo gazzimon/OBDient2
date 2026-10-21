@@ -162,6 +162,10 @@ describe('AssistantService', () => {
     expect(await failing(new LlmHttpError(403, '')).send(input())).toEqual({ ok: false, error: 'disabled' });
     expect(await failing(new LlmHttpError(0, '')).send(input())).toEqual({ ok: false, error: 'timeout' });
     expect(await failing(new LlmHttpError(502, '')).send(input())).toMatchObject({ ok: false, error: 'server' });
+    // A prompt that does not fit is not a connection problem (2026-10-21: it read "sin conexión").
+    const overflow = "{\"error\":{\"message\":\"This model's maximum context length is 16384 tokens. However, you requested 500 output tokens\"}}";
+    expect(await failing(new LlmHttpError(400, overflow)).send(input())).toEqual({ ok: false, error: 'too_long' });
+    expect(await failing(new LlmHttpError(400, 'invalid request')).send(input())).toMatchObject({ ok: false, error: 'server' });
     expect(await failing(new TypeError('Network request failed')).send(input())).toMatchObject({ ok: false, error: 'offline' });
   });
 

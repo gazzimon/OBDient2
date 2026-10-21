@@ -29,6 +29,23 @@ export interface OpenAiChatClientConfig {
   readonly idleTimeoutMs?: number;
 }
 
+// The model reads the whole prompt before its first word. With the prefix not
+// in its cache (the oldest turns were dropped, a new conversation) 12k tokens
+// took ~8 s on the 3090 (2026-10-21): a fixed 8 s cut those requests off. So
+// the wait for the first byte grows with the prompt, beyond a short one.
+const PROMPT_FREE_TOKENS = 2_000;
+const PREFILL_MS_PER_TOKEN = 1.2;
+const CHARS_PER_PROMPT_TOKEN = 3.2;
+const IMAGE_PROMPT_TOKENS = 1_500;
+
+export function prefillAllowanceMs(body: string): number {
+  // A photo travels as base64: it counts as its vision tokens, not as its characters.
+  const images = body.match(/data:image\/[a-z0-9.+-]+;base64,/gi)?.length ?? 0;
+  const text = body.replace(/data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]*/gi, '');
+  const tokens = Math.ceil(text.length / CHARS_PER_PROMPT_TOKEN) + images * IMAGE_PROMPT_TOKENS;
+  return Math.round(Math.max(0, tokens - PROMPT_FREE_TOKENS) * PREFILL_MS_PER_TOKEN);
+}
+
 export class LlmHttpError extends Error {
   constructor(
     readonly status: number,
@@ -62,7 +79,17 @@ export class OpenAiChatClient implements LlmPort {
     };
 
     try {
-      arm(firstByteTimeoutMs);
+      const body = JSON.stringify({
+        model: this.config.model,
+        messages: request.messages,
+        // A call without tools (the summary) sends neither field.
+        ...(request.tools.length ? { tools: request.tools, tool_choice: request.toolChoice } : {}),
+        max_tokens: request.maxTokens,
+        stream: true,
+        chat_template_kwargs: { enable_thinking: request.thinking },
+        ...(request.thinking ? SAMPLING_THINKING : SAMPLING),
+      });
+      arm(firstByteTimeoutMs + prefillAllowanceMs(body));
       const res = await this.config.fetch(`${this.config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -70,16 +97,7 @@ export class OpenAiChatClient implements LlmPort {
           'Content-Type': 'application/json',
           Accept: 'text/event-stream',
         },
-        body: JSON.stringify({
-          model: this.config.model,
-          messages: request.messages,
-          // A call without tools (the summary) sends neither field.
-          ...(request.tools.length ? { tools: request.tools, tool_choice: request.toolChoice } : {}),
-          max_tokens: request.maxTokens,
-          stream: true,
-          chat_template_kwargs: { enable_thinking: request.thinking },
-          ...(request.thinking ? SAMPLING_THINKING : SAMPLING),
-        }),
+        body,
         signal: controller.signal,
       });
       if (!res.ok) throw new LlmHttpError(res.status, (await res.text()).slice(0, 300));

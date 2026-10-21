@@ -7,14 +7,17 @@
 
 import type { ApiMessage } from '@/domain/ports/llm.port';
 
-// Rough, conservative for Spanish with this tokenizer: ~3.5 characters a token,
-// plus a few for the message envelope.
-const CHARS_PER_TOKEN = 3.5;
+// Rough, conservative for Spanish and JSON with this tokenizer: ~3.2 characters
+// a token (a 2026-10-21 conversation measured ~3.3), plus a few for the envelope.
+const CHARS_PER_TOKEN = 3.2;
 const PER_MESSAGE = 4;
 // An attached image (≤ 1024 px, see presentation/services/photo.ts): Qwen3.8
 // counts ~1.3k vision tokens at that size; a 164 kB photo with a short question
 // measured 2.5k prompt tokens (2026-10-18).
 const IMAGE_TOKENS = 1500;
+
+// Tokens of a block of text (the system prompt, the tool definitions).
+export const estimateChars = (chars: number): number => Math.ceil(chars / CHARS_PER_TOKEN);
 
 export function estimateTokens(m: ApiMessage): number {
   let chars = 0;
