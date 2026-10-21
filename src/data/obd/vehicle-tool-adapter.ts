@@ -38,7 +38,7 @@ import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
 import { makeFromVin } from '@/domain/obd/vin-make';
-import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, moduleAnswered, needsFlowPair, protocolToPreset, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
+import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, moduleAnswered, needsFlowPair, protocolToPreset, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -433,10 +433,6 @@ export class VehicleToolAdapter implements VehicleToolsPort {
             if (path === 'uds-at') {
               const probe = await quiet(port, urhCommand(t.reqHeader, t.rxHeader, SCAN_PROBE), 1500);
               present = probe != null && udsReply(probe, SCAN_PROBE) !== '';
-              if (present) {
-                const id = await quiet(port, urhCommand(t.reqHeader, t.rxHeader, SCAN_IDENTIFY), 1500);
-                identify = id ? udsReply(id, SCAN_IDENTIFY) || null : null;
-              }
             } else {
               await quiet(port, `ATSH ${t.reqHeader}`);
               // Only this module's answer; the default filter takes 7E8–7EF only,
@@ -445,12 +441,13 @@ export class VehicleToolAdapter implements VehicleToolsPort {
               await flowFor(t);
               const probe = await quiet(port, SCAN_PROBE, 1200);
               present = probe != null && moduleAnswered(probe);
-              if (present) {
-                const id = await quiet(port, SCAN_IDENTIFY, 1500);
-                identify = id && moduleAnswered(id) ? id.replace(/\s+/g, ' ').trim() : null;
-              }
             }
             if (!present) continue;
+            for (const req of SCAN_IDENTIFY) {
+              const raw = path === 'uds-at' ? await quiet(port, urhCommand(t.reqHeader, t.rxHeader, req), 1500) : await quiet(port, req, 1500);
+              identify = identifyReply(raw && path === 'uds-at' ? udsReply(raw, req) : raw, req);
+              if (identify) break;
+            }
             seen.add(`${bus}:${t.id}`);
             out.push({ ...t, bus, identify });
           }

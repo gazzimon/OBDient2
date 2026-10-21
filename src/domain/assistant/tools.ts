@@ -73,7 +73,7 @@ export type ToolCall =
   | { readonly name: 'web_search'; readonly query: string }
   // Reads the full text of a public page (SearXNG gives the URL, this reads it).
   | { readonly name: 'web_fetch'; readonly url: string }
-  // Lab: which modules of this car answer (read-only probes 3E/22 F190). The
+  // Lab: which modules of this car answer (read-only probes 3E, 22 F187/F190). The
   // make (from the VIN, or given) adds that make's known addresses.
   | { readonly name: 'scan_modules'; readonly make: string | null; readonly model: string | null }
   // Lab (Modo laboratorio): a free READ command/frame; writes are blocked.
@@ -286,7 +286,7 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     fn(
       'scan_modules',
       'Barrido de módulos del auto (como el árbol de FORScan): recorre las direcciones y dice cuáles responden (ABS, airbag, ' +
-        'caja, tablero, carrocería…), con solo lecturas (3E y 22 F190). Suma las direcciones conocidas de la marca (la ' +
+        'caja, tablero, carrocería…), con solo lecturas (3E y el número de pieza, 22 F187). Suma las direcciones conocidas de la marca (la ' +
         'saca del VIN; pasala si el usuario la dijo y el VIN no la da). El auto tiene que estar detenido. Lo que responde ' +
         'queda en la base del laboratorio.',
       {

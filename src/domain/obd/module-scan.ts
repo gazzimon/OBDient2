@@ -1,7 +1,7 @@
 // Discovering which modules answer (the "module tree" FORScan shows), with
 // read-only probes only (decision 2026-10-20). For each candidate address the
 // phone sets the header, asks TesterPresent (3E 00) and, if it answers, the
-// VIN/part-number DID (22 F190). What responds is a real fact about THIS car,
+// part number (22 F187, else the VIN 22 F190). What responds is a real fact about THIS car,
 // saved to the lab knowledge base.
 //
 // Two addressing schemes, chosen by the live protocol:
@@ -21,7 +21,7 @@ export interface ScanTarget {
 
 const HINTS_11: Record<number, string> = { 0: 'PCM (motor)', 1: 'TCM (caja)', 2: 'módulo', 3: 'módulo', 4: 'módulo', 5: 'módulo', 6: 'módulo', 7: 'módulo' };
 
-// Common 29-bit targets (ISO/Ford-style); labels are hints, verified by 22 F190.
+// Common 29-bit targets (ISO/Ford-style); labels are hints, verified by the part number.
 const TARGETS_29: { t: number; label: string }[] = [
   { t: 0x10, label: 'PCM (motor)' },
   { t: 0x18, label: 'caja (alt.)' },
@@ -60,7 +60,17 @@ export function scanTargets(bit29: boolean): ScanTarget[] {
 }
 
 export const SCAN_PROBE = '3E00'; // TesterPresent: "¿estás ahí?"
-export const SCAN_IDENTIFY = '22F190'; // VIN / part number, to identify the responder
+// To identify the responder (ISO 14229-1 Table C.1): F187 is the maker's spare
+// part number, every module's; F190 is the VIN, mostly only the engine's.
+export const SCAN_IDENTIFY = ['22F187', '22F190'] as const;
+
+// The positive answer (62 + DID) to an identify request, or null: a negative
+// response (7F 22 31) means the module is there but this DID is not.
+export function identifyReply(raw: string | null, request: string): string | null {
+  if (!raw) return null;
+  const positive = `62${request.slice(2).toUpperCase()}`;
+  return raw.replace(/\s+/g, '').toUpperCase().includes(positive) ? raw.replace(/\s+/g, ' ').trim() : null;
+}
 
 // A 7F negative response still means the module is THERE (it answered).
 export function moduleAnswered(raw: string): boolean {
