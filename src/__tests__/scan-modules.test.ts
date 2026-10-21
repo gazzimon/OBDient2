@@ -24,6 +24,9 @@ function vwCar(identity: SessionInfo['identity']) {
     const rx = modules[header];
     const seen = rx && (filter === rx || (filter === null && /^7E[89A-F]$/.test(rx)));
     if (command === '3E00' && seen) return `${rx} 02 7E 00`;
+    // Brakes: their part number (F187). Engine: no F187 (7F 22 31), but the VIN.
+    if (command === '22F187' && seen) return header === '713' ? `${rx} 10 0E 62 F1 87 35 51 30` : `${rx} 03 7F 22 31`;
+    if (command === '22F190' && seen && header === '7E0') return `${rx} 10 14 62 F1 90 39 42 57`;
     throw new NoDataError(command);
   };
   const port: CommandPort = { send };
@@ -49,7 +52,7 @@ const VW_TARGETS: ScanTarget[] = [
 const signal = new AbortController().signal;
 const data = (o: ToolOutcome) => {
   if (!o.ok) throw new Error(`${o.error}: ${o.message}`);
-  return o.data as { modules: { id: string }[]; make: string; skippedOtherIdWidth?: number };
+  return o.data as { modules: { id: string; partNumber: string | null }[]; make: string; skippedOtherIdWidth?: number };
 };
 
 describe('scan_modules with the make’s addresses', () => {
@@ -67,6 +70,10 @@ describe('scan_modules with the make’s addresses', () => {
     expect(asked).toEqual(['volkswagen']);
     expect(d.modules.map((m) => m.id).sort()).toEqual(['11:713', '11:7E0']);
     expect(d.skippedOtherIdWidth).toBe(1); // the 29-bit ABS on an 11-bit car
+    // Identified by F187 (part number); the engine refuses F187 and gives F190.
+    const part = Object.fromEntries(d.modules.map((m) => [m.id, m.partNumber]));
+    expect(part['11:713']).toContain('62 F1 87');
+    expect(part['11:7E0']).toContain('62 F1 90');
     expect(sent).toContain('ATCRA 77D');
     expect(sent).toContain('STCFCPA 713, 77D');
     // A custom pair turns the default flow control off: cleared before each
