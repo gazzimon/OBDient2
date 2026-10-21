@@ -13,6 +13,17 @@ interface WebResult {
   readonly prices?: readonly string[];
 }
 
+// A fragment of the lab's text base (obdient-tools /docs): third-party text with
+// its source and the day it was read.
+interface DocHit {
+  readonly text: string;
+  readonly source: string;
+  readonly title: string | null;
+  readonly page: number | null;
+  readonly fetchedAt: string;
+  readonly score: number;
+}
+
 export class OnlineTools {
   constructor(private readonly client: ToolsClient) {}
 
@@ -42,7 +53,7 @@ export class OnlineTools {
     return [...out.values()];
   }
 
-  async execute(call: Extract<ToolCall, { name: 'web_search' | 'web_fetch' | 'knowledge_lookup' | 'dollar_rate' | 'car_price' }>, signal: AbortSignal): Promise<ToolOutcome> {
+  async execute(call: Extract<ToolCall, { name: 'web_search' | 'web_fetch' | 'knowledge_lookup' | 'docs_search' | 'dollar_rate' | 'car_price' }>, signal: AbortSignal): Promise<ToolOutcome> {
     switch (call.name) {
       case 'web_fetch': {
         const r = await this.client.post<{ url: string; domain: string; weight: number; text: string }>('web_fetch', { url: call.url }, signal, 'La lectura de la página');
@@ -55,6 +66,16 @@ export class OnlineTools {
         if (!r.ok) return r;
         const known = r.data.exact != null || (r.data.close?.length ?? 0) > 0 || (r.data.sameMake?.length ?? 0) > 0;
         return { ok: true, data: r.data, summary: known ? 'Datos del laboratorio sobre este auto' : 'El laboratorio no tiene datos de este auto todavía' };
+      }
+      case 'docs_search': {
+        const r = await this.client.post<{ results?: DocHit[] }>('docs', { action: 'search', query: call.query }, signal, 'La base de textos');
+        if (!r.ok) return r;
+        const results = r.data.results ?? [];
+        return {
+          ok: true,
+          data: { query: call.query, results },
+          summary: results.length ? `${results.length} fragmentos de la base de textos` : 'La base de textos no tiene nada sobre eso',
+        };
       }
       case 'web_search': {
         const r = await this.client.post<{ results?: WebResult[] }>('web_search', { query: call.query }, signal, 'La búsqueda web');
