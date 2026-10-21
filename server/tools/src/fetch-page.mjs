@@ -13,6 +13,7 @@ import { plain } from './results.mjs';
 
 const MAX_BYTES = 2_000_000;
 const MAX_TEXT = 12_000;
+const MAX_FULL = 60_000;
 const MAX_REDIRECTS = 4;
 const TIMEOUT_MS = 12_000;
 
@@ -77,6 +78,26 @@ export function readable(html, max = MAX_TEXT) {
   return plain(body, max);
 }
 
+const ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&apos;': "'", '&nbsp;': ' ' };
+
+// The whole readable text for the lab's text base: like readable() but the
+// paragraphs stay (the chunker cuts on them), entities are decoded and the cap
+// is much higher. Never sent to the model as is: it goes through the filter first.
+export function readableFull(html, max = MAX_FULL) {
+  const text = String(html)
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<(script|style|noscript|svg|head|nav|footer|header|form)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<\/(p|div|li|tr|h[1-6]|section|article|pre|table)>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(?:amp|lt|gt|quot|apos|nbsp|#39);/g, (e) => ENTITIES[e])
+    .replace(/[ \t ]+/g, ' ')
+    .replace(/ ?\n ?/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return text.slice(0, max);
+}
+
 export function makeFetchPage({ fetchFn = fetch, resolve = lookup } = {}) {
   return async function fetchPage(rawUrl) {
     await assertPublicUrl(rawUrl, resolve);
@@ -100,6 +121,7 @@ export function makeFetchPage({ fetchFn = fetch, resolve = lookup } = {}) {
     if (!/text\/html|text\/plain|application\/(json|xml)/.test(type)) throw new BadFetch('la página no es texto');
     const buf = Buffer.from(await res.arrayBuffer()).subarray(0, MAX_BYTES);
     const host = new URL(url).hostname.replace(/^www\./, '');
-    return { url, domain: host, weight: domainWeight(host), text: readable(buf.toString('utf8')) };
+    const html = buf.toString('utf8');
+    return { url, domain: host, weight: domainWeight(host), text: readable(html), full: readableFull(html) };
   };
 }

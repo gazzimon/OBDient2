@@ -9,6 +9,9 @@
 //   /tools/v1/track       { device, points: [...] }  → { accepted }   (live position → Traccar, track.mjs)
 //   /tools/v1/web_fetch   { url }                     → { url, domain, weight, text }   (full page, SSRF-guarded)
 //   /tools/v1/knowledge   { action:'lookup'|'report', ... } → lab-shared facts of what a car supports
+//   /tools/v1/docs        { action:'search', query, k? } → { results: [{ text, source, title, page, fetchedAt, score }] }
+//                         { action:'add', source, title?, text | pages:[{page,text}] } → { chunks }   (docs.mjs: filtered per fragment)
+//                         { action:'list' } → { sources }   { action:'delete', source } → { removed }  (only what you added)
 //   GET /tools/healthz                               → 200
 //
 // Errors: 400 bad input, 401 bad key, 429 too many, 502 a source is down,
@@ -25,10 +28,12 @@ import { BadFetch } from './fetch-page.mjs';
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 30;
 const MAX_BODY = 8_192;
+const MAX_DOCS_BODY = 2_000_000; // a document's text
+const MAX_DOC_PAGES = 500;
 
 class BadInput extends Error {}
 
-export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, fetchPage = null, knowledge = null, ownerOf = () => null, log = () => {}, now = () => Date.now() }) {
+export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, fetchPage = null, knowledge = null, docs = null, ownerOf = () => null, log = () => {}, now = () => Date.now() }) {
   const hits = new Map(); // key prefix → { start, count }
 
   function limited(who) {
@@ -84,11 +89,55 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
       if (!fetchPage) throw Object.assign(new Error('no fetch'), { status: 503 });
       const url = typeof b.url === 'string' ? b.url.trim() : '';
       if (!url) throw new BadInput('bad_url');
+      let page;
       try {
-        return await fetchPage(url);
+        page = await fetchPage(url);
       } catch (err) {
         if (err instanceof BadFetch) throw new BadInput(err.message);
         throw Object.assign(new Error('fetch failed'), { status: 502 });
+      }
+      // What was read stays in the lab's text base (a page, 30 days), without
+      // making the answer wait for the embeddings.
+      const { full, ...answer } = page;
+      if (docs && full) {
+        docs.ingest({ source: page.url, title: page.domain, text: full, kind: 'web', addedBy: 'web_fetch' }).catch((err) => log(`docs ingest failed: ${err.message}`));
+      }
+      return answer;
+    },
+    async docs(b, key) {
+      if (!docs) throw Object.assign(new Error('no docs'), { status: 503 });
+      const who = ownerOf(key);
+      const str = (v, max) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+      switch (b.action) {
+        case 'search': {
+          const query = str(b.query, 200);
+          if (!query || query.length < 2) throw new BadInput('bad_query');
+          return { results: await docs.search(query, b.k) };
+        }
+        case 'add': {
+          const name = str(b.source, 200);
+          if (!name) throw new BadInput('bad_source');
+          let pages = null;
+          if (b.pages !== undefined) {
+            if (!Array.isArray(b.pages) || b.pages.length === 0 || b.pages.length > MAX_DOC_PAGES) throw new BadInput('bad_pages');
+            pages = b.pages.map((p) => ({ page: Number.isInteger(p?.page) ? p.page : null, text: typeof p?.text === 'string' ? p.text : '' }));
+          } else if (typeof b.text !== 'string' || !b.text.trim()) {
+            throw new BadInput('bad_text');
+          }
+          const source = `doc:${name}`;
+          const owner = docs.store.addedByOf(source);
+          if (owner && owner !== (who ?? 'desconocido')) throw new BadInput('source_taken');
+          return docs.ingest({ source, title: str(b.title, 200) ?? name, text: pages ? null : b.text, pages, kind: 'ref', addedBy: who ?? 'desconocido', classifyPersonal: true });
+        }
+        case 'list':
+          return { sources: docs.store.list() };
+        case 'delete': {
+          const name = str(b.source, 200);
+          if (!name || !who) throw new BadInput('bad_request');
+          return { removed: docs.store.remove(`doc:${name}`, who) };
+        }
+        default:
+          throw new BadInput('bad_action');
       }
     },
     async knowledge(b) {
@@ -114,12 +163,12 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
     },
   };
 
-  async function readJson(req) {
+  async function readJson(req, max = MAX_BODY) {
     let size = 0;
     const chunks = [];
     for await (const c of req) {
       size += c.length;
-      if (size > MAX_BODY) return null;
+      if (size > max) return null;
       chunks.push(c);
     }
     try {
@@ -151,7 +200,7 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
     }
     if (!valid) return [401, { error: 'invalid_key' }];
 
-    const body = await readJson(req);
+    const body = await readJson(req, name === 'docs' ? MAX_DOCS_BODY : MAX_BODY);
     if (!body) return [400, { error: 'bad_body' }];
     const started = now();
     try {

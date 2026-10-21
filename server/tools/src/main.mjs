@@ -14,6 +14,10 @@ import { createApp, listen } from './server.mjs';
 import { keyOwnerLookup } from './key-owners.mjs';
 import { makeFetchPage } from './fetch-page.mjs';
 import { knowledgeStore } from './knowledge.mjs';
+import { docsStore } from './docs-store.mjs';
+import { makeDocs } from './docs.mjs';
+import { embedClient } from './embed.mjs';
+import { llmClassifier } from './doc-filter.mjs';
 import { attachStt } from './stt-proxy.mjs';
 
 function readEnv(file) {
@@ -31,6 +35,24 @@ const env = readEnv(process.env.TOOLS_ENV ?? join(homedir(), '.config/obdient/to
 const log = (msg) => console.log(`${new Date().toISOString()} ${msg}`);
 
 const isValidKey = newApiKeyCheck({ baseUrl: env.NEWAPI_URL ?? 'http://127.0.0.1:3000' });
+
+// The lab's text base: pages the agent read and documents, searched by words and
+// by meaning. Embeddings: Qwen3-Embedding-0.6B on the Z440 (docker-compose
+// `embed`), with the same vLLM key as the speech server. The personal-data
+// classifier (Qwen3.8 on :8000) is off unless DOCS_CLASSIFY=1.
+const docs = makeDocs({
+  store: docsStore(env.DOCS_FILE ?? join(homedir(), '.local/share/obdient/docs.sqlite')),
+  embed: embedClient({
+    url: env.EMBED_URL ?? 'http://192.168.100.210:8003',
+    key: env.EMBED_API_KEY ?? env.STT_API_KEY ?? null,
+  }),
+  classify:
+    env.DOCS_CLASSIFY === '1'
+      ? llmClassifier({ url: env.LLM_URL ?? 'http://192.168.100.210:8000', key: env.LLM_API_KEY ?? env.STT_API_KEY ?? null })
+      : null,
+  log,
+});
+docs.store.purge();
 const app = createApp({
   search: searxng({ baseUrl: env.SEARXNG_URL ?? 'http://127.0.0.1:8888' }),
   isValidKey,
@@ -45,6 +67,7 @@ const app = createApp({
   // Full-page reader for the agent (SSRF-guarded), and the lab's shared facts.
   fetchPage: makeFetchPage(),
   knowledge: knowledgeStore(env.KNOWLEDGE_FILE ?? join(homedir(), '.local/share/obdient/knowledge.json')),
+  docs,
   // Live position into Traccar's OsmAnd port (docker, server/traccar), local only.
   track: async (query) => {
     const res = await fetch(`${env.TRACCAR_OSMAND_URL ?? 'http://127.0.0.1:5055'}/?${query}`, {
