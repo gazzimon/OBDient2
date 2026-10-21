@@ -117,3 +117,29 @@ ISO 11898-1/-2/-3 y SAE J2411 (HS/MS/SW-CAN), y la **STN FRPM** (comandos ST de 
 - **kingjosephm/uds-diagnostic-tool** (Python, **sin licencia**, LLM+LangGraph sobre un PCAP): analiza
   capturas con un agente; **no se puede reusar** (sin licencia) y no habla con el auto. Solo inspira el
   flujo "analizar una captura", que nuestro agente ya hace en vivo.
+
+## Respuestas del proveedor sobre los adaptadores (2026-10-20)
+
+- **B14:** HS-CAN + MS-CAN (sin SW-CAN).
+- **B33-U:** set de comandos UDS propio (AT UDS/UDST/**UR**/**URH**/USID/RSID/**UDSF**/UDSN/UDSD).
+  El **firmware hace ISO-TP, timeouts y control de flujo** por dentro. `AT URH <TX> <RX> hh…` envía una
+  petición UDS a direcciones arbitrarias y devuelve la respuesta **reensamblada**; `AT UDSF1` = difusión
+  funcional (7DF); `AT UDST xx` = P2/P2* en ms; `AT UDSN` = último NRC; `AT UDSD` = volcado completo. El
+  formato de respuesta es "sugerido" en el datasheet → **verificar en hardware**. Es el adaptador ideal
+  para M9.
+- **STN (B14/B35), respuestas del proveedor:**
+  1. **Cualquier módulo** es accesible configurando TX ID y filtro RX (ATSH/ATCRA). Sin restricción al ECM
+     ni a los IDs funcionales de OBD. → valida nuestro barrido.
+  2. **No reensambla multi-trama automáticamente**: las tramas pasan una por una. → la **presencia** de un
+     módulo se detecta igual (3E 00 es una sola trama; un 7F..78 ya cuenta como presente), pero el
+     **número de pieza (22 F190, multi-trama) puede venir incompleto** en B14/B35. Lectura profunda
+     multi-trama: con el B33-U (lo hace el firmware) o con control de flujo manual.
+  3. **Sin manejo de sesión**; ATST máximo 1 s. → nuestro barrido usa la sesión por defecto (no `10 03`),
+     así que no le afecta. Diagnóstico que necesite sesión extendida: solo con el B33-U o aparte.
+  4. **NRC 0x78 (responsePending) pasa tal cual**, el adaptador no espera. → ya lo cubre
+     `data/adapters/transport-command-port.ts`: el host espera hasta 5 s y reintenta (PENDING_FRAME).
+
+**Conclusión:** el barrido multi-bus actual sirve para **descubrir qué módulos existen** en B14/B35. Para
+**leer a fondo** (números de pieza completos, datos del `22`), el camino es el **B33-U con `AT URH`**, que
+conviene implementar como ruta preferida cuando el adaptador es un B33-U (perfil `uds: 'at-ur'` ya
+existe), verificando el formato de respuesta real.

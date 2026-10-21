@@ -88,7 +88,7 @@ export const ADAPTER_PROFILES: readonly AdapterProfile[] = [
     capabilities: { ...base, uds: 'at-ur' },
     verified: false,
     notes:
-      'Vendor AT UDS/UDST/UR/URH/USID/RSID/UDSF/UDSN/UDSD. Response format is "suggested" in the datasheet — probe NRC 0x78 handling.',
+      'Vendor AT UDS/UDST/UR/URH/USID/RSID/UDSF/UDSN/UDSD; firmware does ISO-TP, flow control and timeouts (supplier 2026-10-20). Preferred M9 adapter: AT URH <TX> <RX> hh reassembles multi-frame. Response format "suggested" in datasheet — verify on hardware.',
   },
   {
     id: 'starcharm-b35',
