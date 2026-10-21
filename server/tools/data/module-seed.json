@@ -4,6 +4,26 @@
     { "make": "generico", "model": "obd-11bit", "protocol": "ISO_15765_4_CAN_11BIT_500K", "modules": [
       { "id": "11:7E0", "bus": "HS", "reqHeader": "7E0", "rxHeader": "7E8", "label": "PCM (motor)" },
       { "id": "11:7E1", "bus": "HS", "reqHeader": "7E1", "rxHeader": "7E9", "label": "TCM (caja)" }
+    ] },
+    { "make": "chevrolet", "model": "generico", "note": "GMLAN 11 bits: pedido 24x, respuesta 64x (+0x400, la misma regla que opendbc para GM). Fuente: GMLAN_11bit.h (mbed, foxdie). Los módulos GMLAN anteriores a Global B leen con servicios GMLAN (1A, A9), no UDS 19.", "modules": [
+      { "id": "11:7E0", "reqHeader": "7E0", "rxHeader": "7E8", "label": "ECM (motor)", "src": "gmlan" },
+      { "id": "11:7E1", "reqHeader": "7E1", "rxHeader": "7E9", "label": "TCM (caja)", "src": "gmlan" },
+      { "id": "11:243", "reqHeader": "243", "rxHeader": "643", "label": "EBCM (ABS)", "src": "gmlan" },
+      { "id": "11:247", "reqHeader": "247", "rxHeader": "647", "label": "SDM (airbag)", "src": "gmlan" },
+      { "id": "11:241", "reqHeader": "241", "rxHeader": "641", "label": "BCM (carrocería)", "src": "gmlan" },
+      { "id": "11:24C", "reqHeader": "24C", "rxHeader": "64C", "label": "IPC (tablero)", "src": "gmlan" },
+      { "id": "11:251", "reqHeader": "251", "rxHeader": "651", "label": "HVAC (clima)", "src": "gmlan" },
+      { "id": "11:244", "reqHeader": "244", "rxHeader": "644", "label": "EHU (radio)", "src": "gmlan" },
+      { "id": "11:242", "reqHeader": "242", "rxHeader": "642", "label": "TDM", "src": "gmlan" },
+      { "id": "11:246", "reqHeader": "246", "rxHeader": "646", "label": "SIC", "src": "gmlan" },
+      { "id": "11:258", "reqHeader": "258", "rxHeader": "658", "label": "RFA (llave remota)", "src": "gmlan" },
+      { "id": "11:24B", "reqHeader": "24B", "rxHeader": "64B", "label": "cámara frontal", "src": "opendbc" }
+    ] },
+    { "make": "fiat", "model": "generico", "note": "FCA 29 bits (18DAttF1). Fuente: P1kachu/talking-with-cars, notas del Fiat 500 con datos de AlfaOBD. PSA lista además BMF_CAN_FIAT 7B0/7C0 para Fiat sobre plataforma Stellantis.", "modules": [
+      { "id": "29:10", "reqHeader": "18DA10F1", "rxHeader": "18DAF110", "label": "motor", "src": "alfaobd" },
+      { "id": "29:28", "reqHeader": "18DA28F1", "rxHeader": "18DAF128", "label": "ABS", "src": "alfaobd" },
+      { "id": "29:30", "reqHeader": "18DA30F1", "rxHeader": "18DAF130", "label": "columna de dirección", "src": "alfaobd" },
+      { "id": "29:40", "reqHeader": "18DA40F1", "rxHeader": "18DAF140", "label": "carrocería (BCM)", "src": "alfaobd" }
     ] }
   ]
 }

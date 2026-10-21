@@ -154,3 +154,19 @@ los dos últimos bytes); las subdirecciones de Toyota quedan en `sub`. Corrigió
 usaba 29 bits: Ford usa 11 bits (ABS 760, EPS 730). `knowledge_lookup` devuelve el modelo exacto,
 modelos parecidos por prefijo (`close`) y el resto de la marca resumido por dirección (`sameMake`, con
 `seenIn`). Son referencia: se confirman con `scan_modules`.
+
+**Marcas que opendbc no cubre (2026-10-21)**, con la lista de autos de la base de precios (Argentina):
+tablas por grupo, no por modelo, generadas por `scripts/ext-extract.py` en `data/ext/` (**no se
+versionan**: fuentes GPL-3 o sin licencia):
+- Renault/Dacia/Nissan: tabla de la Alianza de ddt4all, 209 direcciones (UCH 745→765, ABS 740→760,
+  airbag 752→772, tablero 743→763).
+- Peugeot/Citroën/DS/Opel: arduino-psa-diag, 131 (BSI 752→652, ABS/ESP 6AD→68D, airbag 744→644).
+- VW/Audi/Seat/Skoda: vag-uds-ids (extraída de ODIS), 88 (frenos 713→77D, tablero 714→77E).
+
+A mano en `module-seed.json`, con la fuente citada: **Chevrolet** (GMLAN, pedido 24x → respuesta 64x)
+y **Fiat** (29 bits: motor 10, ABS 28, columna 30, carrocería 40; de AlfaOBD vía talking-with-cars).
+
+**Por qué los barridos no encontraban nada:** `scan_modules` solo prueba 7E0–7E7, una lista fija de 29
+bits y la difusión 7DF; a 7DF responden solo los módulos OBD (motor, caja). Los demás están en
+direcciones propias de cada marca. Siguiente paso: que el barrido sume las direcciones de la base para
+la marca del auto.

@@ -12,7 +12,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-const MAX_MODULES = 64;
+const MAX_MODULES = 300; // a group table (data/ext) has up to ~210
 const MAX_IDS = 400;
 const MAX_CLOSE = 3;
 const MAX_SAME_MAKE = 24;
