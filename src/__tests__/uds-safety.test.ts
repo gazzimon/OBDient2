@@ -101,3 +101,17 @@ describe('multi-bus scan', () => {
     expect(respondersFrom('NO DATA\nSEARCHING...\n>', false)).toEqual([]);
   });
 });
+
+import { udsReply, urhCommand } from '@/domain/obd/module-scan';
+
+describe('B33-U UDS path', () => {
+  it('strips the request echo and keeps the reply', () => {
+    expect(udsReply('3E 00\n7E 00', '3E00')).toBe('7E00');
+    expect(udsReply('22F190\n62 F1 90 31 46 41 44', '22 F1 90')).toBe('62F190314641 44'.replace(' ', ''));
+    expect(udsReply('10 03', '1003')).toBe(''); // only echo = no reply
+    expect(udsReply('NO DATA', '3E00')).toBe('');
+  });
+  it('builds AT URH with TX, RX and data', () => {
+    expect(urhCommand('18DA10F1', '18DAF110', '22 F1 90')).toBe('AT URH 18DA10F1 18DAF110 22F190');
+  });
+});

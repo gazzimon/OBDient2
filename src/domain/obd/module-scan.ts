@@ -121,3 +121,28 @@ export function respondersFrom(raw: string, bit29: boolean): ScanTarget[] {
 
 export const FUNCTIONAL_PROBE = '3E00';
 export { FUNCTIONAL_RESPONSE };
+
+// ── Adapter-aware paths (2026-10-20) ─────────────────────────────────────────
+// Three adapters, auto-detected at scan time:
+//   - B33-U: vendor UDS AT set (AT UDS1 / AT URH), firmware does ISO-TP →
+//     reliable multi-frame reads (full part numbers).
+//   - B35/B14 (STN): STP bus switch + ATSH/ATCRA + functional broadcast.
+//   - plain ELM327: HS-CAN only, ATSH path.
+
+export type ScanPath = 'uds-at' | 'stn';
+
+// The response to a UDS request, with the request echo removed (B33-U echoes
+// the request first). What is left is the module's reply, or empty if none.
+export function udsReply(raw: string, sentHex: string): string {
+  const sent = sentHex.replace(/\s+/g, '').toUpperCase();
+  const lines = raw
+    .split(/[\r\n]+/)
+    .map((l) => l.replace(/\s+/g, '').toUpperCase())
+    .filter((l) => /^[0-9A-F]+$/.test(l) && l !== sent);
+  return lines.join(' ');
+}
+
+// AT URH <TX> <RX> <data>: send a UDS request to a module on the B33-U.
+export function urhCommand(reqHeader: string, rxHeader: string, data: string): string {
+  return `AT URH ${reqHeader} ${rxHeader} ${data.replace(/\s+/g, '')}`;
+}
