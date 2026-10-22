@@ -35,6 +35,7 @@ export const TOOL_NAMES = [
   'obd_command',
   'knowledge_lookup',
   'docs_search',
+  'chat_search',
   'fuel_prices',
   'dollar_rate',
   'weather',
@@ -83,6 +84,8 @@ export type ToolCall =
   | { readonly name: 'knowledge_lookup'; readonly make: string | null; readonly model: string | null; readonly year: number | null }
   // The lab's text base: pages already read and manuals, by words and by meaning.
   | { readonly name: 'docs_search'; readonly query: string }
+  // What was said in earlier conversations (saved on the phone).
+  | { readonly name: 'chat_search'; readonly query: string }
   // Nearest stations and prices (Secretaría de Energía data, daily).
   | { readonly name: 'fuel_prices'; readonly product: FuelProduct | null }
   | { readonly name: 'dollar_rate' }
@@ -345,6 +348,20 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
       },
     ),
     fn(
+      'chat_search',
+      'Busca en las conversaciones anteriores con el usuario (no en la actual): un lugar que se mostró, algo que se habló, ' +
+        '"la cafetería de ayer", "ese lugar que me mostraste". Devuelve unas pocas líneas con la fecha, sin coordenadas; para ir ' +
+        'a un lugar que aparece, buscalo con search_place por su nombre y la ciudad. Solo guarda las últimas conversaciones.',
+      {
+        type: 'object',
+        properties: {
+          query: { type: 'string', minLength: 2, maxLength: 120, description: 'Las palabras clave de lo que se busca, sin "ayer" ni "antes": "cafetería", "taller Gómez".' },
+        },
+        required: ['query'],
+        additionalProperties: false,
+      },
+    ),
+    fn(
       'fuel_prices',
       'Estaciones de servicio más cercanas al auto con su marca, dirección, distancia y precio por litro (con cuántos ' +
         'días tiene el dato), y la más barata cerca. Datos oficiales de la Secretaría de Energía. Los resultados quedan ' +
@@ -523,6 +540,13 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       if (extra) return bad(extra);
       const q = a.query;
       if (typeof q !== 'string' || q.trim().length < 2 || q.length > 200) return bad('"query" debe tener entre 2 y 200 caracteres.');
+      return { ok: true, call: { name, query: q.trim() } };
+    }
+    case 'chat_search': {
+      const extra = only('query');
+      if (extra) return bad(extra);
+      const q = a.query;
+      if (typeof q !== 'string' || q.trim().length < 2 || q.length > 120) return bad('"query" debe tener entre 2 y 120 caracteres.');
       return { ok: true, call: { name, query: q.trim() } };
     }
     case 'fuel_prices': {

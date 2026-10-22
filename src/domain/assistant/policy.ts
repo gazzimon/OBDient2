@@ -31,6 +31,7 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   web_fetch: 'read',
   knowledge_lookup: 'read',
   docs_search: 'read',
+  chat_search: 'read',
   // Use the bus in exclusive mode (like the adapter bench); car stopped.
   scan_modules: 'exclusive',
   obd_command: 'exclusive',

@@ -224,6 +224,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'web_fetch':
       case 'knowledge_lookup':
       case 'docs_search':
+      case 'chat_search':
         return fail('not_supported', 'Internet no lo maneja el adaptador.'); // OnlineTools
     }
   }

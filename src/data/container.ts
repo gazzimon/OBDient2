@@ -3,6 +3,8 @@
 import Constants from 'expo-constants';
 import { fetch as expoFetch } from 'expo/fetch';
 import { AssistantService } from '@/data/assistant/assistant-service';
+import { ChatSearchTools } from '@/data/assistant/chat-search-tools';
+import { useChatStore } from '@/store/chatStore';
 import { OfflineAssistant } from '@/domain/assistant/offline-assistant';
 import { OnlineTools } from '@/data/tools/online-tools';
 import { ToolsClient } from '@/data/tools/tools-client';
@@ -66,6 +68,11 @@ const toolsClient = new ToolsClient({ url: extra.toolsUrl, credentials: () => ac
 const onlineTools = new OnlineTools(toolsClient);
 // The service log on the phone.
 const serviceTools = new ServiceTools({ log: new ServiceLog(createMmkvServiceStorage()), vin: () => vehicleTools.knownVin() });
+// What was said in earlier conversations, read from the chat store.
+const chatSearchTools = new ChatSearchTools({
+  conversations: () => useChatStore.getState().conversations,
+  activeId: () => useChatStore.getState().activeId,
+});
 const assistantTools: VehicleToolsPort = {
   supportedPids: () => vehicleTools.supportedPids(),
   execute: async (call, signal) => {
@@ -86,6 +93,8 @@ const assistantTools: VehicleToolsPort = {
       case 'log_service':
       case 'read_service_log':
         return serviceTools.execute(call);
+      case 'chat_search':
+        return chatSearchTools.execute(call);
       default:
         return navigationTools?.names.has(call.name) ? navigationTools.runner.execute(call, signal) : vehicleTools.execute(call, signal);
     }
