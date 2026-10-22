@@ -89,13 +89,14 @@ describe('runTurn', () => {
 
   it('ends after MAX_MODEL_CALLS: the last call cannot use tools, and empty text falls back to the results', async () => {
     const loop = () => ask(call('read_pids', { pids: ['RPM'] }));
-    const { llm, requests } = scripted(loop, loop, loop, say(''));
+    // Every call but the last asks for a tool; the last one has no tools and answers nothing.
+    const { llm, requests } = scripted(...Array.from({ length: MAX_MODEL_CALLS - 1 }, () => loop), say(''));
     const { vehicle } = car({ read_pids: { ok: true, data: { RPM: 812 }, summary: 'RPM: 812' } });
     const r = await runTurn({ history: [], text: 'rpm?', context: STOPPED, llm, vehicle, confirmation: confirmWith(true).confirmation, memo: new ToolMemo(), now: () => 0 });
 
     expect(requests).toHaveLength(MAX_MODEL_CALLS);
-    expect(requests.map((q) => q.toolChoice)).toEqual(['auto', 'auto', 'auto', 'none']);
-    expect(r.text).toBe('RPM: 812\nRPM: 812\nRPM: 812');
+    expect(requests.map((q) => q.toolChoice)).toEqual([...Array(MAX_MODEL_CALLS - 1).fill('auto'), 'none']);
+    expect(r.text).toBe(Array(MAX_MODEL_CALLS - 1).fill('RPM: 812').join('\n'));
   });
 
   it('refuses invalid, unknown and excess calls without running them, and tells the model', async () => {
