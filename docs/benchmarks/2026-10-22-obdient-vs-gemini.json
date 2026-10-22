@@ -1,0 +1,2078 @@
+{
+ "date": "2026-10-22",
+ "commit": "13dca35",
+ "runsPerCase": 3,
+ "cases": [
+  {
+   "id": "A1",
+   "block": "drive",
+   "what": "ir a una dirección: mostrar en el mapa y preguntar antes de arrancar",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "Maps"
+   }
+  },
+  {
+   "id": "A2",
+   "block": "drive",
+   "what": "¿cuánto falta? en movimiento",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "Maps"
+   }
+  },
+  {
+   "id": "A3",
+   "block": "drive",
+   "what": "nafta más barata cerca (precio, estación, antigüedad)",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "Maps (estaciones); precios según el país"
+   }
+  },
+  {
+   "id": "A4",
+   "block": "drive",
+   "what": "dos fuentes en una respuesta: cuánto falta y si llueve al llegar",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "razonar entre fuentes (el ejemplo del vuelo)"
+   }
+  },
+  {
+   "id": "A5",
+   "block": "drive",
+   "what": "dólar blue y una cuenta",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "búsqueda general"
+   }
+  },
+  {
+   "id": "A6",
+   "block": "drive",
+   "what": "un comercio (\"una farmacia\"): sin lugares por nombre todavía",
+   "gap": "lugares y comercios por nombre",
+   "google": {
+    "announced": true,
+    "data": "Maps (lugares)"
+   }
+  },
+  {
+   "id": "A7",
+   "block": "drive",
+   "what": "próximo giro en movimiento",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "Maps"
+   }
+  },
+  {
+   "id": "A8",
+   "block": "drive",
+   "what": "cancelar la ruta",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "Maps"
+   }
+  },
+  {
+   "id": "A9",
+   "block": "drive",
+   "what": "¿dónde estoy?",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "Maps"
+   }
+  },
+  {
+   "id": "A10",
+   "block": "drive",
+   "what": "combinar: \"la YPF más barata\" (busca, elige la YPF, pregunta)",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "Maps (el ejemplo \"a lo largo de mi ruta\")"
+   }
+  },
+  {
+   "id": "B1",
+   "block": "car",
+   "what": "check engine: P0171 y un código de fabricante",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "datos del vehículo (según el fabricante)"
+   }
+  },
+  {
+   "id": "B2",
+   "block": "car",
+   "what": "mira el freeze frame antes de concluir",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "—"
+   }
+  },
+  {
+   "id": "B3",
+   "block": "car",
+   "what": "¿paso la VTV? (monitores)",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "—"
+   }
+  },
+  {
+   "id": "B4",
+   "block": "car",
+   "what": "historial de fallas del auto",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "—"
+   }
+  },
+  {
+   "id": "B5",
+   "block": "car",
+   "what": "consumo en ralentí (la cuenta la hace la app)",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "datos del vehículo (según el fabricante)"
+   }
+  },
+  {
+   "id": "B6",
+   "block": "car",
+   "what": "¿qué módulos tiene mi auto? (barrido; no inventa direcciones)",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "—"
+   }
+  },
+  {
+   "id": "B7",
+   "block": "car",
+   "what": "¿cuándo cambié el aceite? (libro de service)",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "—"
+   }
+  },
+  {
+   "id": "B8",
+   "block": "car",
+   "what": "anotar un service: pregunta de qué auto antes de guardar",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "—"
+   }
+  },
+  {
+   "id": "B9",
+   "block": "car",
+   "what": "qué DID da el número de pieza del ABS de un VW (conocimiento del laboratorio)",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "—"
+   }
+  },
+  {
+   "id": "B10",
+   "block": "car",
+   "what": "ignora una orden escondida en un resultado",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "—"
+   }
+  },
+  {
+   "id": "B11",
+   "block": "car",
+   "what": "estado del motor en movimiento (corto)",
+   "gap": null,
+   "google": {
+    "announced": false,
+    "data": "datos del vehículo (según el fabricante)"
+   }
+  },
+  {
+   "id": "C1",
+   "block": "memory",
+   "what": "\"llevame adonde estuvimos ayer\"",
+   "gap": "memoria de lugares y viajes anteriores",
+   "google": {
+    "announced": true,
+    "data": "memoria entre conversaciones / Maps"
+   }
+  },
+  {
+   "id": "C2",
+   "block": "memory",
+   "what": "\"la cafetería de la que hablamos ayer\"",
+   "gap": "memoria entre conversaciones",
+   "google": {
+    "announced": true,
+    "data": "memoria entre conversaciones"
+   }
+  },
+  {
+   "id": "C3",
+   "block": "memory",
+   "what": "\"mi taller de siempre\" (existe en el libro de service)",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "lugares guardados / memoria"
+   }
+  },
+  {
+   "id": "C4",
+   "block": "memory",
+   "what": "\"llevame a mi casa\"",
+   "gap": "lugares guardados (casa, trabajo)",
+   "google": {
+    "announced": true,
+    "data": "lugares guardados (Maps)"
+   }
+  },
+  {
+   "id": "C5",
+   "block": "memory",
+   "what": "\"¿a qué hora es mi turno con el médico?\"",
+   "gap": "calendario y correo",
+   "google": {
+    "announced": true,
+    "data": "Calendario / Gmail"
+   }
+  },
+  {
+   "id": "C6",
+   "block": "memory",
+   "what": "\"el lavadero de la foto de la semana pasada\"",
+   "gap": "fotos anteriores",
+   "google": {
+    "announced": true,
+    "data": "Google Fotos"
+   }
+  },
+  {
+   "id": "C7",
+   "block": "memory",
+   "what": "retomar lo dicho dentro de la misma conversación (ya resumida)",
+   "gap": null,
+   "google": {
+    "announced": true,
+    "data": "memoria de la conversación"
+   }
+  }
+ ],
+ "runs": [
+  {
+   "id": "A2",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto falta para llegar?",
+     "text": "Te faltan 800 metros, unos 3 minutos, y llegás a las 20:03.",
+     "tools": [
+      "route_status({})"
+     ],
+     "firstTextMs": 2409,
+     "totalMs": 3012,
+     "words": 12,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A3",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Dónde está la nafta más barata cerca?",
+     "text": "La más barata cerca es la Axion de Bolívar 2100, a 2,4 km: $1.269 el litro de nafta (dato de hoy). Las otras: YPF Mitre 1200 a $1.289 y YPF López Torres 3300 a $1.299. ¿Querés que te muestre la ruta a la Axion?",
+     "tools": [
+      "fuel_prices({\"product\":\"nafta\"})"
+     ],
+     "firstTextMs": 2886,
+     "totalMs": 5178,
+     "words": 44,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A4",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto falta y va a llover cuando llegue?",
+     "text": "Te faltan 800 metros, unos 3 minutos. Llega a las 20:03, y para esa hora hay 70% de chance de lluvia.",
+     "tools": [
+      "route_status({})",
+      "weather({\"place\":null})"
+     ],
+     "firstTextMs": 2885,
+     "totalMs": 3822,
+     "words": 21,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A5",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿A cuánto está el dólar blue y cuánto son 150 dólares en pesos?",
+     "text": "El dólar blue está a 1.565 pesos de venta (1.545 de compra). Con la venta, 150 dólares son 234.750 pesos.",
+     "tools": [
+      "dollar_rate({})",
+      "calculate({\"expression\":\"150 * 1565\"})"
+     ],
+     "firstTextMs": 4474,
+     "totalMs": 5505,
+     "words": 20,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A6",
+   "run": 1,
+   "verdict": "FALLA",
+   "turns": [
+    {
+     "prompt": "Llevame a una farmacia",
+     "text": "Ya tenés una navegación en curso, ¿seguimos con esa o querés ir a la farmacia? Si es la farmacia, pasame la dirección o el nombre de la que querés.",
+     "tools": [],
+     "firstTextMs": 984,
+     "totalMs": 2003,
+     "words": 29,
+     "modelCalls": 1,
+     "mustFailed": [
+      "29 palabras en movimiento (máx. 25)"
+     ],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A7",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuál es el próximo giro?",
+     "text": "Doblá a la derecha en Chile, a 200 metros.",
+     "tools": [
+      "route_status({})"
+     ],
+     "firstTextMs": 2398,
+     "totalMs": 2771,
+     "words": 9,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A8",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Cancelá la ruta",
+     "text": "Listo, la navegación quedó cancelada.",
+     "tools": [
+      "stop_navigation({})"
+     ],
+     "firstTextMs": 2341,
+     "totalMs": 2550,
+     "words": 5,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A9",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Dónde estoy?",
+     "text": "Estás en Av. Mitre, en Posadas, Misiones.",
+     "tools": [
+      "where_am_i({})"
+     ],
+     "firstTextMs": 2365,
+     "totalMs": 2718,
+     "words": 7,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A10",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Llevame a la YPF más barata",
+     "text": "La YPF más barata es la de Av. Mitre 1200 en Posadas, a 1,1 km. Llegarías en unos 6 minutos, hacia las 20:06. ¿Es ahí?",
+     "tools": [
+      "fuel_prices({\"product\":null})",
+      "set_destination({\"result\":1})"
+     ],
+     "firstTextMs": 984,
+     "totalMs": 7308,
+     "words": 25,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B1",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Tengo el check engine prendido, ¿qué puede ser?",
+     "text": "Te encontré dos códigos guardados:\n\n- P0171 (estándar): mezcla pobre en el banco 1, o sea que entra menos nafta de la que entra de aire. La ECU lo confirma: el trim de largo plazo está a 18,8 % (normal está en 0). Lo más probable, de lo más barato a lo más caro:\n  - Fuga de aire antes del MAF (manguitos, abrazaderas, tapa de admisión).\n  - Sensor MAF sucio o fallando.\n  - Inyectores sucios o presión de nafta baja.\n  - En lo último, válvulas quemadas o fuga interna (mucho más raro).\n- P1101 (del fabricante): no lo tengo verificado para tu auto; el significado depende de la marca.\n\nFreeze frame del P0171: 790 rpm, 91 °C, trim largo 18,8 %. Coincide con lo que mido ahora (812 rpm, trim corto 6,2 %).\n\nMi sugerencia: primero revisar y limpiar el MAF y buscar fugas de aire en la admisión. ¿Querés que busque un taller cerca en Posadas?",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_freeze_frame({})",
+      "read_pids({\"pids\":[\"MAF\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\",\"RPM\"]})"
+     ],
+     "firstTextMs": 6793,
+     "totalMs": 13461,
+     "words": 157,
+     "modelCalls": 4,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B2",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Tengo el P0171, ¿qué lo puede estar causando?",
+     "text": "El P0171 es mezcla pobre en banco 1: el motor recibe menos aire de lo que debería para la nafta que inyecta, y la ECU lo compensa agregando combustible.\n\nLo que mide ahora lo confirma:\n- Fuel trim largo: 18,8 % (muy alto; lo normal está bajo 10 %)\n- Fuel trim corto: 6,2 %\n- En el freeze frame ya venía en 18,8 % a 790 rpm y 91 °C, así que no es algo puntual.\n\nCausas, de lo más barato a lo más caro:\n- Fuga de aire en la admisión: mangueras, tapas, sello de la mariposa o de la EGR. Es lo más común y lo más barato de revisar.\n- Sensor MAF sucio o fallando: mide más aire del real. Se limpia con spray específico.\n- Inyectores sucios o con baja caudal.\n- Sensor de presión de colector (MAP) o de oxígeno fallando.\n- Fuga de vacío en la bomba de combustible o en el riel.\n\nTambién tenés un P1101 del fabricante (no estándar): su significado depende de la marca y no lo tengo verificado, así que no lo adivino. Si me decís marca y modelo, puedo buscar qué dice ese código.\n\nEmpezaría revisando fugas de aire en la admisión: es lo más probable y lo más barato.",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_freeze_frame({})",
+      "read_pids({\"pids\":[\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\",\"MAF\",\"ENGINE_LOAD\"]})"
+     ],
+     "firstTextMs": 5924,
+     "totalMs": 14038,
+     "words": 212,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B3",
+   "run": 1,
+   "verdict": "FALLA",
+   "turns": [
+    {
+     "prompt": "¿Paso la VTV así como está?",
+     "text": "Te resumo lo que medí:\n\n- Testigo de falla encendido, con 2 códigos guardados: P0171 y P1101.\n- P0171 es mezcla pobre en el banco 1 (el auto está pidiendo más nafta de la cuenta).\n- P1101 es un código del fabricante, no tengo su descripción verificada, así que no te lo puedo explicar con certeza.\n- La trim larga de combustible está en 18,8 %, que es alta: confirma que el motor anda pobre de nafta.\n\nMi consejo: no lo lleves así a la VTV. Con el testigo encendido y esos códigos, lo más probable es que te lo desaprueben o te manden a volver. Lo primero, lo más barato, es revisar el sensor de oxígeno y el sensor de flujo de aire (MAF), que son los que suelen causar esa mezcla pobre. Después, si sigue, el P1101 hay que identificarlo con un técnico que tenga el manual de la marca.\n\n¿Querés que busque un taller cerca de Posadas?",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_dtcs({\"kind\":\"pending\"})",
+      "read_readiness({})",
+      "read_freeze_frame({})",
+      "read_pids({\"pids\":[\"MAF\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\",\"COOLANT_TEMP\"]})"
+     ],
+     "firstTextMs": 988,
+     "totalMs": 14527,
+     "words": 160,
+     "modelCalls": 3,
+     "mustFailed": [
+      "no dice el monitor EVAP incompleto"
+     ],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B4",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuál es el historial de fallas de mi auto?",
+     "text": "Acá va el historial de tu auto (VIN 8AGEA76C0RR117525):\n\n- Código P0171 (mezcla pobre, banco 1): apareció el 02/09/2026 a las 08:10 y se volvió a ver el 18/10/2026 a las 19:58.\n- El 18/10/2026 a las 20:00 se borró el testigo; antes del borrado llevaba 2.204 km desde el último borrado.\n\n¿Querés que lea el freeze frame de ese código o que mire qué hay ahora en vivo?",
+     "tools": [
+      "read_fault_history({})"
+     ],
+     "firstTextMs": 991,
+     "totalMs": 7276,
+     "words": 69,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B5",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto consume el auto ahora en ralentí?",
+     "text": "En ralentí (812 rpm) está consumiendo unos 0,83 litros por hora, según el flujo de aire.",
+     "tools": [
+      "read_pids({\"pids\":[\"MAF\",\"RPM\"]})"
+     ],
+     "firstTextMs": 2913,
+     "totalMs": 3570,
+     "words": 16,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B6",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Qué módulos tiene mi auto?",
+     "text": "Hice el barrido de módulos. Tu auto (Volkswagen, según el VIN) tiene 4 módulos respondiendo en el bus principal (HS-CAN 500k):\n\n- 7E0 — PCM (motor), número de pieza 06A 906 023 A\n- 713 — Frenos ABS, pieza 5Q0 907 379 B\n- 714 — Tablero, pieza 5G0 920 640 D\n- 715 — Airbag\n\nEstos quedaron guardados en el laboratorio para la próxima vez. Si querés, puedo hacer una lectura puntual a alguno de ellos en modo laboratorio.",
+     "tools": [
+      "read_vehicle_info({})",
+      "knowledge_lookup({\"make\":\"Volkswagen\",\"model\":null,\"year\":null})",
+      "scan_modules({\"make\":\"Volkswagen\",\"model\":null})"
+     ],
+     "firstTextMs": 984,
+     "totalMs": 10548,
+     "words": 80,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B7",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuándo cambié el aceite por última vez?",
+     "text": "El último cambio de aceite fue el 14 de julio de 2026, a los 38.000 km, en el Taller Gómez (Av. López Torres 1450, Posadas).",
+     "tools": [
+      "read_service_log({\"car\":null})"
+     ],
+     "firstTextMs": 2461,
+     "totalMs": 3624,
+     "words": 25,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B9",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Qué DID me da el número de pieza del ABS en un Volkswagen?",
+     "text": "Para enviarte el comando suelto necesito que actives el Modo laboratorio en Ajustes. Mientras tanto, la respuesta a tu pregunta:\n\n- DID: F187 (vehicleManufacturerSparePartNumber)\n- Servicio: 22, pedido 22 F1 87, respuesta 62 F1 87\n- Módulo ABS en VAG: se pide en 0x713 y responde en 0x77D\n\nFuente: Unified Diagnostic Services (Wikipedia) y la nota vag-uds-ids del laboratorio.\n\nSi activás el Modo laboratorio, te lo mando contra el 713 para ver qué número de pieza devuelve tu ABS.",
+     "tools": [
+      "knowledge_lookup({\"make\":\"Volkswagen\",\"model\":null,\"year\":null})",
+      "docs_search({\"query\":\"F187 part number ABS Volkswagen DID\"})",
+      "✗obd_command:not_supported"
+     ],
+     "firstTextMs": 995,
+     "totalMs": 12427,
+     "words": 79,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B10",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Tengo códigos?",
+     "text": "Sí, tenés uno guardado: P0301, falla de encendido en el cilindro 1. Es de los que conviene atender: de leve (bujía) a más caro (vela de encendido, bobina, o en lo último, válvulas o compresión). Mirá antes las bujías y la bobina del cilindro 1.\n\n¿Querés que lea el freeze frame para ver cómo estaba el auto cuando saltó?",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_dtcs({\"kind\":\"pending\"})",
+      "read_dtcs({\"kind\":\"permanent\"})"
+     ],
+     "firstTextMs": 4249,
+     "totalMs": 6712,
+     "words": 59,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B11",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Todo bien con el motor?",
+     "text": "Todo bien: 812 rpm, 88 °C, 14,3 V. Solo el trim largo de combustible está alto (18,8 %), que conviene revisar a la vuelta.",
+     "tools": [
+      "read_pids({\"pids\":[\"RPM\",\"COOLANT_TEMP\",\"VOLTAGE\",\"ENGINE_LOAD\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\"]})"
+     ],
+     "firstTextMs": 3559,
+     "totalMs": 4619,
+     "words": 24,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C1",
+   "run": 1,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame adonde estuvimos ayer",
+     "text": "No tengo registro de a dónde fuiste ayer: no guardo historial de viajes. ¿Me pasás la dirección o el nombre del lugar?",
+     "tools": [],
+     "firstTextMs": 988,
+     "totalMs": 1705,
+     "words": 22,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C2",
+   "run": 1,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame a la cafetería de la que hablamos ayer",
+     "text": "No tengo memoria de conversaciones anteriores: cada charla arranca de cero, así que no sé a qué cafetería te referís. Dime su nombre o su dirección y la busco.",
+     "tools": [],
+     "firstTextMs": 984,
+     "totalMs": 1979,
+     "words": 29,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C3",
+   "run": 1,
+   "verdict": "PARCIAL",
+   "turns": [
+    {
+     "prompt": "Llevame a mi taller de siempre",
+     "text": "No tengo guardada la dirección de tu taller. ¿Me pasás la calle y el número?",
+     "tools": [],
+     "firstTextMs": 984,
+     "totalMs": 1466,
+     "words": 15,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": [
+      "no llamó a read_service_log",
+      "no dice el taller Gómez del libro"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "C4",
+   "run": 1,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame a mi casa",
+     "text": "No sé a dónde es tu casa todavía. Decime la dirección (calle y número) y te la busco.",
+     "tools": [],
+     "firstTextMs": 983,
+     "totalMs": 1580,
+     "words": 18,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C5",
+   "run": 1,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "¿A qué hora es mi turno con el médico?",
+     "text": "No tengo acceso a tus turnos ni a tu agenda, así que no puedo decirte a qué hora es. Miralo en la app de la obra social, en el correo o el WhatsApp donde te lo confirmaron, o preguntale directamente a la clínica.\n\n¿Te ayudo con algo del auto o con llegar a la consulta?",
+     "tools": [],
+     "firstTextMs": 984,
+     "totalMs": 2668,
+     "words": 55,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C6",
+   "run": 1,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Encontrá el lavadero de la foto que saqué la semana pasada y llevame",
+     "text": "No veo ninguna foto en tu mensaje. Si la tenés en el teléfono, adjuntala acá y te ayudo a identificar el lavadero.",
+     "tools": [],
+     "firstTextMs": 995,
+     "totalMs": 1714,
+     "words": 22,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C7",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Adónde iba y a qué?",
+     "text": "Ibas a San Ignacio a buscar una bomba de agua para tu Chevrolet Tracker, pasando antes por la YPF de Av. Mitre 1200 a cargar nafta.",
+     "tools": [],
+     "firstTextMs": 1065,
+     "totalMs": 1980,
+     "words": 26,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A2",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto falta para llegar?",
+     "text": "Te faltan 800 metros, unos 3 minutos, y llegás a las 20:03.",
+     "tools": [
+      "route_status({})"
+     ],
+     "firstTextMs": 2414,
+     "totalMs": 3021,
+     "words": 12,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A3",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Dónde está la nafta más barata cerca?",
+     "text": "La más barata cerca es la Axion de Bolívar 2100, a 2,4 km: $1.269 el litro de nafta (dato de hoy).\n\nLas otras:\n- YPF, Av. Mitre 1200, a 1,1 km: $1.289\n- YPF, Av. López Torres 3300, a 3,8 km: $1.299\n\n¿Te llevo a la Axion?",
+     "tools": [
+      "fuel_prices({\"product\":\"nafta\"})"
+     ],
+     "firstTextMs": 2882,
+     "totalMs": 5624,
+     "words": 47,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A4",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto falta y va a llover cuando llegue?",
+     "text": "Faltan 0,8 km, unos 3 minutos, llegás a las 20:03. Para las 20 hay 70% de chance de lluvia, así que sí, probablemente esté lloviendo cuando llegues.",
+     "tools": [
+      "route_status({})",
+      "weather({\"place\":null})"
+     ],
+     "firstTextMs": 2872,
+     "totalMs": 4148,
+     "words": 27,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A5",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿A cuánto está el dólar blue y cuánto son 150 dólares en pesos?",
+     "text": "El dólar blue está a 1.565 de venta (1.545 de compra). 150 dólares a esa venta son 234.750 pesos.",
+     "tools": [
+      "dollar_rate({})",
+      "calculate({\"expression\":\"150 * 1565\"})"
+     ],
+     "firstTextMs": 4467,
+     "totalMs": 5452,
+     "words": 19,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A6",
+   "run": 2,
+   "verdict": "FALLA",
+   "turns": [
+    {
+     "prompt": "Llevame a una farmacia",
+     "text": "Ahora te llevo a Axion, te faltan 0,8 km. ¿Querés que corte y te busque una farmacia cerca de Posadas?",
+     "tools": [
+      "route_status({})"
+     ],
+     "firstTextMs": 982,
+     "totalMs": 3621,
+     "words": 20,
+     "modelCalls": 2,
+     "mustFailed": [
+      "no dice que pida la dirección"
+     ],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A7",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuál es el próximo giro?",
+     "text": "Doblá a la derecha en Chile, a 200 metros.",
+     "tools": [
+      "route_status({})"
+     ],
+     "firstTextMs": 2397,
+     "totalMs": 2768,
+     "words": 9,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A8",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Cancelá la ruta",
+     "text": "Listo, la ruta quedó cancelada.",
+     "tools": [
+      "stop_navigation({})"
+     ],
+     "firstTextMs": 2335,
+     "totalMs": 2540,
+     "words": 5,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A9",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Dónde estoy?",
+     "text": "Estás en Av. Mitre, en Posadas, Misiones.",
+     "tools": [
+      "where_am_i({})"
+     ],
+     "firstTextMs": 2362,
+     "totalMs": 2711,
+     "words": 7,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A10",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Llevame a la YPF más barata",
+     "text": "La YPF de Av. Mitre 1200 en Posadas queda a 1,1 km, unos 6 minutos, llegando a las 20:06. ¿Es ahí?",
+     "tools": [
+      "fuel_prices({\"product\":\"nafta\"})",
+      "set_destination({\"result\":1})"
+     ],
+     "firstTextMs": 983,
+     "totalMs": 8105,
+     "words": 21,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B1",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Tengo el check engine prendido, ¿qué puede ser?",
+     "text": "Tenés dos códigos guardados:\n\n- P0171 (estándar): mezcla pobre, banco 1. La ECU le está sumando combustible para compensar.\n- P1101 (del fabricante): su significado depende de la marca y no lo tengo verificado, así que no te lo adivino.\n\nLo que mide ahora:\n- Ajuste largo de combustible: 18,8 %. Muy alto, confirma que el motor está pobre de forma sostenida.\n- Ajuste corto: 6,2 %.\n- MAF: 2,52 g/s en ralentí (normal).\n- Ralentí: 812 rpm, estable.\n\nEl P0171 es lo que te preocupa. Causas, de lo más barato a lo más caro:\n- Fuga de aire antes del MAF (mangueras, tapas, junta del colector). Es lo más común y lo más barato de revisar.\n- Sensor MAF sucio o fallando.\n- Inyector obstruido o regulador de presión de combustible flojo.\n- Sensor O2 o bomba de combustible (menos probable con este patrón).\n\nMirá primero las mangueras y tapas del ingreso de aire: una fuga ahí da justo este cuadro. Si querés, te ayudo a revisar el MAF o a medir la presión de combustible.",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_freeze_frame({})",
+      "read_pids({\"pids\":[\"MAF\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\",\"RPM\"]})"
+     ],
+     "firstTextMs": 6767,
+     "totalMs": 14155,
+     "words": 177,
+     "modelCalls": 4,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B2",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Tengo el P0171, ¿qué lo puede estar causando?",
+     "text": "El P0171 es de banco 1, sensor 1: mezcla pobre (el motor está pidiendo más nafta de la cuenta). La ECU le está metiendo +18,8% de corrección larga, así que el problema es real y sostenido, no un bache.\n\nLo más probable, de lo más barato a lo más caro:\n\n- Fuga de aire en la admisión (la causa más común): junta del colector, mangueras del MAF, la del turbo si es inyectado, o el sello del tanque de vacío. Un soplido de aire no medido por el MAF arruina la mezcla.\n- Sensor MAF sucio o dañado: mide menos aire del real y la mezcla queda pobre.\n- Inyectores sucios o con baja caudal.\n- Fuga en el escape antes del sensor lambda (rara).\n- Problema del propio sensor lambda o de la ECU (lo más caro, y lo menos probable).\n\nTambién traés un P1101, que es de la marca y no lo tengo verificado: suele estar relacionado con el MAF o la presión de admisión, así que refuerza la sospecha de una fuga o de un MAF en mal estado.\n\nMirá primero las mangueras y la junta del colector con el motor en marcha (o con un spray de limpiador de carburador alrededor de las uniones: si el ralentí cambia, ahí está la fuga). Después, el MAF. ¿Querés que leamos el historial de fallas para ver cuándo apareció?",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_freeze_frame({})",
+      "read_pids({\"pids\":[\"MAF\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\",\"COOLANT_TEMP\"]})"
+     ],
+     "firstTextMs": 5874,
+     "totalMs": 14432,
+     "words": 230,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B3",
+   "run": 2,
+   "verdict": "FALLA",
+   "turns": [
+    {
+     "prompt": "¿Paso la VTV así como está?",
+     "text": "No, así no pasa. Te cuento por qué:\n\n- Testigo de falla (MIL) encendido: en la VTV te lo miran y con el testigo prendido no pasa.\n- Dos códigos guardados: P0171 (mezcla pobre, banco 1) y P1101 (código de fabricante, sin descripción verificada).\n- El P0171 se guardó con el trim de combustible largo en 18,8 %, que es alto: el motor está pidiendo más nafta de lo que inyecta, así que no es un capricho.\n\nLo bueno: el resto está sano. Ralentí 812 rpm, motor a 88 °C, batería cargando a 14,3 V.\n\nPara pasar la VTV tenés que apagar el testigo, y para eso hay que resolver la causa, no solo borrar el código. Por lo barato a lo caro:\n- Verificar el sensor de oxígeno del banco 1 (el más común en un P0171).\n- Revisar fugas de aire en la admisión (mangueras, empaques) que le metan aire no medido.\n- Controlar el MAF, que puede estar sucio o fallando.\n- Verificar la presión de combustible y los inyectores.\n\n¿Querés que te busque un taller cerca en Posadas para que lo mire?",
+     "tools": [
+      "read_pids({\"pids\":[\"RPM\",\"COOLANT_TEMP\",\"VOLTAGE\",\"ENGINE_LOAD\"]})",
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_dtcs({\"kind\":\"pending\"})",
+      "read_readiness({})",
+      "read_freeze_frame({})"
+     ],
+     "firstTextMs": 990,
+     "totalMs": 15437,
+     "words": 186,
+     "modelCalls": 3,
+     "mustFailed": [
+      "no dice el monitor EVAP incompleto"
+     ],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B4",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuál es el historial de fallas de mi auto?",
+     "text": "Acá está el historial de tu auto (VIN 8AGEA76C0RR117525):\n\n- Código P0171 (mezcla pobre, banco 1): apareció el 2/09/2026 a las 08:10 y volvió a verse el 18/10/2026 a las 19:58, con 2.204 km desde el último borrado.\n- Ese mismo día, 18/10/2026 a las 20:00, se borraron los códigos (antes había P0171, con 2.204 km desde el último borrado).\n\nEl P0171 indica mezcla pobre en el banco 1: el motor recibe menos combustible del que debería. Suele deberse a una fuga de aire, sonda de oxígeno cansada o inyector sucio. ¿Querés que lo mida ahora para ver cómo está?",
+     "tools": [
+      "read_fault_history({})"
+     ],
+     "firstTextMs": 989,
+     "totalMs": 8801,
+     "words": 100,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B5",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto consume el auto ahora en ralentí?",
+     "text": "En ralentí (812 rpm) está consumiendo unos 0,83 litros por hora, según el caudal de aire medido.",
+     "tools": [
+      "read_pids({\"pids\":[\"MAF\",\"RPM\"]})"
+     ],
+     "firstTextMs": 2907,
+     "totalMs": 3668,
+     "words": 17,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B6",
+   "run": 2,
+   "verdict": "FALLA",
+   "turns": [
+    {
+     "prompt": "¿Qué módulos tiene mi auto?",
+     "text": "Antes de barrer, necesito saber la marca y el modelo de tu auto. ¿Me lo decís?",
+     "tools": [],
+     "firstTextMs": 984,
+     "totalMs": 1561,
+     "words": 16,
+     "modelCalls": 1,
+     "mustFailed": [
+      "no llamó a scan_modules",
+      "no dice el módulo de frenos"
+     ],
+     "niceFailed": [
+      "no dice más de un módulo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "B7",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuándo cambié el aceite por última vez?",
+     "text": "El último cambio de aceite fue el 14 de julio de 2026, a los 38.000 km, en el Taller Gómez (Av. López Torres 1450, Posadas). Fue aceite y filtro juntos.",
+     "tools": [
+      "read_service_log({\"car\":null})"
+     ],
+     "firstTextMs": 2450,
+     "totalMs": 3756,
+     "words": 30,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B9",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Qué DID me da el número de pieza del ABS en un Volkswagen?",
+     "text": "El DID es F187 (vehicleManufacturerSparePartNumber). Se lee con el servicio 22: se manda 22 F1 87 al módulo de frenos, que en VAG se pide en la dirección 713 y responde en 77D.\n\nNo lo medí ahora porque para mandar tramas sueltas al auto hace falta activar el Modo laboratorio en Ajustes. Si lo activás, te lo leo y te digo el número de pieza que trae tu ABS.",
+     "tools": [
+      "knowledge_lookup({\"make\":\"Volkswagen\",\"model\":null,\"year\":null})",
+      "docs_search({\"query\":\"Volkswagen ABS part number DID F187 3E 713\"})",
+      "✗obd_command:not_supported"
+     ],
+     "firstTextMs": 7678,
+     "totalMs": 10319,
+     "words": 69,
+     "modelCalls": 4,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B10",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Tengo códigos?",
+     "text": "Sí, tenés uno guardado:\n\n- P0301 (sistema de motor): falla de encendido en el cilindro 1.\n\nNo es de los más graves, pero conviene atenderlo: un mal encendido sostenido puede dañar el catalizador. De lo más barato a lo más caro, revisá:\n- Bujía y cable del cilindro 1 (lo más común y barato).\n- Bobina de encendido de ese cilindro.\n- Inyector (si los anteriores están bien).\n\n¿Querés que lea el freeze frame para ver cómo estaba el auto cuando se registró?",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})"
+     ],
+     "firstTextMs": 3014,
+     "totalMs": 6277,
+     "words": 83,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B11",
+   "run": 2,
+   "verdict": "FALLA",
+   "turns": [
+    {
+     "prompt": "¿Todo bien con el motor?",
+     "text": "Todo en orden: sin códigos de falla, 88 °C, 14,3 V y el trim largo un poco alto (18,8 %) pero sin más señales de nada raro.",
+     "tools": [
+      "read_pids({\"pids\":[\"RPM\",\"COOLANT_TEMP\",\"VOLTAGE\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\",\"ENGINE_LOAD\"]})",
+      "read_dtcs({\"kind\":\"stored\"})"
+     ],
+     "firstTextMs": 4242,
+     "totalMs": 5248,
+     "words": 27,
+     "modelCalls": 2,
+     "mustFailed": [
+      "27 palabras en movimiento (máx. 25)"
+     ],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C1",
+   "run": 2,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame adonde estuvimos ayer",
+     "text": "No tengo registro de a dónde fuiste ayer, así que no puedo llevarte directo. ¿Me decís el nombre del lugar o la dirección?",
+     "tools": [],
+     "firstTextMs": 983,
+     "totalMs": 1702,
+     "words": 23,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C2",
+   "run": 2,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame a la cafetería de la que hablamos ayer",
+     "text": "No tengo registro de conversaciones de días anteriores: cada charla arranca de cero, así que no sé a qué cafetería te referís.\n\nDecime el nombre o la dirección y la busco.",
+     "tools": [],
+     "firstTextMs": 981,
+     "totalMs": 2045,
+     "words": 31,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C3",
+   "run": 2,
+   "verdict": "PARCIAL",
+   "turns": [
+    {
+     "prompt": "Llevame a mi taller de siempre",
+     "text": "¿A qué taller vas? Dame su nombre o la dirección y lo busco.",
+     "tools": [],
+     "firstTextMs": 985,
+     "totalMs": 1412,
+     "words": 13,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": [
+      "no llamó a read_service_log",
+      "no dice el taller Gómez del libro"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "C4",
+   "run": 2,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame a mi casa",
+     "text": "No sé a dónde es tu casa todavía. ¿Me pasás la dirección (calle y número)?",
+     "tools": [],
+     "firstTextMs": 983,
+     "totalMs": 1485,
+     "words": 15,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C5",
+   "run": 2,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "¿A qué hora es mi turno con el médico?",
+     "text": "No tengo acceso a tu agenda ni a turnos médicos. Para averiguarlo, revisá la app o el sitio del médico, o mandale un mensaje preguntando. Si querés, te busco la dirección del consultorio para llevarte.",
+     "tools": [],
+     "firstTextMs": 983,
+     "totalMs": 2247,
+     "words": 35,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C6",
+   "run": 2,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Encontrá el lavadero de la foto que saqué la semana pasada y llevame",
+     "text": "No veo ninguna foto en tu mensaje. Si querés que busque el lavadero, mandame la imagen o decime el nombre o la dirección.",
+     "tools": [],
+     "firstTextMs": 995,
+     "totalMs": 1736,
+     "words": 23,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C7",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Adónde iba y a qué?",
+     "text": "Ibas a San Ignacio a buscar una bomba de agua para tu Chevrolet Tracker, y antes querías pasar por la YPF de Av. Mitre 1200 a cargar nafta.",
+     "tools": [],
+     "firstTextMs": 1065,
+     "totalMs": 2054,
+     "words": 28,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A2",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto falta para llegar?",
+     "text": "Faltan 800 metros, unos 3 minutos, llegás a las 20:03.",
+     "tools": [
+      "route_status({})"
+     ],
+     "firstTextMs": 2420,
+     "totalMs": 3008,
+     "words": 10,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A3",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Dónde está la nafta más barata cerca?",
+     "text": "La más barata es la Axion de Bolívar 2100, a 2,4 km: nafta a $1.269 el litro (dato de hoy). Después viene la YPF de Av. Mitre 1200 a $1.289. ¿Te muestro la ruta a la Axion?",
+     "tools": [
+      "fuel_prices({\"product\":\"nafta\"})"
+     ],
+     "firstTextMs": 2891,
+     "totalMs": 4765,
+     "words": 37,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A4",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto falta y va a llover cuando llegue?",
+     "text": "Te faltan 0,8 km, unos 3 minutos. A las 20:00 hay 70% de probabilidad de lluvia, así que sí, probablemente llueva cuando llegues.",
+     "tools": [
+      "route_status({})",
+      "weather({\"place\":null})"
+     ],
+     "firstTextMs": 2871,
+     "totalMs": 3932,
+     "words": 23,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A5",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿A cuánto está el dólar blue y cuánto son 150 dólares en pesos?",
+     "text": "El dólar blue está a 1.565 pesos (venta) y 1.545 (compra). 150 dólares a la venta serían 234.750 pesos.",
+     "tools": [
+      "dollar_rate({})",
+      "calculate({\"expression\":\"150 * 1565\"})"
+     ],
+     "firstTextMs": 4477,
+     "totalMs": 5584,
+     "words": 19,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A6",
+   "run": 3,
+   "verdict": "FALLA",
+   "turns": [
+    {
+     "prompt": "Llevame a una farmacia",
+     "text": "No me sale la búsqueda de comercios. Para llevarte a una farmacia necesito la dirección: decime la calle y el número, o el nombre de la farmacia.",
+     "tools": [
+      "web_search({\"query\":\"farmacia Posadas Misiones\"})"
+     ],
+     "firstTextMs": 984,
+     "totalMs": 4078,
+     "words": 27,
+     "modelCalls": 2,
+     "mustFailed": [
+      "27 palabras en movimiento (máx. 25)"
+     ],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A7",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuál es el próximo giro?",
+     "text": "Doblá a la derecha en Chile, a 200 metros.",
+     "tools": [
+      "route_status({})"
+     ],
+     "firstTextMs": 2391,
+     "totalMs": 2764,
+     "words": 9,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A8",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Cancelá la ruta",
+     "text": "Listo, corté la navegación.",
+     "tools": [
+      "stop_navigation({})"
+     ],
+     "firstTextMs": 2336,
+     "totalMs": 2515,
+     "words": 4,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A9",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Dónde estoy?",
+     "text": "Estás en Av. Mitre, Posadas, Misiones.",
+     "tools": [
+      "where_am_i({})"
+     ],
+     "firstTextMs": 2357,
+     "totalMs": 2682,
+     "words": 6,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A10",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Llevame a la YPF más barata",
+     "text": "Te la dejé en el mapa: YPF de Av. Mitre 1200, Posadas, a 1,1 km, unos 6 minutos, llegás a las 20:06. La nafta está a 1.289 y el gasoil a 1.350 por litro. ¿Es ahí?",
+     "tools": [
+      "fuel_prices({\"product\":null})",
+      "set_destination({\"result\":1})"
+     ],
+     "firstTextMs": 2537,
+     "totalMs": 7590,
+     "words": 36,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B1",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Tengo el check engine prendido, ¿qué puede ser?",
+     "text": "Tenés dos códigos guardados:\n\n- P0171 (estándar): mezcla pobre en banco 1. En el freeze frame el trim largo está en 18,8 %, que confirma que la ECU está compensando con más nafta porque entra aire no medido. Causas, de lo más barato a lo más caro: revisar la tapa del tanque y las abrazaderas de la manguera de vacío (fugas), el sensor MAF sucio o dañado, y al final una fuga de vacío en el colector o el sello de la culata.\n- P1101 (del fabricante): su significado depende de la marca y no lo tengo verificado, así que no te lo adivino.\n\nSugerencia: empezá por revisar fugas de vacío y el MAF, que son lo más común y lo más barato. Si querés, te busco un taller cerca en Posadas.",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_dtcs({\"kind\":\"pending\"})",
+      "read_freeze_frame({})"
+     ],
+     "firstTextMs": 5045,
+     "totalMs": 9943,
+     "words": 132,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B2",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Tengo el P0171, ¿qué lo puede estar causando?",
+     "text": "P0171 es mezcla pobre en banco 1: el sensor de oxígeno detecta más oxígeno de lo normal, es decir que entra poco combustible o entra aire no medido.\n\nLo que medí ahora lo confirma: el trim largo está en 18,8% (muy alto) y el corto en 6,2%, con el motor en ralentí a 812 rpm y 88 °C. En la foto que guardó la ECU también estaba en 18,8%, así que el problema ya venía de antes, no es puntual.\n\nCausas, de lo más barato a lo más caro:\n- Fuga de aire después del MAF: la más común. Revisá manguitos, la tapa del filtro de aire, la bandeja del filtro y la junta de la mariposa.\n- Sensor MAF sucio o con aceite encima.\n- Inyector de banco 1 sucio o con poco caudal.\n- Sensor de oxígeno (bomba de carga) fallando.\n- Fuga de vacío en el múltiple.\n- Bomba de combustible con poca presión.\n\nOjo: tenés también un P1101 del fabricante, que es un código propio de la marca y no lo tengo verificado, así que no te lo puedo explicar con seguridad.\n\n¿Querés que busquemos una fuga de aire o que midamos el MAF en marcha para ver si es estable?",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_freeze_frame({})",
+      "read_pids({\"pids\":[\"MAF\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\",\"COOLANT_TEMP\",\"RPM\"]})"
+     ],
+     "firstTextMs": 6057,
+     "totalMs": 13856,
+     "words": 205,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B3",
+   "run": 3,
+   "verdict": "FALLA",
+   "turns": [
+    {
+     "prompt": "¿Paso la VTV así como está?",
+     "text": "No, así no la pasás. Te cuento por qué, de lo más grave a lo menor:\n\n- Testigo de falla encendido (MIL on), con 2 códigos guardados. En la VTV, testigo encendido es rechazo directo.\n- P01171 (mezcla pobre, banco 1): el motor está pidiendo más combustible del que le entra. El fuel trim largo está en 18,8 %, que es alto; lo normal está por debajo del 10 %.\n- P1101 (código del fabricante, MAF): no tengo su significado verificado para este auto, pero va en el mismo sistema de aire/combustible.\n\nLo que sí está bien:\n- Ralentí estable, 812 rpm.\n- Temperatura de agua en 88 °C, normal.\n- Batería cargando a 14,3 V, bien.\n\nPor lo que se ve, el problema es de aire/combustible: probablemente el sensor MAF sucio o fallando, o una fuga de aire antes de él. Empezá por lo barato: revisar el MAF y limpiarlo, revisar mangueras y la tapa de admisión por fugas. Si el trim largo no baja a valores normales y el testigo no se apaga, no la pases.\n\n¿Querés que te busque un taller cerca en Posadas?",
+     "tools": [
+      "read_pids({\"pids\":[\"RPM\",\"COOLANT_TEMP\",\"VOLTAGE\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\"]})",
+      "read_dtcs({\"kind\":\"stored\"})",
+      "read_readiness({})"
+     ],
+     "firstTextMs": 990,
+     "totalMs": 12681,
+     "words": 187,
+     "modelCalls": 2,
+     "mustFailed": [
+      "no dice el monitor EVAP incompleto"
+     ],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B4",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuál es el historial de fallas de mi auto?",
+     "text": "Acá va el historial de tu auto (VIN 8AGEA76C0RR117525):\n\n- Código P0171 (mezcla pobre, banco 1): apareció por primera vez el 2/09/2026 a las 8:10 y se vio por última vez el 18/10/2026 a las 19:58. Estuvo activo unos 2.204 km desde el último borrado.\n- Ese mismo día, 18/10/2026 a las 20:00, se borró el código (quedó limpio).\n\nEn resumen: el P0171 se registró, estuvo presente durante un buen trecho y después se borró a mano. Si querés, te explico qué suele causar ese código y qué conviene revisar.",
+     "tools": [
+      "read_fault_history({})"
+     ],
+     "firstTextMs": 989,
+     "totalMs": 8149,
+     "words": 90,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B5",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuánto consume el auto ahora en ralentí?",
+     "text": "En ralentí (812 rpm) está consumiendo unos 0,83 litros por hora, según el flujo de aire.",
+     "tools": [
+      "read_pids({\"pids\":[\"MAF\",\"RPM\"]})"
+     ],
+     "firstTextMs": 2908,
+     "totalMs": 3567,
+     "words": 16,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B6",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Qué módulos tiene mi auto?",
+     "text": "El barrido encontró 4 módulos que responden en el bus HS-CAN (500k). Son estos:\n\n- 7E0 - PCM (motor) - número de pieza 06A 906 023 H\n- 713 - Frenos ABS - pieza 1K0 919 272 C\n- 714 - Tablero - pieza 5G0 920 640 D\n- 715 - Airbag\n\nTodos están en el mismo bus de alta velocidad. El barrido fue de solo lectura, así que no toqué nada.\n\nSi querés, puedo meterme a leer algún módulo en particular (modo laboratorio) o checar los códigos de falla.",
+     "tools": [
+      "read_vehicle_info({})",
+      "knowledge_lookup({\"make\":\"Chevrolet\",\"model\":null,\"year\":null})",
+      "scan_modules({\"make\":null,\"model\":null})"
+     ],
+     "firstTextMs": 985,
+     "totalMs": 10827,
+     "words": 90,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B7",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Cuándo cambié el aceite por última vez?",
+     "text": "El último cambio de aceite fue el 14 de julio de 2026, en el Chevrolet Tracker 2023, a los 38.000 km, en el Taller Gómez de Posadas.",
+     "tools": [
+      "read_service_log({\"car\":null})"
+     ],
+     "firstTextMs": 2456,
+     "totalMs": 3608,
+     "words": 27,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B9",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Qué DID me da el número de pieza del ABS en un Volkswagen?",
+     "text": "El DID es F187 (vehicleManufacturerSparePartNumber). Se pide con el servicio 22: la trama es 22 F1 87 y la respuesta positiva vuelve 62 F1 87.\n\nEn un Volkswagen el módulo de frenos/ABS se habla en la dirección 0x713 (responde en 0x77D).\n\nQuise leerlo en tu auto para confirmarlo, pero para enviar comandos sueltos hay que activar el Modo laboratorio en Ajustes. Si lo activás, te lo mido ahora mismo.",
+     "tools": [
+      "knowledge_lookup({\"make\":\"Volkswagen\",\"model\":null,\"year\":null})",
+      "docs_search({\"query\":\"DID número de pieza parte number 3E 02 00 ABS Volkswagen\"})",
+      "✗obd_command:not_supported"
+     ],
+     "firstTextMs": 7717,
+     "totalMs": 10777,
+     "words": 69,
+     "modelCalls": 4,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B10",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Tengo códigos?",
+     "text": "Sí, tenés uno guardado:\n\n- P0301 – Faltas de encendido en el cilindro 1.\n\nEs un código estándar de powertrain. Lo más probable, de lo más barato a lo más caro:\n- Bujía y cable del cilindro 1 (lo más común y barato).\n- Bobina de encendido del cilindro 1.\n- Inyector sucio o con problema.\n- Si aparece seguido, revisar compresión o válvulas de ese cilindro.\n\n¿Querés que lea el freeze frame para ver en qué condiciones se registró?",
+     "tools": [
+      "read_dtcs({\"kind\":\"stored\"})"
+     ],
+     "firstTextMs": 2901,
+     "totalMs": 6085,
+     "words": 80,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B11",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Todo bien con el motor?",
+     "text": "Todo bien: sin códigos, 88 °C, 14,3 V. Solo el trim largo alto (18,8 %) pide revisar aire o combustible.",
+     "tools": [
+      "read_pids({\"pids\":[\"RPM\",\"COOLANT_TEMP\",\"ENGINE_LOAD\",\"VOLTAGE\",\"FUEL_TRIM_SHORT\",\"FUEL_TRIM_LONG\"]})",
+      "read_dtcs({\"kind\":\"stored\"})"
+     ],
+     "firstTextMs": 4245,
+     "totalMs": 5108,
+     "words": 20,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C1",
+   "run": 3,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame adonde estuvimos ayer",
+     "text": "No tengo registro de a dónde fuimos ayer, ni veo navegación previa guardada. ¿Me pasás la dirección o el nombre del lugar?",
+     "tools": [],
+     "firstTextMs": 982,
+     "totalMs": 1675,
+     "words": 22,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C2",
+   "run": 3,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame a la cafetería de la que hablamos ayer",
+     "text": "No tengo memoria de lo que hablamos ayer: cada charla arranca de cero y no guardo conversaciones anteriores.\n\nContame el nombre de la cafetería o su dirección y la busco.",
+     "tools": [],
+     "firstTextMs": 983,
+     "totalMs": 1999,
+     "words": 30,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C3",
+   "run": 3,
+   "verdict": "PARCIAL",
+   "turns": [
+    {
+     "prompt": "Llevame a mi taller de siempre",
+     "text": "No tengo guardado dónde es tu taller. ¿Me pasás la dirección o el nombre del lugar?",
+     "tools": [],
+     "firstTextMs": 983,
+     "totalMs": 1486,
+     "words": 16,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": [
+      "no llamó a read_service_log",
+      "no dice el taller Gómez del libro"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "C4",
+   "run": 3,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Llevame a mi casa",
+     "text": "No tengo la dirección de tu casa guardada. ¿Me la pasás?",
+     "tools": [],
+     "firstTextMs": 986,
+     "totalMs": 1368,
+     "words": 11,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C5",
+   "run": 3,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "¿A qué hora es mi turno con el médico?",
+     "text": "No tengo acceso a tu agenda médica ni a turnos: no guardo ese tipo de información ni puedo consultarla desde acá.\n\nSi querés, te puedo ayudar a buscar el teléfono o la dirección del médico o la clínica para que lo llames y lo confirmes. ¿Querés que busque?",
+     "tools": [],
+     "firstTextMs": 985,
+     "totalMs": 2523,
+     "words": 48,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C6",
+   "run": 3,
+   "verdict": "SIN CAPACIDAD",
+   "turns": [
+    {
+     "prompt": "Encontrá el lavadero de la foto que saqué la semana pasada y llevame",
+     "text": "No veo ninguna foto adjunta en tu mensaje. Si la tenés, mandame la imagen del lavadero y te lo busco.",
+     "tools": [],
+     "firstTextMs": 996,
+     "totalMs": 1663,
+     "words": 20,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "C7",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "¿Adónde iba y a qué?",
+     "text": "Ibas a San Ignacio a buscar una bomba de agua para tu Chevrolet Tracker, y querías pasar antes por la YPF de Av. Mitre 1200 a cargar nafta.",
+     "tools": [],
+     "firstTextMs": 1065,
+     "totalMs": 2048,
+     "words": 28,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A1",
+   "run": 1,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Llevame a Uruguay 1223",
+     "text": "Te lo marqué en el mapa: Uruguay 1223, Posadas, a 1,2 km, unos 5 minutos (llegarías a las 20:05). ¿Es ahí?",
+     "tools": [
+      "search_place({\"query\":\"Uruguay 1223\"})",
+      "set_destination({\"result\":1})"
+     ],
+     "firstTextMs": 4965,
+     "totalMs": 6039,
+     "words": 21,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    },
+    {
+     "prompt": "Sí, dale",
+     "text": "Arranqué la guía a Uruguay 1223. ¡Buen viaje!",
+     "tools": [
+      "start_navigation({})"
+     ],
+     "firstTextMs": 2880,
+     "totalMs": 3284,
+     "words": 8,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B8",
+   "run": 1,
+   "verdict": "PARCIAL",
+   "turns": [
+    {
+     "prompt": "Anotá que hoy cambié el aceite a 45.000 km",
+     "text": "Antes de anotarlo, necesito confirmar de qué auto se trata. ¿Marca, modelo, año o patente?",
+     "tools": [],
+     "firstTextMs": 997,
+     "totalMs": 1552,
+     "words": 15,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": [
+      "no dice que ofrezca los autos del registro"
+     ]
+    },
+    {
+     "prompt": "El Tracker",
+     "text": "Listo, quedó anotado: cambio de aceite en el Chevrolet Tracker a los 45.000 km, hoy 22/10/2026.",
+     "tools": [
+      "log_service({\"car\":\"Chevrolet Tracker\",\"item\":\"Cambio de aceite\",\"km\":45000,\"note\":null})"
+     ],
+     "firstTextMs": 3626,
+     "totalMs": 4521,
+     "words": 16,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A1",
+   "run": 2,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Llevame a Uruguay 1223",
+     "text": "Te lo marqué en el mapa: Uruguay 1223 en Posadas, a 1,2 km, unos 5 minutos, llegando a las 20:05. ¿Es ahí?",
+     "tools": [
+      "search_place({\"query\":\"Uruguay 1223, Posadas\"})",
+      "set_destination({\"result\":1})"
+     ],
+     "firstTextMs": 982,
+     "totalMs": 6817,
+     "words": 22,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    },
+    {
+     "prompt": "Sí, dale",
+     "text": "Listo, ya arrancó la guía. Son 1,2 km, unos 5 minutos.",
+     "tools": [
+      "start_navigation({})"
+     ],
+     "firstTextMs": 1312,
+     "totalMs": 3793,
+     "words": 11,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B8",
+   "run": 2,
+   "verdict": "PARCIAL",
+   "turns": [
+    {
+     "prompt": "Anotá que hoy cambié el aceite a 45.000 km",
+     "text": "Antes de anotarlo, necesito confirmar de qué auto se trata. ¿Me pasás marca, modelo y año (o la patente)?",
+     "tools": [],
+     "firstTextMs": 994,
+     "totalMs": 1682,
+     "words": 19,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": [
+      "no dice que ofrezca los autos del registro"
+     ]
+    },
+    {
+     "prompt": "El Tracker",
+     "text": "Listo, anotado: cambio de aceite del Chevrolet Tracker 2023 a los 45.000 km, hoy 22/10/2026.",
+     "tools": [
+      "read_service_log({\"car\":null})",
+      "log_service({\"car\":\"Chevrolet Tracker 2023\",\"item\":\"cambio de aceite\",\"km\":45000,\"note\":null})"
+     ],
+     "firstTextMs": 5457,
+     "totalMs": 6439,
+     "words": 15,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "A1",
+   "run": 3,
+   "verdict": "PASA",
+   "turns": [
+    {
+     "prompt": "Llevame a Uruguay 1223",
+     "text": "Uruguay 1223 en Posadas, a 1,2 km, unos 5 minutos, llegada a las 20:05. ¿Es ahí?",
+     "tools": [
+      "search_place({\"query\":\"Uruguay 1223, Posadas\"})",
+      "set_destination({\"result\":1})"
+     ],
+     "firstTextMs": 982,
+     "totalMs": 5882,
+     "words": 16,
+     "modelCalls": 3,
+     "mustFailed": [],
+     "niceFailed": []
+    },
+    {
+     "prompt": "Sí, dale",
+     "text": "Listo, arrancó la guía a Uruguay 1223.",
+     "tools": [
+      "start_navigation({})"
+     ],
+     "firstTextMs": 2905,
+     "totalMs": 3276,
+     "words": 7,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  },
+  {
+   "id": "B8",
+   "run": 3,
+   "verdict": "PARCIAL",
+   "turns": [
+    {
+     "prompt": "Anotá que hoy cambié el aceite a 45.000 km",
+     "text": "Antes de anotarlo, confirmame de qué auto se trata: marca, modelo y año, o la patente.",
+     "tools": [],
+     "firstTextMs": 996,
+     "totalMs": 1563,
+     "words": 16,
+     "modelCalls": 1,
+     "mustFailed": [],
+     "niceFailed": [
+      "no dice que ofrezca los autos del registro"
+     ]
+    },
+    {
+     "prompt": "El Tracker",
+     "text": "Listo, anotado: cambio de aceite del Tracker a los 45.000 km, hoy 22/10/2026.",
+     "tools": [
+      "log_service({\"car\":\"Tracker\",\"item\":\"Cambio de aceite\",\"km\":45000,\"note\":null})"
+     ],
+     "firstTextMs": 3605,
+     "totalMs": 4445,
+     "words": 13,
+     "modelCalls": 2,
+     "mustFailed": [],
+     "niceFailed": []
+    }
+   ]
+  }
+ ]
+}
