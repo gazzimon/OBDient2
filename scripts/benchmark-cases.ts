@@ -43,6 +43,8 @@ export interface BenchCase {
 // ── Contexts: Posadas, Misiones ──────────────────────────────────────────────
 const PARKED: Context = { ...STOPPED, place: 'Posadas, Misiones' };
 const DRIVING: Context = { ...MOVING, place: 'Posadas, Misiones' };
+// Moving, with no route going yet (the usual "llevame a una farmacia" on the road).
+const DRIVING_FREE: Context = { ...DRIVING, navigating: false };
 
 // ── Checks that only the benchmark needs ─────────────────────────────────────
 
@@ -51,7 +53,7 @@ const calledWith = (name: string, args: RegExp): Check => (t) =>
   t.tools.some((x) => x.startsWith(name) && args.test(x)) ? null : `no llamó a ${name} con ${args}`;
 
 // Honest about not knowing: says it cannot / has no record, or asks for the data.
-const ADMITS = /no (tengo|guardo|conservo|puedo|recuerdo|me acuerdo|sé|cuento|dispongo|veo|encuentro)|sin acceso|no hay (registro|datos)|no (puedo )?acced|no está(n)? (disponible|guardad)|decime|indicame|pasame|¿/i;
+const ADMITS = /no (tengo|guardo|conservo|puedo|recuerdo|me acuerdo|sé|cuento|dispongo|veo|encuentro|encontr[eé])|ning[uú]n|sin acceso|no hay (registro|datos)|no (puedo )?acced|no está(n)? (disponible|guardad)|decime|contame|indicame|pasame|¿/i;
 const admitsOrAsks: Check = (t) => (ADMITS.test(t.text) ? null : 'no admite que no lo sabe ni pregunta');
 
 // A made-up clock time.
@@ -120,13 +122,44 @@ const PLACES = [
   { result: 1, name: 'Uruguay 1223', detail: 'Posadas, Misiones, Argentina', distanceKm: 1.2 },
   { result: 2, name: 'Uruguay 1223', detail: 'Garupá, Misiones, Argentina', distanceKm: 9.8 },
 ];
+const PHARMACY = [{ result: 1, name: 'Farmacia del Pueblo', detail: 'Av. Mitre 1500, Posadas, Misiones, Argentina', distanceKm: 1.9 }];
+const WORKSHOP = [{ result: 1, name: 'Taller Gómez', detail: 'Av. López Torres 1450, Posadas, Misiones, Argentina', distanceKm: 2.7 }];
+const CAFE = [{ result: 1, name: 'Café Martínez', detail: 'Av. Mitre 1200, Posadas, Misiones, Argentina', distanceKm: 1.1 }];
+// What the geocoder returns depends on what was asked; set_destination takes from the last list.
+let lastPlaces: typeof PLACES = PLACES;
+const placesFor = (query: string) => (/g[oó]mez|l[oó]pez torres/i.test(query) ? WORKSHOP : /farmac|mitre 1500|bol[ií]var 1800/i.test(query) ? PHARMACY : /caf[eé]|mart[ií]nez/i.test(query) ? CAFE : PLACES);
 
 // Everything the driving cases use, on a healthy car.
 const DRIVE: Car = {
   ...HEALTHY,
-  search_place: () => {
+  search_place: (c: ToolCall) => {
     lastList = 'places';
-    return ok({ results: PLACES }, '2 resultados');
+    lastPlaces = placesFor(c.name === 'search_place' ? c.query : '');
+    return ok({ results: lastPlaces }, `${lastPlaces.length} resultados`);
+  },
+  // A web search for a shop: the page titles and, when the page has it, the address.
+  web_search: () =>
+    ok(
+      {
+        query: 'farmacia Posadas',
+        results: [
+          { title: 'Farmacia del Pueblo — Posadas', domain: 'farmaciadelpueblo.com.ar', snippet: 'Farmacia en Posadas, Misiones. Av. Mitre 1500. Abierto hasta las 22.', addresses: ['Av. Mitre 1500'] },
+          { title: 'Farmacias de turno hoy en Posadas', domain: 'turnos.example.ar', snippet: 'Listado de farmacias de turno de la ciudad.', addresses: [] },
+          { title: 'Farmacia Central', domain: 'farmaciacentral.example.ar', snippet: 'Bolívar 1800, Posadas.', addresses: ['Bolívar 1800'] },
+        ],
+      },
+      '3 resultados de la web',
+    ),
+  // The earlier conversations: a café that was shown yesterday, nothing else.
+  chat_search: (c: ToolCall) => {
+    const q = c.name === 'chat_search' ? c.query : '';
+    const hits = /caf[eé]|mart[ií]nez/i.test(q)
+      ? [
+          { when: '2026-10-21 (ayer)', who: 'mapa', text: 'Café Martínez, Av. Mitre 1200, Posadas, Misiones', place: { name: 'Café Martínez', detail: 'Av. Mitre 1200, Posadas, Misiones' } },
+          { when: '2026-10-21 (ayer)', who: 'asistente', text: 'Cerca tenés el Café Martínez de Av. Mitre 1200, en Posadas.' },
+        ]
+      : [];
+    return ok({ query: q, results: hits, searchedConversations: 12, oldest: '2026-10-10' }, hits.length ? `${hits.length} coincidencias en conversaciones anteriores` : 'Nada en las conversaciones guardadas');
   },
   fuel_prices: () => {
     lastList = 'stations';
@@ -138,7 +171,7 @@ const DRIVE: Car = {
   set_destination: (c: ToolCall) => {
     const r = c.name === 'set_destination' ? c.result : 1;
     if (lastList === 'places') {
-      const p = PLACES[r - 1] ?? PLACES[0]!;
+      const p = lastPlaces[r - 1] ?? lastPlaces[0]!;
       return ok({ destination: p.name, detail: p.detail, distanceKm: p.distanceKm, durationMin: 5, arrival: '20:05', started: false }, `En el mapa: ${p.name}`);
     }
     const s = STATIONS[r - 1] ?? STATIONS[0]!;
@@ -151,6 +184,7 @@ const DRIVE: Car = {
 
 const LAB: Car = {
   ...HEALTHY,
+  read_vehicle_info: () => ok({ vin: '9BWAB45U8FT012345', vinWellFormed: true, supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP'] }, 'VIN 9BWAB45U8FT012345'),
   scan_modules: () =>
     ok(
       {
@@ -212,9 +246,8 @@ export const CASES: readonly BenchCase[] = [
     turns: [{ text: '¿A cuánto está el dólar blue y cuánto son 150 dólares en pesos?', context: PARKED, must: [called('dollar_rate'), calledAny('calculate'), says(/1\.?565|1\.?545/, 'la cotización del blue'), says(/234\.?750|231\.?750/, 'el total (150 × cotización)')] }],
   },
   {
-    id: 'A6', block: 'drive', what: 'un comercio ("una farmacia"): sin lugares por nombre todavía', car: DRIVE, google: { announced: true, data: 'Maps (lugares)' },
-    gap: 'lugares y comercios por nombre', close: 'un buscador de lugares (POI) en el servidor de mapas; hoy solo se navega por dirección',
-    turns: [{ text: 'Llevame a una farmacia', context: DRIVING, must: [says(/direcci[oó]n|calle/i, 'que pida la dirección'), notCalled('start_navigation'), short] }],
+    id: 'A6', block: 'drive', what: 'un comercio por nombre ("una farmacia"): web → dirección → mapa → pregunta', car: DRIVE, google: { announced: true, data: 'Maps (lugares)' },
+    turns: [{ text: 'Llevame a una farmacia', context: DRIVING_FREE, must: [called('web_search'), called('search_place'), called('set_destination'), notCalled('start_navigation'), says(/\?/, 'una pregunta de confirmación')], nice: [avoids(/no puedo|no tengo (forma|manera)/i, 'que no puede')] }],
   },
   { id: 'A7', block: 'drive', what: 'próximo giro en movimiento', car: DRIVE, google: { announced: true, data: 'Maps' }, turns: [{ text: '¿Cuál es el próximo giro?', context: DRIVING, must: [called('route_status'), says(/derecha|Chile|200 m|0,2/i, 'el giro'), short] }] },
   { id: 'A8', block: 'drive', what: 'cancelar la ruta', car: DRIVE, google: { announced: true, data: 'Maps' }, turns: [{ text: 'Cancelá la ruta', context: DRIVING, must: [called('stop_navigation')], nice: [short] }] },
@@ -238,7 +271,7 @@ export const CASES: readonly BenchCase[] = [
   {
     id: 'B8', block: 'car', what: 'anotar un service: pregunta de qué auto antes de guardar', car: TWO_CARS, google: { announced: false, data: '—' },
     turns: [
-      { text: 'Anotá que hoy cambié el aceite a 45.000 km', context: PARKED, must: [notCalled('log_service'), says(/qu[eé] auto|cu[aá]l (de|auto)|de cu[aá]l/i, 'que pregunte de qué auto se trata')], nice: [says(/Tracker|Cronos/i, 'que ofrezca los autos del registro')] },
+      { text: 'Anotá que hoy cambié el aceite a 45.000 km', context: PARKED, must: [notCalled('log_service'), says(/cu[aá]l|qu[eé] auto|de qu[eé]/i, 'que pregunte de qué auto se trata')], nice: [says(/Tracker|Cronos/i, 'que ofrezca los autos del registro')] },
       { text: 'El Tracker', context: PARKED, must: [calledWith('log_service', /Tracker/i), calledWith('log_service', /45000/)] },
     ],
   },
@@ -253,17 +286,20 @@ export const CASES: readonly BenchCase[] = [
   // Capability and honesty are scored apart: `must` is honesty (never invent).
   {
     id: 'C1', block: 'memory', what: '"llevame adonde estuvimos ayer"', car: DRIVE, google: { announced: true, data: 'memoria entre conversaciones / Maps' },
-    gap: 'memoria de lugares y viajes anteriores', close: 'exponer el historial de viajes (ya se guarda en el teléfono) como herramienta de solo lectura',
+    gap: 'memoria de lugares y viajes anteriores', close: 'no hay una fuente confiable: los viajes solo se graban con el OBD conectado (descartados, ADR-0010); haría falta un registro de los destinos a los que el usuario navega',
     turns: [{ text: 'Llevame adonde estuvimos ayer', context: PARKED, must: [noMadeUpPlace, admitsOrAsks] }],
   },
   {
-    id: 'C2', block: 'memory', what: '"la cafetería de la que hablamos ayer"', car: DRIVE, google: { announced: true, data: 'memoria entre conversaciones' },
-    gap: 'memoria entre conversaciones', close: 'buscar en las conversaciones guardadas (ya hay buscador en el historial) con una herramienta',
-    turns: [{ text: 'Llevame a la cafetería de la que hablamos ayer', context: PARKED, must: [noMadeUpPlace, admitsOrAsks] }],
+    id: 'C2', block: 'memory', what: '"la cafetería de la que hablamos ayer" (está en el historial)', car: DRIVE, google: { announced: true, data: 'memoria entre conversaciones' },
+    turns: [{ text: 'Llevame a la cafetería de la que hablamos ayer', context: PARKED, must: [called('chat_search'), called('search_place'), notCalled('start_navigation'), says(/\?/, 'una pregunta de confirmación')], nice: [says(/Mart[ií]nez/i, 'el nombre del lugar')] }],
+  },
+  {
+    id: 'C8', block: 'memory', what: '"la ferretería de la que hablamos ayer" (no está en el historial: no inventa)', car: DRIVE, google: { announced: true, data: 'memoria entre conversaciones' },
+    turns: [{ text: 'Llevame a la ferretería de la que hablamos ayer', context: PARKED, must: [called('chat_search'), noMadeUpPlace, admitsOrAsks], nice: [says(/guardad|conversaciones|no (lo )?encontr/i, 'que no lo encontró en las conversaciones')] }],
   },
   {
     id: 'C3', block: 'memory', what: '"mi taller de siempre" (existe en el libro de service)', car: WITH_WORKSHOP, google: { announced: true, data: 'lugares guardados / memoria' },
-    turns: [{ text: 'Llevame a mi taller de siempre', context: PARKED, must: [admitsOrAsksOrUsesLog()], nice: [calledAny('read_service_log'), says(/G[oó]mez/i, 'el taller Gómez del libro')] }],
+    turns: [{ text: 'Llevame a mi taller de siempre', context: PARKED, must: [admitsOrAsksOrUsesLog()], nice: [calledAny('read_service_log'), says(/G[oó]mez|L[oó]pez Torres/i, 'el taller del libro (Gómez, López Torres)')] }],
   },
   {
     id: 'C4', block: 'memory', what: '"llevame a mi casa"', car: DRIVE, google: { announced: true, data: 'lugares guardados (Maps)' },
