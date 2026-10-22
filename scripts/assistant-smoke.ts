@@ -81,6 +81,7 @@ function simulated(): VehicleToolsPort {
       case 'web_fetch':
       case 'knowledge_lookup':
       case 'docs_search':
+      case 'chat_search':
       case 'scan_modules':
       case 'obd_command':
         return { ok: false, error: 'not_supported', message: 'Sin navegación en el humo.' };
