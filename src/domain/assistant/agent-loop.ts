@@ -20,7 +20,10 @@ import { INTERNAL_MARKER, MarkerFilter } from './stream-filter';
 import { summaryMessages } from './summary';
 import { parseToolCall, toolSchemas, type ToolCall, type ToolOutcome } from './tools';
 
-export const MAX_MODEL_CALLS = 4;
+// Going to a shop is web_search → search_place → set_destination → the answer: four
+// calls with no room for one search that finds nothing (benchmark 2026-10-22: out of
+// rounds, it answered with the tools' summaries). The fifth is that room.
+export const MAX_MODEL_CALLS = 5;
 export const MAX_TOOLS_PER_ROUND = 6;
 export const MEMO_MS = 10_000;
 // The model's window (vLLM --max-model-len, ADR-0006).

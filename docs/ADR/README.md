@@ -21,3 +21,4 @@ Cada decisión vive en un ADR con estado y fecha. Reglas, para que nada quede de
 | [0007](0007-asistente-conversacional-en-el-telefono.md) | Asistente conversacional: el loop en el teléfono, el modelo en el servidor | propuesta |
 | [0008](0008-cuentas-y-gateway-del-asistente.md) | Cuentas (Firebase) y acceso al modelo (new-api) | propuesta |
 | [0009](0009-gemelo-del-adaptador-modo-laboratorio.md) | Gemelo del adaptador: modo laboratorio con OBDient como puente (M9) | propuesta, después de la navegación |
+| [0010](0010-memoria-del-asistente-en-el-telefono.md) | La memoria del asistente vive en el teléfono; sin Honcho por ahora | aceptada |
