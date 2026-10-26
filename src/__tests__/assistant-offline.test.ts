@@ -1,5 +1,5 @@
 import { runTurn } from '@/domain/assistant/agent-loop';
-import { addNote, addOfflineAnswer, addUserMessage, applySummary, clearNotes, MAX_MESSAGES, newConversation, type Conversation } from '@/domain/assistant/conversation';
+import { addNote, addOfflineAnswer, addUserMessage, applySummary, clearNotes, dropFailedAttempt, failTurn, MAX_MESSAGES, newConversation, type Conversation } from '@/domain/assistant/conversation';
 import { MAX_NOTES, makeNote, noteReply, notesBrief } from '@/domain/assistant/offline';
 import { OFFLINE_READ_MS, OfflineAssistant } from '@/domain/assistant/offline-assistant';
 import { routePhrase } from '@/domain/assistant/phrase-router';
@@ -174,11 +174,34 @@ describe('notes', () => {
 
   it('are kept per conversation, bounded, and cleared by id', () => {
     let c = newConversation('c', 0);
-    for (let i = 0; i < MAX_NOTES + 3; i++) c = addNote(c, makeNote(`n${i}`, i, 'x', false, null));
+    for (let i = 0; i < MAX_NOTES + 3; i++) c = addNote(c, makeNote(`n${i}`, i, `nota ${i}`, false, null));
     expect(c.notes).toHaveLength(MAX_NOTES);
     expect(c.notes![0]!.id).toBe('n3');
     c = clearNotes(c, ['n3', 'n4']);
     expect(c.notes).toHaveLength(MAX_NOTES - 2);
+  });
+
+  it('the same words noted twice in a row are one note', () => {
+    let c = newConversation('c', 0);
+    c = addNote(c, makeNote('a', 1, 'tironea al acelerar', false, null));
+    c = addNote(c, makeNote('b', 2, 'tironea al acelerar', false, null));
+    c = addNote(c, makeNote('c', 3, 'pasa en frío', false, null));
+    expect(c.notes!.map((n) => n.id)).toEqual(['a', 'c']);
+  });
+
+  it('sending the same words again replaces the failed attempt instead of piling up copies', () => {
+    const failed = failTurn(addUserMessage(newConversation('c', 0), 'u1', 'brief de notas', 0, 1), 'e1', 'El asistente tuvo un problema.', null, 2);
+    const again = dropFailedAttempt(failed, 'brief de notas');
+    expect(again.items).toEqual([]);
+    // The offline "I noted it" answer is a failed attempt too.
+    const noted = addOfflineAnswer(addUserMessage(newConversation('c', 0), 'u1', 'hola', 0, 1), 'a1', 'Lo anoté.', 2);
+    expect(dropFailedAttempt(noted, 'hola').items).toEqual([]);
+    // Other words, a real answer, or a photo are left alone.
+    expect(dropFailedAttempt(failed, 'otra cosa').items).toHaveLength(2);
+    const answered = addUserMessage(newConversation('c', 0), 'u1', 'hola', 0, 1);
+    expect(dropFailedAttempt(answered, 'hola').items).toHaveLength(1);
+    const photo = failTurn(addUserMessage(newConversation('c', 0), 'u1', 'mirá', 1, 1), 'e1', 'x', null, 2);
+    expect(dropFailedAttempt(photo, 'mirá').items).toHaveLength(2);
   });
 
   it('an offline answer is on screen but not in the API history', () => {

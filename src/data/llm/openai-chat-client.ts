@@ -100,7 +100,9 @@ export class OpenAiChatClient implements LlmPort {
         body,
         signal: controller.signal,
       });
-      if (!res.ok) throw new LlmHttpError(res.status, (await res.text()).slice(0, 300));
+      // 600, not 300: behind new-api the useful words ("context_length_exceeded")
+      // can come after a long wrapper.
+      if (!res.ok) throw new LlmHttpError(res.status, (await res.text()).slice(0, 600));
       if (!res.body) throw new LlmHttpError(res.status, 'La respuesta no tiene cuerpo.');
 
       const reader = res.body.getReader();
@@ -117,7 +119,7 @@ export class OpenAiChatClient implements LlmPort {
         }
         if (acc.done) break;
       }
-      return { content: acc.content, toolCalls: acc.toolCalls, finishReason: acc.finishReason };
+      return { content: acc.content, toolCalls: acc.toolCalls, finishReason: acc.finishReason, reasoningChars: acc.reasoningChars };
     } catch (err) {
       if (timedOut && !outer?.aborted) throw new LlmHttpError(0, 'El asistente no respondió a tiempo.');
       throw err;

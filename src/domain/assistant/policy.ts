@@ -28,6 +28,7 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   stop_navigation: 'read',
   where_am_i: 'read',
   web_search: 'read',
+  research: 'read',
   web_fetch: 'read',
   knowledge_lookup: 'read',
   docs_search: 'read',

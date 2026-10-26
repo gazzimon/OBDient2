@@ -1,7 +1,7 @@
 // web_search, dollar_rate and car_price (M8): obdient-tools answers them with
 // plain, short fields; nothing here needs the phone's position.
 
-import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
+import type { SourceLink, ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import type { ScanTarget } from '@/domain/obd/module-scan';
 import type { ToolsClient } from './tools-client';
 
@@ -22,6 +22,48 @@ interface DocHit {
   readonly page: number | null;
   readonly fetchedAt: string;
   readonly score: number;
+}
+
+// research (obdient-tools /research): the fragments that answer, and how good they are.
+type Grade = 'good' | 'weak' | 'none';
+interface Passage {
+  readonly n: number;
+  readonly site: string;
+  readonly source: string;
+  readonly title: string | null;
+  readonly section: string | null;
+  readonly fetchedAt: string;
+  readonly text: string;
+}
+interface ResearchReply {
+  readonly query: string;
+  readonly grade: Grade;
+  readonly passages: readonly Passage[];
+  readonly read: readonly { readonly url: string; readonly site: string; readonly title: string | null; readonly status: 'read' | 'cached' | 'failed' }[];
+  readonly also: readonly { readonly site: string; readonly title: string; readonly url: string }[];
+  readonly hint: string;
+}
+
+// Reading three pages and indexing them takes longer than a plain search.
+const RESEARCH_TIMEOUT_MS = 35_000;
+
+// The line under the tool row: which sites were read and whether the answer is there.
+export function researchSummary(d: ResearchReply): string {
+  const sites = [...new Set(d.read.filter((r) => r.status !== 'failed').map((r) => r.site))];
+  const where = sites.length ? sites.join(', ') : 'ninguna página se pudo leer';
+  if (d.grade === 'none') return `Leí ${where}: no apareció el dato`;
+  const n = d.passages.length;
+  return `Leí ${where}: ${n} ${n === 1 ? 'fragmento' : 'fragmentos'}${d.grade === 'weak' ? ' (parcial)' : ''}`;
+}
+
+// The pages that were read, for the buttons: only http(s), the ones that gave
+// fragments first. (A page the app cannot open is not offered.)
+export function researchSources(d: ResearchReply): SourceLink[] {
+  const used = new Set(d.passages.map((p) => p.source));
+  return d.read
+    .filter((r) => r.status !== 'failed' && /^https?:\/\//i.test(r.url))
+    .sort((a, b) => Number(used.has(b.url)) - Number(used.has(a.url)))
+    .map((r) => ({ site: r.site, title: r.title, url: r.url }));
 }
 
 export class OnlineTools {
@@ -53,16 +95,29 @@ export class OnlineTools {
     return [...out.values()];
   }
 
-  async execute(call: Extract<ToolCall, { name: 'web_search' | 'web_fetch' | 'knowledge_lookup' | 'docs_search' | 'dollar_rate' | 'car_price' }>, signal: AbortSignal): Promise<ToolOutcome> {
+  async execute(call: Extract<ToolCall, { name: 'web_search' | 'research' | 'web_fetch' | 'knowledge_lookup' | 'docs_search' | 'dollar_rate' | 'car_price' }>, signal: AbortSignal): Promise<ToolOutcome> {
     switch (call.name) {
-      case 'web_fetch': {
-        const r = await this.client.post<{ url: string; domain: string; weight: number; text: string }>('web_fetch', { url: call.url }, signal, 'La lectura de la página');
+      case 'research': {
+        // Search, read and rank happen on the server: up to three pages in parallel.
+        const body = { query: call.query, ...(call.queryEn ? { query_en: call.queryEn } : {}) };
+        const r = await this.client.post<ResearchReply>('research', body, signal, 'La investigación en internet', RESEARCH_TIMEOUT_MS);
         if (!r.ok) return r;
-        return { ok: true, data: { url: r.data.url, site: r.data.domain, text: r.data.text }, summary: `Leí ${r.data.domain}` };
+        return { ok: true, data: r.data, summary: researchSummary(r.data), sources: researchSources(r.data) };
+      }
+      case 'web_fetch': {
+        const body = { url: call.url, ...(call.focus ? { focus: call.focus } : {}) };
+        const r = await this.client.post<{ url: string; domain: string; title?: string | null; text?: string; grade?: Grade; passages?: Passage[]; hint?: string }>('web_fetch', body, signal, 'La lectura de la página', call.focus ? RESEARCH_TIMEOUT_MS : undefined);
+        if (!r.ok) return r;
+        const { domain, url, title, text, grade, passages, hint } = r.data;
+        if (passages) {
+          const summary = grade === 'none' ? `Leí ${domain}: no habla de "${call.focus}"` : `Leí ${domain}: ${passages.length} fragmentos sobre "${call.focus}"`;
+          return { ok: true, data: { url, site: domain, title: title ?? null, grade, passages, hint }, summary, sources: grade === 'none' ? [] : [{ site: domain, title: title ?? null, url }] };
+        }
+        return { ok: true, data: { url, site: domain, title: title ?? null, text }, summary: `Leí ${domain}`, sources: [{ site: domain, title: title ?? null, url }] };
       }
       case 'knowledge_lookup': {
         const body = { action: 'lookup', ...(call.make ? { make: call.make } : {}), ...(call.model ? { model: call.model } : {}), ...(call.year ? { year: call.year } : {}) };
-        const r = await this.client.post<{ exact: unknown; close?: unknown[]; byVin: unknown; sameMake: unknown[] }>('knowledge', body, signal, 'La base del laboratorio');
+        const r = await this.client.post<{ exact: unknown; close?: unknown[]; sameMake: unknown[] }>('knowledge', body, signal, 'La base del laboratorio');
         if (!r.ok) return r;
         const known = r.data.exact != null || (r.data.close?.length ?? 0) > 0 || (r.data.sameMake?.length ?? 0) > 0;
         return { ok: true, data: r.data, summary: known ? 'Datos del laboratorio sobre este auto' : 'El laboratorio no tiene datos de este auto todavía' };

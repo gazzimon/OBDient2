@@ -1,5 +1,5 @@
-import { CONTEXT_TOKENS, isContextOverflow, runTurn } from '@/domain/assistant/agent-loop';
-import { estimateChars, estimateTokens } from '@/domain/assistant/history';
+import { CONTEXT_TOKENS, isContextOverflow, MAX_TOOL_RESULT_TOKENS, runTurn } from '@/domain/assistant/agent-loop';
+import { estimateChars, estimateTokens, textTokens } from '@/domain/assistant/history';
 import { maxTokensFor, SYSTEM_PROMPT, type AssistantContext } from '@/domain/assistant/prompt';
 import { toolSchemas } from '@/domain/assistant/tools';
 import type { ApiMessage, LlmPort, LlmRequest, LlmResult } from '@/domain/ports/llm.port';
@@ -82,6 +82,58 @@ describe('the conversation fits the model window', () => {
     expect(isContextOverflow(new LlmHttpError(500, 'maximum context length'))).toBe(false);
     expect(isContextOverflow(new TypeError('Network request failed'))).toBe(false);
     expect(isContextOverflow(null)).toBe(false);
+  });
+
+  it('also recognises the gateway wording and a 413', () => {
+    expect(isContextOverflow(new LlmHttpError(400, '{"error":{"message":"upstream error","type":"new_api_error","code":"context_length_exceeded"}}'))).toBe(true);
+    expect(isContextOverflow(new LlmHttpError(413, 'Request too large: prompt is too long'))).toBe(true);
+    expect(isContextOverflow(new LlmHttpError(400, 'Too many input tokens (18077 > 16384)'))).toBe(true);
+    expect(isContextOverflow(new LlmHttpError(413, 'payload too large'))).toBe(false);
+  });
+});
+
+// A diagnostic capture as the app shares it (hex replies, ~4 kB), the text that
+// filled the window in the 2026-10-21 chat.
+const CAPTURE = `OBDient2 · OBDient\n\nCaptura de diagnóstico\n${Array.from({ length: 60 }, (_, i) => `> 0${i % 10}00 (60 ms)\n  4100${(0xbe1f9803 + i).toString(16).toUpperCase()}\n  = 18DAF111: 41 00 BE 1F 98 0${i % 10}`).join('\n')}`;
+
+describe('a hex dump is not counted as prose', () => {
+  it('costs about a token per character, not per 3.2', () => {
+    const hex = '18DAF1111014490201384147 18DAF1112145413736433052 18DAF1112252303030303939'.repeat(20);
+    expect(textTokens(hex)).toBeGreaterThan(hex.length / 1.6);
+    expect(textTokens('El auto está detenido y el adaptador conectado. '.repeat(20))).toBeLessThan(`El auto está detenido y el adaptador conectado. `.length * 20 / 3);
+  });
+
+  it('a long chain of tools after two pasted captures still fits the window on every call', async () => {
+    const requests: LlmRequest[] = [];
+    const call = (name: string, args: object, id: string) => ({ id, name, arguments: JSON.stringify(args) });
+    let round = 0;
+    const llm: LlmPort = {
+      complete: async (req) => {
+        requests.push(req);
+        round += 1;
+        if (round >= 5) return say('Listo.');
+        return { content: '', toolCalls: [call('obd_command', { command: `22 F1 ${round}0`, header: '18DA11F1' }, `a${round}`), call('obd_command', { command: `22 F1 ${round}1`, header: '18DA11F1' }, `b${round}`), call('obd_command', { command: `22 F1 ${round}2`, header: '18DA11F1' }, `c${round}`)], finishReason: 'tool_calls' };
+      },
+    };
+    // Every reply is a big raw dump: the kind of tool result that overflowed.
+    const big: VehicleToolsPort = { supportedPids: () => [...PIDS], execute: async () => ({ ok: true, data: { raw: '41 01 00 07 E1 21 '.repeat(900) }, summary: 'ok' }) };
+    const past: ApiMessage[] = [
+      { role: 'user', content: CAPTURE },
+      { role: 'assistant', content: 'En el barrido no aparece el PID de odómetro.' },
+      { role: 'user', content: CAPTURE },
+      { role: 'assistant', content: 'El adaptador anda bien.' },
+    ];
+    const r = await runTurn({ history: past, text: '¿Probás con otros DIDs?', context: { ...CTX, labMode: true }, llm, vehicle: big, confirmation });
+
+    expect(r.text).toBe('Listo.');
+    for (const req of requests) expect(promptTokens(req) + maxTokensFor(CTX)).toBeLessThan(CONTEXT_TOKENS);
+    // No single result went to the model whole.
+    const results = requests.at(-1)!.messages.filter((m) => m.role === 'tool');
+    expect(results.length).toBeGreaterThan(0);
+    for (const m of results) expect(textTokens(m.content as string)).toBeLessThan(MAX_TOOL_RESULT_TOKENS + 60);
+    // What gave way was the turn's older results (cut short), not the question.
+    expect(results.some((m) => (m.content as string).includes('[recortado'))).toBe(true);
+    expect(requests.at(-1)!.messages.some((m) => m.role === 'user' && typeof m.content === 'string' && m.content.includes('¿Probás con otros DIDs?'))).toBe(true);
   });
 });
 

@@ -43,6 +43,7 @@ export class ChatStreamAccumulator {
   content = '';
   finishReason: string | null = null;
   done = false;
+  reasoningChars = 0;
   // Payloads that were not JSON: counted, never fatal.
   malformed = 0;
   private calls = new Map<number, PartialCall>();
@@ -77,7 +78,12 @@ export class ChatStreamAccumulator {
       this.calls.set(index, call);
     }
 
-    // Reasoning (reasoning / reasoning_content) is never shown.
+    // Reasoning (reasoning / reasoning_content) is never shown, only counted: an
+    // empty answer after a long reasoning is a different failure from a cut stream.
+    for (const key of ['reasoning_content', 'reasoning'] as const) {
+      const r = delta[key];
+      if (typeof r === 'string') this.reasoningChars += r.length;
+    }
     const text = typeof delta.content === 'string' ? delta.content : '';
     if (!text) return '';
     // With thinking on, the visible answer starts with blank lines.

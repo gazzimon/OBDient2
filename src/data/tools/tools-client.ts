@@ -23,11 +23,12 @@ export class ToolsClient {
     },
   ) {}
 
-  async post<T>(tool: string, body: Record<string, unknown>, signal: AbortSignal, what: string): Promise<ToolsReply<T>> {
+  // `timeoutMs`: longer for a call that reads pages (research, web_fetch with a focus).
+  async post<T>(tool: string, body: Record<string, unknown>, signal: AbortSignal, what: string, timeoutMs: number = TIMEOUT_MS): Promise<ToolsReply<T>> {
     const creds = this.deps.credentials();
     if (!creds) return { ok: false, error: 'not_supported', message: `${what} necesita la cuenta.` };
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     const onAbort = () => controller.abort();
     signal.addEventListener('abort', onAbort);
     const fetchFn = this.deps.fetchFn ?? (fetch as unknown as ToolsFetch);

@@ -222,6 +222,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'read_service_log':
         return fail('not_supported', 'No la maneja el adaptador.'); // OnlineTools, ServiceTools
       case 'web_search':
+      case 'research':
       case 'web_fetch':
       case 'knowledge_lookup':
       case 'docs_search':

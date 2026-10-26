@@ -40,6 +40,8 @@ export interface LlmResult {
   readonly content: string;
   readonly toolCalls: readonly AssembledToolCall[];
   readonly finishReason: string | null;
+  // Characters of model-side reasoning that were not shown (diagnostics only).
+  readonly reasoningChars?: number;
 }
 
 export interface LlmCallOptions {

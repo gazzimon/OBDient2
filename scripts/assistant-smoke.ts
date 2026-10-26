@@ -78,6 +78,7 @@ function simulated(): VehicleToolsPort {
       case 'log_service':
       case 'read_service_log':
       case 'web_search':
+      case 'research':
       case 'web_fetch':
       case 'knowledge_lookup':
       case 'docs_search':
