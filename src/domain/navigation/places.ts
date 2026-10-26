@@ -77,7 +77,36 @@ export async function findByText(
   // meant (Buenos Aires: CABA at 1.2 km before Adrogué at 24). A name keeps
   // the geocoder's relevance. Another town is reached by naming it.
   if (/\d/.test(query) && near) nearOnes.sort((a, b) => a.distanceKm! - b.distanceKm!);
+  // A name: the place whose name is the one asked goes first. "Panificados Mana"
+  // (2026-10-21) gave "Panificados de la Costa" first and "Maná" second, and the
+  // model said it found nothing. Ties keep the geocoder's order.
+  else nearOnes.sort(byNameMatch(query));
   return [...corners, ...nearOnes, ...places.filter((p) => !isNear(p))].slice(0, MAX_RESULTS);
+}
+
+const NAME_FILLER = new Set(['los', 'las', 'del', 'calle', 'avenida']);
+const foldName = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3 && !NAME_FILLER.has(w));
+
+// Sort order for a name query: first how many asked words the name has, then how
+// much of the name they are ("Maná" is all of it; "Panificados de la Costa" half).
+export function byNameMatch(query: string): (a: FoundPlace, b: FoundPlace) => number {
+  const asked = new Set(foldName(query.split(',')[0] ?? query));
+  const score = (p: FoundPlace): [number, number] => {
+    const words = foldName(p.name);
+    const hits = words.filter((w) => asked.has(w)).length;
+    return [hits, words.length ? hits / words.length : 0];
+  };
+  return (a, b) => {
+    const [ha, ca] = score(a);
+    const [hb, cb] = score(b);
+    return hb - ha || cb - ca;
+  };
 }
 
 // "A y B", "A esquina B", "A e B": two street names, no house number.

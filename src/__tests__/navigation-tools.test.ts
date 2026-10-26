@@ -1,6 +1,6 @@
 import type { LatLng } from '@/domain/geo/geo';
 import { NavigationTools } from '@/domain/navigation/navigation-tools';
-import { findByText, findNearby } from '@/domain/navigation/places';
+import { byNameMatch, findByText, findNearby } from '@/domain/navigation/places';
 import type { GeocodingPort, Place, Route, SearchOptions } from '@/domain/navigation/route';
 import type { NavStatus } from '@/store/navStore';
 import type { RouteProgress } from '@/domain/navigation/route-progress';
@@ -140,5 +140,15 @@ describe('NavigationTools', () => {
     expect(parseToolCall('search_place', '{"category":"fuel"}', [])).toMatchObject({ ok: false });
     expect(parseToolCall('search_place', '{"query":"Uruguay 1223"}', [])).toMatchObject({ ok: true, call: { query: 'Uruguay 1223' } });
     expect(parseToolCall('set_destination', '{"result":9}', [])).toMatchObject({ ok: false });
+  });
+});
+
+describe('search by name', () => {
+  it('the place whose name is the one asked goes first (2026-10-21: "Panificados Mana")', () => {
+    const p = (name: string, km: number) => ({ name, detail: 'Posadas', lat: 0, lng: 0, distanceKm: km }) as never;
+    const found = [p('Panificados de la Costa', 2.2), p('Maná', 0.8), p('Los Manantiales', 4.3)];
+    expect([...found].sort(byNameMatch('Panificados Mana, Posadas')).map((x: { name: string }) => x.name)).toEqual(['Maná', 'Panificados de la Costa', 'Los Manantiales']);
+    // Nothing matches better: the geocoder's order stays.
+    expect([...found].sort(byNameMatch('xyz')).map((x: { name: string }) => x.name)).toEqual(['Panificados de la Costa', 'Maná', 'Los Manantiales']);
   });
 });
