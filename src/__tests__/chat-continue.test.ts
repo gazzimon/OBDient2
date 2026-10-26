@@ -18,7 +18,7 @@ describe('summary before the window is full', () => {
   });
 
   it('past it, the oldest whole turns go to the summary and the rest fits SUMMARY_KEEP', () => {
-    const long = turns(20, 150);
+    const long = turns(40, 150);
     expect(tokens(long)).toBeGreaterThan(SUMMARY_FROM);
     const old = turnsToSummarize(long);
     expect(old.length % 2).toBe(0); // whole turns: a question with its answer

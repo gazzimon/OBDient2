@@ -11,7 +11,7 @@ const PIDS = ['SPEED', 'RPM', 'COOLANT_TEMP', 'ENGINE_LOAD'] as const;
 const vehicle: VehicleToolsPort = { supportedPids: () => [...PIDS], execute: async () => ({ ok: true, data: {}, summary: 'ok' }) };
 const confirmation = { confirm: async () => true };
 const say = (content: string): LlmResult => ({ content, toolCalls: [], finishReason: 'stop' });
-const OVERFLOW = new LlmHttpError(400, `{"error":{"message":"This model's maximum context length is 16384 tokens. However, you requested 500 output tokens and your prompt contains at least 15885 input tokens"}}`);
+const OVERFLOW = new LlmHttpError(400, `{"error":{"message":"This model's maximum context length is 32768 tokens. However, you requested 500 output tokens and your prompt contains at least 32268 input tokens"}}`);
 
 // A conversation of `turns` question-and-answer pairs of about 1 200 tokens each.
 const history = (turns: number): ApiMessage[] =>
@@ -26,7 +26,7 @@ describe('the conversation fits the model window', () => {
   it('trims the history by what the instructions and tools leave, not by a fixed number', async () => {
     const requests: LlmRequest[] = [];
     const llm: LlmPort = { complete: async (req) => (requests.push(req), say('ok')) };
-    const r = await runTurn({ history: history(20), text: '¿Cómo está el auto?', context: CTX, llm, vehicle, confirmation });
+    const r = await runTurn({ history: history(40), text: '¿Cómo está el auto?', context: CTX, llm, vehicle, confirmation });
     expect(r.dropped.length).toBeGreaterThan(0);
     // Prompt + answer + the room kept for tool results fit in 16 384.
     expect(promptTokens(requests[0]!) + maxTokensFor(CTX)).toBeLessThan(CONTEXT_TOKENS - 1_500);
@@ -53,7 +53,7 @@ describe('the conversation fits the model window', () => {
         return say('listo');
       },
     };
-    const r = await runTurn({ history: history(6), text: 'hola', context: CTX, llm, vehicle, confirmation });
+    const r = await runTurn({ history: history(30), text: 'hola', context: CTX, llm, vehicle, confirmation });
     expect(r.text).toBe('listo');
     expect(requests).toHaveLength(2);
     expect(requests[1]!.messages.length).toBeLessThan(requests[0]!.messages.length);
@@ -72,7 +72,7 @@ describe('the conversation fits the model window', () => {
     let calls = 0;
     const err = new LlmHttpError(502, 'bad gateway');
     const llm: LlmPort = { complete: async () => (calls++, Promise.reject(err)) };
-    await expect(runTurn({ history: history(6), text: 'hola', context: CTX, llm, vehicle, confirmation })).rejects.toBe(err);
+    await expect(runTurn({ history: history(30), text: 'hola', context: CTX, llm, vehicle, confirmation })).rejects.toBe(err);
     expect(calls).toBe(1);
   });
 
