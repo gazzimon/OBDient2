@@ -148,7 +148,8 @@ test('track: driver from the key owners (hash → email), VIN passed on', async 
     });
     assert.equal(res.status, 200);
     assert.equal(sent[0].get('driverUniqueId'), 'juan@example.com');
-    assert.equal(sent[0].get('vin'), '9BWZZZ377VT004251');
+    // An old app sends the whole VIN: only the part that says what the car is is kept.
+    assert.equal(sent[0].get('vin'), '9BWZZZ377VT');
     assert.equal(sent[1].get('vin'), null);
     owners.forget('juan@example.com');
     assert.equal(keyOwnerLookup(file)('sk-new'), null);
@@ -200,14 +201,41 @@ test('knowledge: report merges, lookup returns facts for the vehicle and the mak
   const { join } = await import('node:path');
   const { knowledgeStore } = await import('../src/knowledge.mjs');
   const k = knowledgeStore(join(mkdtempSync(join(tmpdir(), 'kb-')), 'knowledge.json'));
-  k.report({ make: 'Ford', model: 'Focus', year: 2015, vin: '9BFZ', protocol: 'CAN29', modules: [{ id: '29:10', reqHeader: '18DA10F1', rxHeader: '18DAF110', label: 'PCM' }] });
+  k.report({ make: 'Ford', model: 'Focus', year: 2015, protocol: 'CAN29', modules: [{ id: '29:10', reqHeader: '18DA10F1', rxHeader: '18DAF110', label: 'PCM' }] });
   k.report({ make: 'Ford', model: 'Focus', year: 2015, modules: [{ id: '29:28', reqHeader: '18DA28F1', rxHeader: '18DAF128', label: 'ABS' }] });
   k.report({ make: 'Ford', model: 'Ranger', year: 2020, modules: [{ id: '29:10', reqHeader: '18DA10F1', rxHeader: '18DAF110', label: 'PCM' }] });
   const r = k.lookup({ make: 'Ford', model: 'Focus', year: 2015 });
   assert.equal(r.exact.modules.length, 2);
   assert.equal(r.sameMake.length, 1);
   assert.deepEqual(r.sameMake[0], { id: '29:10', reqHeader: '18DA10F1', rxHeader: '18DAF110', label: 'PCM', seenIn: 1 });
-  assert.equal(k.lookup({ make: 'Ford', vin: '9BFZ' }).byVin.key, 'ford/focus/2015');
+});
+
+test('knowledge: it never keeps or returns a VIN, even one inside a part number or a note, and purge cleans an old file', async () => {
+  const { mkdtempSync, readFileSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { knowledgeStore } = await import('../src/knowledge.mjs');
+  const vin = '8AGEA76C0RR000043';
+  const file = join(mkdtempSync(join(tmpdir(), 'kb-')), 'knowledge.json');
+
+  // A file written by the old version: VINs in `vins`, in a part number and in a note.
+  const mod = { id: '29:11', reqHeader: '18DA11F1', rxHeader: '18DAF111', label: 'PCM' };
+  writeFileSync(file, JSON.stringify({ vehicles: { 'chevrolet/tracker/2023': { make: 'chevrolet', model: 'tracker', years: ['2023'], vins: [vin], protocol: 'CAN29', modules: [{ ...mod, partNumber: vin }, { id: '29:28', partNumber: '12345678' }], notes: [{ at: 'x', note: `VIN ${vin}` }] } } }));
+  const k = knowledgeStore(file);
+  assert.equal(k.purge(), 1);
+  const disk = readFileSync(file, 'utf8');
+  assert.ok(!disk.includes('000043'), 'the file still has the serial');
+  assert.ok(disk.includes('8AGEA76C0RR••••••'), 'the first 11 characters stay');
+  assert.ok(disk.includes('12345678'), 'a real part number stays');
+  assert.equal(k.purge(), 0);
+
+  // A new report: a vin field is ignored, one inside a part number or a note is masked.
+  k.report({ make: 'Chevrolet', model: 'Tracker', year: 2023, vin, modules: [{ ...mod, partNumber: vin }], note: `mi VIN es ${vin}` });
+  const r = k.lookup({ make: 'Chevrolet', model: 'Tracker', year: 2023, vin });
+  const out = JSON.stringify(r) + readFileSync(file, 'utf8');
+  assert.ok(!out.includes('000043'), 'a VIN serial got through');
+  assert.equal(r.byVin, undefined);
+  assert.equal(r.exact.vins, undefined);
 });
 
 test('knowledge: platform names match by prefix; the rest of the make is condensed', async () => {

@@ -7,8 +7,10 @@
 // local ranges are refused, the DNS is resolved and the resolved IP checked on
 // every redirect hop (DNS rebinding), with a size and time cap.
 
+import { spawn } from 'node:child_process';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
+import { pageStructure, plainStructure } from './page-text.mjs';
 import { plain } from './results.mjs';
 
 const MAX_BYTES = 2_000_000;
@@ -98,15 +100,23 @@ export function readableFull(html, max = MAX_FULL) {
   return text.slice(0, max);
 }
 
-export function makeFetchPage({ fetchFn = fetch, resolve = lookup } = {}) {
-  return async function fetchPage(rawUrl) {
+// A GitHub file page is HTML around the file; the file itself is what matters
+// (a README, a .dbc, a source): github.com/o/r/blob/ref/path → raw.githubusercontent.com.
+export function rawGithub(rawUrl) {
+  const m = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)(?:[?#].*)?$/.exec(String(rawUrl));
+  return m ? `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}/${m[4]}` : rawUrl;
+}
+
+export function makeFetchPage({ fetchFn = fetch, resolve = lookup, readPdf = popplerReader, pdfMaxBytes = PDF_MAX_BYTES } = {}) {
+  return async function fetchPage(requested) {
+    const rawUrl = rawGithub(requested);
     await assertPublicUrl(rawUrl, resolve);
     let url = rawUrl;
     let res;
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
       res = await fetchFn(url, {
         redirect: 'manual',
-        headers: { 'User-Agent': 'OBDient/1.0 (+lab)', Accept: 'text/html,text/plain' },
+        headers: { 'User-Agent': 'OBDient/1.0 (+lab)', Accept: 'text/html,text/plain,application/pdf' },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
@@ -118,10 +128,91 @@ export function makeFetchPage({ fetchFn = fetch, resolve = lookup } = {}) {
     }
     if (!res.ok) throw new BadFetch(`el sitio respondió HTTP ${res.status}`);
     const type = res.headers.get('content-type') ?? '';
-    if (!/text\/html|text\/plain|application\/(json|xml)/.test(type)) throw new BadFetch('la página no es texto');
-    const buf = Buffer.from(await res.arrayBuffer()).subarray(0, MAX_BYTES);
     const host = new URL(url).hostname.replace(/^www\./, '');
-    const html = buf.toString('utf8');
-    return { url, domain: host, weight: domainWeight(host), text: readable(html), full: readableFull(html) };
+    const name = decodeURIComponent(url.split(/[?#]/)[0].split('/').pop() || host);
+    const firstPart = (t) => (t.length > MAX_TEXT ? t.slice(0, t.lastIndexOf('\n\n', MAX_TEXT) > MAX_TEXT / 2 ? t.lastIndexOf('\n\n', MAX_TEXT) : MAX_TEXT) : t);
+
+    // A PDF (datasheets and programming manuals: where commands and DIDs are),
+    // through poppler's pdftotext, one entry per page so a fragment can cite it.
+    if (/application\/pdf/.test(type) || (/octet-stream/.test(type) && /\.pdf$/i.test(name))) {
+      const declared = Number(res.headers.get('content-length') ?? 0);
+      if (declared > pdfMaxBytes) throw new BadFetch('el PDF es demasiado grande');
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length > pdfMaxBytes) throw new BadFetch('el PDF es demasiado grande');
+      const { title, pages } = await pdfPages(buf, name, readPdf);
+      if (!pages.length) throw new BadFetch('el PDF no tiene texto (puede ser una imagen escaneada)');
+      const full = pages.map((p) => p.text).join('\n\n');
+      return { url: requested, domain: host, weight: domainWeight(host), title, text: firstPart(full), full, pages };
+    }
+
+    if (!/text\/html|text\/plain|text\/markdown|application\/(json|xml)/.test(type)) throw new BadFetch('la página no es texto');
+    const buf = Buffer.from(await res.arrayBuffer()).subarray(0, MAX_BYTES);
+    const body = buf.toString('utf8');
+    // HTML keeps its structure (headings, code, tables, lists); a file is already text.
+    const page = /text\/html/.test(type) ? pageStructure(body) : plainStructure(body, name);
+    return {
+      // What the caller asked for, so the source it cites is the page it knows.
+      url: requested,
+      domain: host,
+      weight: domainWeight(host),
+      title: page.title,
+      // The first part, for web_fetch without a focus.
+      text: firstPart(page.text),
+      // The whole, for the text base.
+      full: page.text,
+    };
   };
+}
+
+// ── PDF ──────────────────────────────────────────────────────────────────────
+
+const PDF_MAX_BYTES = 20_000_000;
+const PDF_MAX_CHARS = 300_000;
+const PDF_TIMEOUT_MS = 30_000;
+
+// Runs a poppler tool with the PDF on stdin; resolves its stdout.
+export function popplerRun(cmd, args, input, timeoutMs = PDF_TIMEOUT_MS) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { stdio: ['pipe', 'pipe', 'ignore'] });
+    const out = [];
+    let size = 0;
+    const timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs);
+    child.stdout.on('data', (c) => {
+      size += c.length;
+      if (size > PDF_MAX_CHARS * 4) child.kill('SIGKILL');
+      else out.push(c);
+    });
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0 || out.length) resolve(Buffer.concat(out).toString('utf8'));
+      else reject(new Error(`${cmd} exited ${code}`));
+    });
+    child.stdin.on('error', () => {}); // a PDF poppler stopped reading
+    child.stdin.end(input);
+  });
+}
+
+// The default reader: pdftotext for the text (pages split by form feed), pdfinfo for the title.
+const popplerReader = {
+  text: (buf) => popplerRun('pdftotext', ['-q', '-enc', 'UTF-8', '-', '-'], buf),
+  info: (buf) => popplerRun('pdfinfo', ['-'], buf).catch(() => ''),
+};
+
+export async function pdfPages(buf, name, reader = popplerReader) {
+  const [text, info] = await Promise.all([reader.text(buf), reader.info(buf)]);
+  const title = /^Title:\s*(.+)$/m.exec(info)?.[1]?.trim() || name;
+  let total = 0;
+  const pages = [];
+  text.split('\f').forEach((raw, i) => {
+    if (total >= PDF_MAX_CHARS) return;
+    const t = plainStructure(raw).text;
+    if (!t.trim()) return;
+    total += t.length;
+    pages.push({ page: i + 1, text: t });
+  });
+  return { title: title.slice(0, 160), pages };
 }

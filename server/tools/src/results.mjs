@@ -1,12 +1,23 @@
-// What the model gets from a web search: a few results as short, plain
-// fields, never the pages themselves (defence against prompt injection,
-// docs/plans/voz-y-lugares.md §3). A search engine's snippet is the only page
-// text that passes, clipped, flattened and without markup. Addresses found in
-// it come apart, so the app can look them up on the map.
+// What the model gets from web_search (shops, addresses, prices): a few results
+// as short, plain fields. A search engine's snippet, clipped, flattened and
+// without markup; addresses and prices found in it come apart, so the app can
+// look them up on the map. Page text for questions goes through research.mjs,
+// marked as third-party by untrusted() below (ADR-0012).
+
+import { randomBytes } from 'node:crypto';
 
 export const MAX_RESULTS = 5;
 const TITLE_CHARS = 90;
 const SNIPPET_CHARS = 180;
+
+// Text of a page (third party) for the model, in delimiters that say so
+// (spotlighting, Hines et al. 2024): «a3f1»…«/a3f1». The mark is random on each
+// answer, so a page cannot close it, and the guillemets inside the text are
+// taken out. The system prompt says what is between them is data, never orders.
+// The page's own brackets and braces stay: they are the commands and JSON.
+export function untrusted(text, mark = randomBytes(2).toString('hex')) {
+  return `«${mark}»${String(text).replace(/[«»]/g, '"')}«/${mark}»`;
+}
 
 // Plain text: no tags, no brackets or braces (no fake tool calls or markers),
 // no control characters, one line.

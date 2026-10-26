@@ -7,7 +7,9 @@
 //   /tools/v1/weather     { lat, lng }               → { now, nextHours, maxRainChance, source }
 //   /tools/v1/car_price   { query, year? }           → { results, month, unit, source }
 //   /tools/v1/track       { device, points: [...] }  → { accepted }   (live position → Traccar, track.mjs)
-//   /tools/v1/web_fetch   { url }                     → { url, domain, weight, text }   (full page, SSRF-guarded)
+//   /tools/v1/web_fetch   { url, focus? }             → { url, domain, weight, title, text }   (page with its structure, SSRF-guarded;
+//                                                        with `focus`: { …, grade, passages, hint } the fragments of it that answer)
+//   /tools/v1/research    { query, query_en? }        → { grade: good|weak|none, passages, read, also, hint }   (research.mjs)
 //   /tools/v1/knowledge   { action:'lookup'|'report', ... } → lab-shared facts of what a car supports
 //   /tools/v1/docs        { action:'search', query, k? } → { results: [{ text, source, title, page, fetchedAt, score }] }
 //                         { action:'add', source, title?, text | pages:[{page,text}] } → { chunks }   (docs.mjs: filtered per fragment)
@@ -18,7 +20,8 @@
 // 503 no data yet. Keys, queries and positions are never logged.
 
 import { createServer } from 'node:http';
-import { toToolResults } from './results.mjs';
+import { toToolResults, untrusted } from './results.mjs';
+import { buildPassages, byCloseness, HINT, WEAK_SIM } from './research.mjs';
 import { findCars } from './queries/cars.mjs';
 import { FUEL_PRODUCTS, nearestStations } from './queries/fuel.mjs';
 import { validPoint } from './queries/geo.mjs';
@@ -33,7 +36,7 @@ const MAX_DOC_PAGES = 500;
 
 class BadInput extends Error {}
 
-export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, fetchPage = null, knowledge = null, docs = null, ownerOf = () => null, log = () => {}, now = () => Date.now() }) {
+export function createApp({ search, isValidKey, data = () => null, weather = null, track = null, fetchPage = null, knowledge = null, docs = null, research = null, ownerOf = () => null, log = () => {}, now = () => Date.now() }) {
   const hits = new Map(); // key prefix → { start, count }
 
   function limited(who) {
@@ -96,13 +99,40 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
         if (err instanceof BadFetch) throw new BadInput(err.message);
         throw Object.assign(new Error('fetch failed'), { status: 502 });
       }
-      // What was read stays in the lab's text base (a page, 30 days), without
-      // making the answer wait for the embeddings.
-      const { full, ...answer } = page;
-      if (docs && full) {
-        docs.ingest({ source: page.url, title: page.domain, text: full, kind: 'web', addedBy: 'web_fetch' }).catch((err) => log(`docs ingest failed: ${err.message}`));
+      // What was read stays in the lab's text base (a page, 30 days).
+      const { full, text, pages, ...meta } = page; // a PDF's pages go to the base, not back to the phone
+      const focus = typeof b.focus === 'string' ? b.focus.trim().slice(0, 200) : '';
+      const stored = docs && full ? docs.ingest({ source: page.url, title: page.title ?? page.domain, text: full, pages: pages ?? null, kind: 'web', addedBy: 'web_fetch', structured: true }) : null;
+      // With a focus ("what to look for in it") the answer is the fragments of the
+      // page that speak of that, not its first lines: a long page's answer is rarely
+      // at the top. It waits for the page to be indexed to rank them.
+      if (focus.length >= 2 && stored) {
+        try {
+          await stored;
+          const candidates = (await docs.search(focus, 8, { sources: [page.url] })).filter((h) => (h.sim ?? 0) >= WEAK_SIM || h.lex >= 0.4);
+          const { grade, hits } = research ? await research.assess(focus, candidates) : byCloseness(candidates);
+          return { ...meta, focus, grade, passages: buildPassages(hits, grade), hint: HINT[grade] };
+        } catch (err) {
+          log(`web_fetch focus failed (${err.message}): the start of the page instead`);
+        }
+      } else {
+        // Without a focus the answer does not wait for the embeddings.
+        stored?.catch((err) => log(`docs ingest failed: ${err.message}`));
       }
-      return answer;
+      return { ...meta, text: untrusted(text) };
+    },
+    async research(b) {
+      if (!research) throw Object.assign(new Error('no research'), { status: 503 });
+      const text = (v, lo, hi) => (typeof v === 'string' && v.trim().length >= lo && v.trim().length <= hi ? v.trim() : null);
+      const query = text(b.query, 2, 200);
+      if (!query) throw new BadInput('bad_query');
+      if (b.query_en != null && !text(b.query_en, 2, 200)) throw new BadInput('bad_query_en');
+      try {
+        return await research.run({ query, queryEn: b.query_en != null ? text(b.query_en, 2, 200) : null });
+      } catch (err) {
+        log(`research failed: ${err.message}`);
+        throw Object.assign(new Error('research failed'), { status: 502 });
+      }
     },
     async docs(b, key) {
       if (!docs) throw Object.assign(new Error('no docs'), { status: 503 });

@@ -35,8 +35,10 @@ export function osmandQuery(device, p, now, driver = null) {
   if (kmh != null) q.set('speed', (kmh / 1.852).toFixed(2));
   if (bearing != null) q.set('bearing', bearing.toFixed(0));
   if (acc != null) q.set('accuracy', acc.toFixed(0));
-  // VIN = the car, driver = the account's email (decision 2026-10-20).
-  if (typeof p.vin === 'string' && /^[A-HJ-NPR-Z0-9]{11,17}$/.test(p.vin)) q.set('vin', p.vin);
+  // Car = what the VIN says about the model (its first 11 characters), driver = the
+  // account's email (decision 2026-10-20). The serial part of a VIN is never kept,
+  // even if an older app sends it (ADR-0011).
+  if (typeof p.vin === 'string' && /^[A-HJ-NPR-Z0-9]{11,17}$/.test(p.vin)) q.set('vin', p.vin.slice(0, 11));
   if (driver) q.set('driverUniqueId', driver);
   if (p.obd && typeof p.obd === 'object') {
     for (const k of OBD_KEYS) {

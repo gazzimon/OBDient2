@@ -3,8 +3,8 @@
 // search. What the filter did goes to the log as counts (never the source's
 // name or the text): the user is not told.
 
-import { packPieces, splitPieces } from './chunk.mjs';
-import { clean, hashOf } from './docs-store.mjs';
+import { packBlocks, packPieces, parseBlocks, splitPieces } from './chunk.mjs';
+import { clean, embedInput, hashOf } from './docs-store.mjs';
 import { filterFragment } from './doc-filter.mjs';
 
 const MAX_CHUNKS = 400; // per source: ~320 000 characters
@@ -15,22 +15,36 @@ export function makeDocs({ store, embed = null, classify = null, log = () => {} 
 
     // pages: [{ page, text }] or text. classifyPersonal: also ask the model
     // (uploads by people; web pages are public and skip it).
-    async ingest({ source, title = null, text = null, pages = null, kind = 'ref', addedBy = null, classifyPersonal = false }) {
+    // structured: the text comes from page-text.mjs (headings, ``` blocks, tables,
+    // lists): it is cut by those blocks and each fragment keeps its section.
+    async ingest({ source, title = null, text = null, pages = null, kind = 'ref', addedBy = null, classifyPersonal = false, structured = false }) {
       const units = pages ?? [{ page: null, text }];
       const seen = { licencia: 0, precios: 0, vacío: 0, personal: 0 };
       const covered = {};
       let total = 0;
       let kept = [];
-      // The filter judges each paragraph or sentence; what stays is packed after,
-      // so one bad paragraph does not take its neighbours with it.
+      // The filter judges each paragraph or sentence (or block); what stays is
+      // packed after, so one bad paragraph does not take its neighbours with it.
+      const judge = (piece) => {
+        total += 1;
+        const r = filterFragment(piece);
+        for (const [k, n] of Object.entries(r.redactions)) covered[k] = (covered[k] ?? 0) + n;
+        if (!r.text) seen[r.dropped] += 1;
+        return r.text;
+      };
       for (const u of units) {
+        if (structured) {
+          const blocks = parseBlocks(u.text).flatMap((b) => {
+            const t = judge(b.text);
+            return t ? [{ ...b, text: t }] : [];
+          });
+          for (const c of packBlocks(blocks)) kept.push({ page: u.page ?? null, text: c.text, section: c.section || null });
+          continue;
+        }
         const ok = [];
         for (const piece of splitPieces(clean(u.text))) {
-          total += 1;
-          const r = filterFragment(piece);
-          for (const [k, n] of Object.entries(r.redactions)) covered[k] = (covered[k] ?? 0) + n;
-          if (r.text) ok.push(r.text);
-          else seen[r.dropped] += 1;
+          const t = judge(piece);
+          if (t) ok.push(t);
         }
         for (const t of packPieces(ok)) kept.push({ page: u.page ?? null, text: t });
       }
@@ -50,18 +64,20 @@ export function makeDocs({ store, embed = null, classify = null, log = () => {} 
       }
 
       // A page read again keeps the vectors of the fragments that did not change.
+      // What is embedded is the fragment with where it is from in front (embedInput).
+      const inputOf = (f) => embedInput(title, f.section, f.text);
       const known = store.embeddingsFor(source);
-      const todo = kept.filter((f) => !known.has(hashOf(f.text)));
+      const todo = kept.filter((f) => !known.has(hashOf(inputOf(f))));
       let fresh = [];
       if (embed && todo.length) {
         try {
-          fresh = await embed.embedDocs(todo.map((f) => f.text));
+          fresh = await embed.embedDocs(todo.map(inputOf));
         } catch (err) {
           log(`docs embed failed (${err.message}): ${todo.length} fragments stored without vector`);
         }
       }
-      const byText = new Map(todo.map((f, i) => [f.text, fresh[i] ?? null]));
-      const chunks = kept.map((f) => ({ ...f, emb: known.get(hashOf(f.text)) ?? byText.get(f.text) ?? null }));
+      const byInput = new Map(todo.map((f, i) => [inputOf(f), fresh[i] ?? null]));
+      const chunks = kept.map((f) => ({ ...f, emb: known.get(hashOf(inputOf(f))) ?? byInput.get(inputOf(f)) ?? null }));
 
       store.replaceSource({ source, title, kind, addedBy, chunks });
       store.purge();
@@ -69,7 +85,7 @@ export function makeDocs({ store, embed = null, classify = null, log = () => {} 
       return { chunks: chunks.length };
     },
 
-    async search(question, k) {
+    async search(question, k, opts) {
       let qvec = null;
       if (embed) {
         try {
@@ -78,7 +94,7 @@ export function makeDocs({ store, embed = null, classify = null, log = () => {} 
           log(`docs query embed failed (${err.message}): words only`);
         }
       }
-      return store.search(question, qvec, k);
+      return store.search(question, qvec, k, opts);
     },
   };
 }
