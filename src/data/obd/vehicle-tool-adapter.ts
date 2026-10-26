@@ -562,7 +562,14 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       }
     });
     const flat = String(raw).replace(/\s+/g, ' ').trim();
-    const data = { command, header: target?.reqHeader ?? null, raw: flat };
+    // The reply as the app reads it: multi-frame answers assembled (no 10 14 / 21 / 22
+    // control bytes in the middle), and a DID's text decoded. Left to the model, the
+    // 2026-10-26 test read "8AGEA76C0RR000099" as "BA76C0R2200043": it took the
+    // control bytes for data. Assembled, a VIN is also one run of bytes the privacy
+    // layer masks; as raw frames its serial went by unmasked.
+    const messages = frameMessages(String(raw), isCan(info.protocol));
+    // The raw frames only when nothing could be assembled from them.
+    const data = { command, header: target?.reqHeader ?? null, ...(messages.length ? { messages } : { raw: flat }) };
     // No answer is not an answer: the model must not read it as "the module has no such data".
     if (noAnswer(flat)) {
       return fail('timeout', `Sin respuesta${target ? ` de ${target.reqHeader}` : ''} a "${command}" (${flat.slice(0, 40)}). No prueba que el dato no exista: puede ser otra dirección, otro bus o algo que este adaptador no alcanza.`);
@@ -571,7 +578,8 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     if (refused) {
       return { ok: true, data: { ...data, refused }, summary: `El módulo rechazó ${command}: ${refused.reason}` };
     }
-    return { ok: true, data, summary: `Respuesta: ${flat.slice(0, 60)}` };
+    const first = messages[0];
+    return { ok: true, data, summary: `Respuesta: ${(first ? `${first.ecu ?? ''} ${first.bytes}` : flat).trim().slice(0, 60)}` };
   }
 
   private diag<T>(s: ObdSession, work: (send: Send, can: boolean) => Promise<T>): Promise<T> {
@@ -930,4 +938,23 @@ function noModulesNote(otherWidth: number, bit29: boolean): string {
   if (otherWidth) parts.push(`Se saltaron ${otherWidth} direcciones conocidas de la marca porque usan IDs de ${bit29 ? '11' : '29'} bits y el protocolo del auto es de ${bit29 ? '29' : '11'}.`);
   parts.push('Los módulos pueden estar detrás de un gateway o en otro bus; si el auto usa CAN FD, ni el ELM327 ni el STN lo hablan: hace falta otro hardware.');
   return parts.join(' ');
+}
+
+// The answers in a reply, assembled: [{ ecu, bytes: "62 F1 90 38 41…", complete, text? }].
+// `text`: the ASCII after "62 DID DID" (a read-DID answer) or "49 02 01" (the VIN).
+export function frameMessages(raw: string, can: boolean): { ecu: string | null; bytes: string; complete: boolean; text?: string }[] {
+  let messages: EcuMessage[];
+  try {
+    messages = readMessages(raw, { headers: true, can });
+  } catch {
+    return [];
+  }
+  return messages
+    .filter((m) => m.bytes.length > 0)
+    .map((m) => {
+      const hex = m.bytes.map((b) => b.toString(16).toUpperCase().padStart(2, '0'));
+      const data = m.bytes[0] === 0x62 && m.bytes.length > 4 ? m.bytes.slice(3) : m.bytes[0] === 0x49 && m.bytes[1] === 0x02 ? m.bytes.slice(3) : [];
+      const text = data.length >= 4 && data.every((b) => b >= 0x20 && b <= 0x7e) ? String.fromCharCode(...data) : null;
+      return { ecu: m.ecu, bytes: hex.join(' '), complete: m.complete, ...(text ? { text } : {}) };
+    });
 }
