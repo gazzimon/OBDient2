@@ -38,7 +38,8 @@ import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
 import { makeFromVin } from '@/domain/obd/vin-make';
-import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, moduleAnswered, needsFlowPair, protocolToPreset, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
+import { redactText } from '@/domain/privacy/redact';
+import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -393,7 +394,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
 
       const out: Found[] = [];
       const seen = new Set<string>();
-      let skipped = 0;
+      let skipped = { otherWidth: 0, overLimit: 0 };
       let elmFlow = false;
       // FlowControl to the module's own request ID when the adapter's default
       // (RxID − 8, or 29-bit swap) misses it. On the STN a custom pair turns the
@@ -427,7 +428,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
             for (const r of broadcast ? respondersFrom(broadcast, bit29) : []) if (!generic.some((c) => c.id === r.id)) generic.unshift(r);
           }
           const merged = mergeTargets(generic, makeTargets, bit29);
-          skipped = merged.skipped;
+          skipped = { otherWidth: merged.otherWidth, overLimit: merged.overLimit };
           for (const t of merged.targets) {
             if (seen.has(`${bus}:${t.id}`)) continue;
             let present: boolean;
@@ -463,6 +464,8 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         if (isStn) await quiet(port, 'STCFCPC').catch(() => undefined);
         else if (elmFlow) await quiet(port, 'ATFCSM 0').catch(() => undefined);
         await quiet(port, 'ATCRA').catch(() => undefined);
+        // The last module's header would stay: telemetry asks the functional one.
+        await quiet(port, `ATSH ${bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11}`).catch(() => undefined);
         await quiet(port, 'ATH0').catch(() => undefined);
       }
       return { out, path, buses, skipped };
@@ -480,22 +483,28 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         vin,
         make: make ?? 'desconocida (no se probaron direcciones de marca ni se guardó en el laboratorio)',
         makeAddresses: makeTargets.length,
-        ...(skipped ? { skippedOtherIdWidth: skipped } : {}),
+        ...(skipped.otherWidth ? { skippedOtherIdWidth: skipped.otherWidth } : {}),
+        ...(skipped.overLimit ? { skippedOverLimit: skipped.overLimit } : {}),
+        // "None answered" is easy to over-read (2026-10-21: "the adapter cannot reach
+        // UDS", then the wrong adapter advice): it says what it does not prove.
+        ...(found.length === 0 ? { note: noModulesNote(skipped.otherWidth, bit29) } : {}),
         buses: buses.map((b) => ({ bus: b, label: BUS_PRESET[b].label, modules: byBus(b) })),
         modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, label: m.label, partNumber: m.identify })),
       },
       summary: found.length
         ? `${found.length} módulos (${adapter}): ${buses.filter((b) => byBus(b)).map((b) => `${byBus(b)} en ${b}`).join(', ')}`
         : `Ningún módulo respondió (${adapter})`,
-      // The lab keys facts by make: without it the server refuses the report.
+      // The lab keys facts by make: without it the server refuses the report. It is
+      // read by every user, so it carries what the car is (make, model, which
+      // modules answer where), never which car: no VIN, and a part number that
+      // turns out to be one (DID F190) is masked (ADR-0011).
       ...(make
         ? {
             knowledge: {
               make,
               ...(model ? { model } : {}),
-              vin,
               protocol: info.protocol,
-              modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label, partNumber: m.identify })),
+              modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label, partNumber: m.identify == null ? m.identify : redactText(m.identify) })),
             },
           }
         : {}),
@@ -507,18 +516,61 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   private async obdCommand(s: ObdSession, command: string, header: string | null): Promise<ToolOutcome> {
     const verdict = classifyCommand(command);
     if (!verdict.ok) return fail('not_supported', `Bloqueado: ${verdict.reason}. Solo lectura.`);
+    const info = s.sessionInfo!;
+    const bit29 = /29BIT/.test(info.protocol);
+    const isStn = info.identity.stn != null;
+    let target: { reqHeader: string; rxHeader: string | null } | null = null;
     if (header) {
-      const h = classifyCommand(`ATSH${header}`);
-      if (!h.ok) return fail('invalid_arguments', 'Encabezado inválido.');
+      if (!classifyCommand(`ATSH${header}`).ok) return fail('invalid_arguments', 'Encabezado inválido.');
+      // A response ID given as the request (18DAF111 for 18DA11F1) is refused with the right one.
+      const checked = requestHeader(header, bit29);
+      if (!checked.ok) return fail('invalid_arguments', checked.message);
+      target = checked;
     }
     const raw = await s.exclusive(async (port) => {
+      let elmFlow = false;
       await quiet(port, 'ATH1');
-      if (header) await quiet(port, `ATSH ${header}`);
-      const res = await port.send(command.replace(/\s+/g, ' ').trim(), 4000).catch((e) => `ERROR ${e instanceof Error ? e.message : String(e)}`);
-      await quiet(port, 'ATH0').catch(() => undefined);
-      return res;
+      try {
+        if (target) {
+          await quiet(port, `ATSH ${target.reqHeader}`);
+          // Only that module's answer, and its FlowControl where the adapter's
+          // default misses it (as scan_modules does), so a long answer is not cut.
+          if (target.rxHeader) {
+            const t = { id: target.reqHeader, reqHeader: target.reqHeader, rxHeader: target.rxHeader, label: '' };
+            await quiet(port, `ATCRA ${t.rxHeader}`);
+            if (isStn) {
+              await quiet(port, 'STCFCPC');
+              if (needsFlowPair(t)) await quiet(port, `STCFCPA ${t.reqHeader}, ${t.rxHeader}`);
+            } else if (needsFlowPair(t)) {
+              await quiet(port, `ATFCSH ${t.reqHeader}`);
+              await quiet(port, 'ATFCSD 30 00 00');
+              elmFlow = (await quiet(port, 'ATFCSM 1')) != null;
+            }
+          }
+        }
+        return await port.send(command.replace(/\s+/g, ' ').trim(), 4000).catch((e) => `ERROR ${e instanceof Error ? e.message : String(e)}`);
+      } finally {
+        // Back to how telemetry needs the adapter: functional header, no filter.
+        if (target) {
+          if (isStn) await quiet(port, 'STCFCPC').catch(() => undefined);
+          else if (elmFlow) await quiet(port, 'ATFCSM 0').catch(() => undefined);
+          await quiet(port, 'ATCRA').catch(() => undefined);
+          await quiet(port, `ATSH ${bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11}`).catch(() => undefined);
+        }
+        await quiet(port, 'ATH0').catch(() => undefined);
+      }
     });
-    return { ok: true, data: { command, header, raw: String(raw).replace(/\s+/g, ' ').trim() }, summary: `Respuesta: ${String(raw).replace(/\s+/g, ' ').trim().slice(0, 60)}` };
+    const flat = String(raw).replace(/\s+/g, ' ').trim();
+    const data = { command, header: target?.reqHeader ?? null, raw: flat };
+    // No answer is not an answer: the model must not read it as "the module has no such data".
+    if (noAnswer(flat)) {
+      return fail('timeout', `Sin respuesta${target ? ` de ${target.reqHeader}` : ''} a "${command}" (${flat.slice(0, 40)}). No prueba que el dato no exista: puede ser otra dirección, otro bus o algo que este adaptador no alcanza.`);
+    }
+    const refused = refusalIn(flat);
+    if (refused) {
+      return { ok: true, data: { ...data, refused }, summary: `El módulo rechazó ${command}: ${refused.reason}` };
+    }
+    return { ok: true, data, summary: `Respuesta: ${flat.slice(0, 60)}` };
   }
 
   private diag<T>(s: ObdSession, work: (send: Send, can: boolean) => Promise<T>): Promise<T> {
@@ -869,4 +921,12 @@ function round(v: number): number {
 
 function fmt(v: number | null): string {
   return v == null ? 'sin dato' : String(round(v));
+}
+
+// What "no module answered" does not prove, said to the model with the scan.
+function noModulesNote(otherWidth: number, bit29: boolean): string {
+  const parts = ['Ningún módulo respondió a estas direcciones con este adaptador. No es concluyente.'];
+  if (otherWidth) parts.push(`Se saltaron ${otherWidth} direcciones conocidas de la marca porque usan IDs de ${bit29 ? '11' : '29'} bits y el protocolo del auto es de ${bit29 ? '29' : '11'}.`);
+  parts.push('Los módulos pueden estar detrás de un gateway o en otro bus; si el auto usa CAN FD, ni el ELM327 ni el STN lo hablan: hace falta otro hardware.');
+  return parts.join(' ');
 }

@@ -86,6 +86,61 @@ export function moduleAnswered(raw: string): boolean {
 export const FUNCTIONAL_11 = '7DF';
 export const FUNCTIONAL_29 = '18DB33F1';
 
+// ── A header for one free request (obd_command) ─────────────────────────────
+// The 2026-10-21 chat sent 27 requests with header 18DAF111: that is the ID the
+// module 11 ANSWERS with (18DA F1 11: to the tester F1, from 11), so every one was
+// "NO DATA" and proved nothing. A request goes to 18DA 11 F1. The same mistake on
+// 11 bits is 7E8 for 7E0. Both are refused with the right one; the width must
+// match the protocol. `rxHeader`: the reply's ID when it is known (to filter on it).
+export type RequestHeader = { readonly ok: true; readonly reqHeader: string; readonly rxHeader: string | null } | { readonly ok: false; readonly message: string };
+
+export function requestHeader(header: string, bit29: boolean): RequestHeader {
+  const h = header.replace(/\s+/g, '').toUpperCase();
+  if (!/^[0-9A-F]+$/.test(h)) return { ok: false, message: 'El header es hexadecimal.' };
+  if (bit29 && h.length !== 8) return { ok: false, message: 'Este auto usa CAN de 29 bits: el header tiene 8 dígitos, p. ej. 18DA11F1 (pedido al módulo 11).' };
+  if (!bit29 && h.length !== 3) return { ok: false, message: 'Este auto usa CAN de 11 bits: el header tiene 3 dígitos, p. ej. 7E0.' };
+  if (bit29) {
+    if (h === FUNCTIONAL_29) return { ok: true, reqHeader: h, rxHeader: null };
+    const m = /^18DA([0-9A-F]{2})([0-9A-F]{2})$/.exec(h);
+    if (!m) return { ok: true, reqHeader: h, rxHeader: null };
+    const [, target, source] = m;
+    if (target === 'F1' && source !== 'F1') {
+      return { ok: false, message: `${h} es la dirección con la que RESPONDE el módulo ${source}; para pedirle algo usá 18DA${source}F1.` };
+    }
+    return { ok: true, reqHeader: h, rxHeader: `18DA${source}${target}` };
+  }
+  const n = parseInt(h, 16);
+  if (n >= 0x7e8 && n <= 0x7ef) {
+    return { ok: false, message: `${h} es la dirección con la que RESPONDE un módulo; para pedirle algo usá ${(n - 8).toString(16).toUpperCase()}.` };
+  }
+  if (n >= 0x7e0 && n <= 0x7e7) return { ok: true, reqHeader: h, rxHeader: (n + 8).toString(16).toUpperCase() };
+  return { ok: true, reqHeader: h, rxHeader: null };
+}
+
+// A UDS/OBD refusal (7F, service, reason) in words, for the model and the driver.
+const NRC: Readonly<Record<string, string>> = {
+  '10': 'rechazo general',
+  '11': 'el módulo no tiene ese servicio',
+  '12': 'el módulo no tiene esa subfunción',
+  '13': 'el pedido tiene un largo o formato incorrecto',
+  '22': 'condiciones no aptas (p. ej. motor en marcha o falta contacto)',
+  '31': 'ese identificador (DID/PID) no existe en este módulo',
+  '33': 'necesita acceso de seguridad',
+  '7E': 'no disponible en la sesión actual',
+  '7F': 'servicio no disponible en la sesión actual',
+};
+
+export function refusalIn(raw: string): { service: string; code: string; reason: string } | null {
+  const m = /(?:^|\s|[0-9A-F]{3,8}\s?\d?\s?)7F\s?([0-9A-F]{2})\s?([0-9A-F]{2})/i.exec(raw.toUpperCase());
+  if (!m || m[2] === '78') return null; // 78: "response pending", not a refusal
+  return { service: m[1]!, code: m[2]!, reason: NRC[m[2]!] ?? `código ${m[2]}` };
+}
+
+// The adapter did not get an answer (or the frame failed): nothing was learnt.
+export function noAnswer(raw: string): boolean {
+  return /^\s*(ERROR|NO DATA|\?|UNABLE TO CONNECT|CAN ERROR|BUS (INIT|ERROR|BUSY)|STOPPED|FB ERROR|DATA ERROR)/i.test(raw) || /NO DATA/i.test(raw);
+}
+
 export type Bus = 'HS' | 'MS' | 'SW';
 
 // STN protocol presets (FRPM): ISO 15765, DLC=8. Only one CAN channel is
@@ -167,22 +222,30 @@ const MAX_MAKE_TARGETS = 32;
 
 // The make's targets added after the generic ones: same ID width as the live
 // protocol (the adapter sends with the protocol's width), no repeats, capped.
-export function mergeTargets(base: readonly ScanTarget[], make: readonly ScanTarget[], bit29: boolean): { targets: ScanTarget[]; skipped: number } {
+// `skipped`: all left out; `otherWidth`: of those, addresses of the other ID width
+// (11-bit ones on a 29-bit car: this adapter cannot reach them on this protocol);
+// `overLimit`: the rest, beyond MAX_MAKE_TARGETS.
+export function mergeTargets(base: readonly ScanTarget[], make: readonly ScanTarget[], bit29: boolean): { targets: ScanTarget[]; skipped: number; otherWidth: number; overLimit: number } {
   const seen = new Set(base.map((t) => t.id));
   const targets = [...base];
-  let skipped = 0;
+  let otherWidth = 0;
+  let overLimit = 0;
   let added = 0;
   for (const t of make) {
     if (seen.has(t.id)) continue;
-    if ((t.reqHeader.length === 8) !== bit29 || added >= MAX_MAKE_TARGETS) {
-      skipped += 1;
+    if ((t.reqHeader.length === 8) !== bit29) {
+      otherWidth += 1;
+      continue;
+    }
+    if (added >= MAX_MAKE_TARGETS) {
+      overLimit += 1;
       continue;
     }
     seen.add(t.id);
     targets.push(t);
     added += 1;
   }
-  return { targets, skipped };
+  return { targets, skipped: otherWidth + overLimit, otherWidth, overLimit };
 }
 
 // Whether the adapter's default flow control misses this module: by default
