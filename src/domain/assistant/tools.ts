@@ -29,6 +29,7 @@ export const TOOL_NAMES = [
   'route_status',
   'stop_navigation',
   'where_am_i',
+  'research',
   'web_search',
   'web_fetch',
   'scan_modules',
@@ -71,10 +72,12 @@ export type ToolCall =
   | { readonly name: 'stop_navigation' }
   // Street and town where the car is (GPS), for "¿dónde estoy?".
   | { readonly name: 'where_am_i' }
-  // The web, through obdient-tools (SearXNG): short results, never whole pages.
+  // The web, through obdient-tools (SearXNG): short results (places, prices), never whole pages.
   | { readonly name: 'web_search'; readonly query: string }
-  // Reads the full text of a public page (SearXNG gives the URL, this reads it).
-  | { readonly name: 'web_fetch'; readonly url: string }
+  // Search + read + rank in one call: the fragments that answer, with their source and a grade.
+  | { readonly name: 'research'; readonly query: string; readonly queryEn: string | null }
+  // Reads a public page: its start, or with `focus` the fragments of it about that.
+  | { readonly name: 'web_fetch'; readonly url: string; readonly focus: string | null }
   // Lab: which modules of this car answer (read-only probes 3E, 22 F187/F190). The
   // make (from the VIN, or given) adds that make's known addresses.
   | { readonly name: 'scan_modules'; readonly make: string | null; readonly model: string | null }
@@ -123,6 +126,14 @@ export type ToolErrorCode =
   // The car answered with a refusal (7F); the message carries the reason.
   | 'rejected_by_car';
 
+// A page the assistant read, as a button under its tool row. For the screen
+// only, like MapPin: the model gets `data`, never this.
+export interface SourceLink {
+  readonly site: string;
+  readonly title: string | null;
+  readonly url: string;
+}
+
 // A numbered point the chat can show on a map (search and fuel results).
 // For the screen only: the model gets `data`, never this.
 export interface MapPin {
@@ -135,7 +146,7 @@ export interface MapPin {
 }
 
 export type ToolOutcome =
-  | { readonly ok: true; readonly data: unknown; readonly summary: string; readonly places?: readonly MapPin[]; readonly knowledge?: Record<string, unknown> }
+  | { readonly ok: true; readonly data: unknown; readonly summary: string; readonly places?: readonly MapPin[]; readonly sources?: readonly SourceLink[]; readonly knowledge?: Record<string, unknown> }
   | { readonly ok: false; readonly error: ToolErrorCode; readonly message: string };
 
 // PIDs the model may ask for: what the car supports, in catalogue order. Battery
@@ -271,10 +282,28 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     fn('stop_navigation', 'Termina la navegación en curso.', NO_ARGS),
     fn('where_am_i', 'Dónde está ahora el auto según el GPS: calle, altura y ciudad.', NO_ARGS),
     fn(
+      'research',
+      'Investiga una pregunta en internet en un solo paso: busca, lee las mejores páginas y devuelve los fragmentos que la ' +
+        'responden, cada uno con su sitio, título y sección, y una nota "grade": good (hay evidencia), weak (parcial) o ' +
+        'none (no apareció). Para datos técnicos y de conocimiento: DIDs, PIDs, procedimientos, recalls, fallas conocidas ' +
+        'de un modelo, especificaciones. "query": la pregunta en pocas palabras clave, sin direcciones de módulo ni VIN ' +
+        '("odómetro Chevrolet Tracker 2023 UDS"). "query_en": la misma en inglés, para temas técnicos (foros, GitHub y ' +
+        'manuales suelen estar en inglés). No la uses para comercios, direcciones ni precios: para eso es web_search.',
+      {
+        type: 'object',
+        properties: {
+          query: { type: 'string', minLength: 2, maxLength: 200 },
+          query_en: { type: 'string', minLength: 2, maxLength: 200 },
+        },
+        required: ['query'],
+        additionalProperties: false,
+      },
+    ),
+    fn(
       'web_search',
-      'Busca en internet. Devuelve hasta 5 resultados con título, sitio y un fragmento corto, y las direcciones ' +
-        'que aparezcan. Para lo que no sale del auto ni de las otras herramientas: comercios y talleres, ' +
-        'horarios, precios, recalls, datos de un modelo de auto. Incluí la ciudad en la búsqueda si importa.',
+      'Busca en internet y devuelve hasta 5 resultados con título, sitio, un fragmento corto, y las direcciones y precios ' +
+        'que aparezcan. Para comercios y talleres, horarios, direcciones y precios. Incluí la ciudad si importa. Para ' +
+        'preguntas técnicas o de conocimiento usá research, que lee las páginas.',
       {
         type: 'object',
         properties: { query: { type: 'string', minLength: 2, maxLength: 200 } },
@@ -284,10 +313,15 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     ),
     fn(
       'web_fetch',
-      'Lee el texto completo de una página pública (la URL sale de web_search). Usala cuando el fragmento no alcanza: ' +
-        'IDs CAN, DIDs o PIDs propietarios en GitHub, foros, documentación de OBDLink. No inventes direcciones de módulos: ' +
-        'leé la fuente o medí en el auto.',
-      { type: 'object', properties: { url: { type: 'string', minLength: 8, maxLength: 400 } }, required: ['url'], additionalProperties: false },
+      'Lee una página pública cuya URL ya tenés (de research, de web_search o del usuario). Con "focus" (qué buscar en ' +
+        'ella: "DID del odómetro") devuelve solo los fragmentos de esa página que hablan de eso; sin "focus", el comienzo ' +
+        'de la página. No inventes direcciones de módulos: leé la fuente o medí en el auto.',
+      {
+        type: 'object',
+        properties: { url: { type: 'string', minLength: 8, maxLength: 400 }, focus: { type: 'string', minLength: 2, maxLength: 200 } },
+        required: ['url'],
+        additionalProperties: false,
+      },
     ),
     fn(
       'scan_modules',
@@ -313,7 +347,7 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
         type: 'object',
         properties: {
           command: { type: 'string', minLength: 2, maxLength: 60, description: 'La trama o comando: "1902FF", "22 F1 90", "ATI".' },
-          header: { type: 'string', maxLength: 8, description: 'Dirección del módulo (ATSH), p. ej. "7E0" o "18DA10F1".' },
+          header: { type: 'string', maxLength: 8, description: 'Dirección de PEDIDO al módulo (ATSH): 11 bits "7E0"; 29 bits "18DA<módulo>F1", p. ej. "18DA11F1". La de respuesta (7E8, 18DAF1<módulo>) no sirve como pedido.' },
         },
         required: ['command'],
         additionalProperties: false,
@@ -511,12 +545,23 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       if (typeof q !== 'string' || q.trim().length < 2 || q.length > 200) return bad('"query" debe tener entre 2 y 200 caracteres.');
       return { ok: true, call: { name, query: q.trim() } };
     }
+    case 'research': {
+      const extra = only('query', 'query_en');
+      if (extra) return bad(extra);
+      const q = a.query;
+      if (typeof q !== 'string' || q.trim().length < 2 || q.length > 200) return bad('"query" debe tener entre 2 y 200 caracteres.');
+      const en = a.query_en;
+      if (en !== undefined && en !== null && (typeof en !== 'string' || en.trim().length < 2 || en.length > 200)) return bad('"query_en" debe tener entre 2 y 200 caracteres.');
+      return { ok: true, call: { name, query: q.trim(), queryEn: typeof en === 'string' ? en.trim() : null } };
+    }
     case 'web_fetch': {
-      const extra = only('url');
+      const extra = only('url', 'focus');
       if (extra) return bad(extra);
       const u = a.url;
       if (typeof u !== 'string' || !/^https?:\/\//i.test(u.trim()) || u.length > 400) return bad('"url" debe ser una dirección http(s).');
-      return { ok: true, call: { name, url: u.trim() } };
+      const f = a.focus;
+      if (f !== undefined && f !== null && (typeof f !== 'string' || f.trim().length < 2 || f.length > 200)) return bad('"focus" debe tener entre 2 y 200 caracteres.');
+      return { ok: true, call: { name, url: u.trim(), focus: typeof f === 'string' ? f.trim() : null } };
     }
     case 'obd_command': {
       const extra = only('command', 'header');

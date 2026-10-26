@@ -238,3 +238,13 @@ describe('answer split by tool rows', () => {
     expect(c.items.at(-1)).toMatchObject({ id: 'a1.2', text: '¿Es ahí? (final)' });
   });
 });
+
+describe('sources under a tool row', () => {
+  it('the row keeps the pages the tool read, for the buttons', () => {
+    let c = newConversation('c', 0);
+    const call = { name: 'research' as const, query: 'odómetro', queryEn: null };
+    c = applyEvent(c, { type: 'tool_start', id: 't1', call }, 1, 'a1');
+    c = applyEvent(c, { type: 'tool_end', id: 't1', call, outcome: { ok: true, data: {}, summary: 'Leí b.example: 1 fragmento', sources: [{ site: 'b.example', title: 'B', url: 'https://b.example/x' }] } }, 2, 'a1');
+    expect(c.items.find((i) => i.kind === 'tool')).toMatchObject({ status: 'ok', sources: [{ site: 'b.example', url: 'https://b.example/x' }] });
+  });
+});

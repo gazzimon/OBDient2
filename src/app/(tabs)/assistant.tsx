@@ -15,6 +15,7 @@ import type { ChatItem } from '@/domain/assistant/conversation';
 import { SEE_ON_MAP, suggest } from '@/domain/assistant/suggestions';
 import { ChatBubble } from '@/presentation/components/assistant/ChatBubble';
 import { ErrorRow } from '@/presentation/components/assistant/ErrorRow';
+import { SourcesRow } from '@/presentation/components/assistant/SourcesRow';
 import { PlacesCard } from '@/presentation/components/assistant/PlacesCard';
 import { ToolRow, toolLabel } from '@/presentation/components/assistant/ToolRow';
 import { WaitingAscii } from '@/presentation/components/assistant/WaitingAscii';
@@ -44,7 +45,7 @@ export default function AssistantScreen() {
   const conversation = useChatStore((s) => s.conversations.find((c) => c.id === s.activeId) ?? null);
   const runningId = useChatStore((s) => s.runningId);
   const connected = useOBDStore((s) => s.connectionState === 'connected');
-  const { send, sendNotes, discardNotes, stop, running } = useAssistant();
+  const { send, sendNotes, discardNotes, continueInNew, stop, running } = useAssistant();
   const notes = conversation?.notes?.length ?? 0;
   const [text, setText] = useState('');
   const [listOpen, setListOpen] = useState(false);
@@ -196,12 +197,19 @@ export default function AssistantScreen() {
                   return (
                     <>
                       <ToolRow name={item.name} status={item.status} detail={item.detail} />
+                      {item.sources?.length ? <SourcesRow sources={item.sources} /> : null}
                       {item.places?.length ? <PlacesCard id={item.id} pins={item.places} live={item.id === lastPlacesId} /> : null}
                     </>
                   );
                 case 'error': {
                   const retry = item.retryText;
-                  return <ErrorRow text={item.text} onRetry={retry && !running ? () => submit(retry) : undefined} />;
+                  return (
+                    <ErrorRow
+                      text={item.text}
+                      onRetry={retry && !running ? () => submit(retry) : undefined}
+                      onContinue={item.action === 'continue_new' && !running ? () => void continueInNew(retry) : undefined}
+                    />
+                  );
                 }
               }
             }}

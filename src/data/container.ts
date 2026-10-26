@@ -78,6 +78,7 @@ const assistantTools: VehicleToolsPort = {
   execute: async (call, signal) => {
     switch (call.name) {
       case 'web_search':
+      case 'research':
       case 'web_fetch':
       case 'knowledge_lookup':
       case 'docs_search':

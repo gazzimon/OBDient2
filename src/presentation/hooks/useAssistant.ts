@@ -20,6 +20,8 @@ import {
   applyEvent,
   applySummary,
   clearNotes,
+  continuation,
+  dropFailedAttempt,
   failTurn,
   setNextQuestions,
   finishTurn,
@@ -27,6 +29,8 @@ import {
 } from '@/domain/assistant/conversation';
 import { noteReply, notesBrief } from '@/domain/assistant/offline';
 import { asksForNotes } from '@/domain/assistant/phrase-router';
+import { captureDigest } from '@/domain/obd/capture-digest';
+import { turnsToSummarize } from '@/domain/assistant/history';
 import { navigationTools } from '@/presentation/services/navigation-tools';
 import { useChatStore } from '@/store/chatStore';
 import { screenConfirmation } from '@/store/confirmStore';
@@ -39,10 +43,12 @@ const ERROR_TEXT: Record<AssistantError, string> = {
   rate_limited: 'El asistente está con muchos pedidos. Probá en un minuto.',
   timeout: 'El asistente no respondió a tiempo.',
   offline: 'Sin conexión con el asistente. Revisá los datos móviles o el Wi‑Fi.',
-  too_long: 'La conversación se hizo demasiado larga para el asistente. Empezá una conversación nueva (el historial queda guardado).',
+  too_long: 'La conversación se hizo demasiado larga para el asistente. Puedo seguir en una conversación nueva con un resumen de esta (queda guardada).',
   server: 'El asistente tuvo un problema. Probá de nuevo en un rato.',
 };
 
+// Messages of the old conversation summarised when going on in a new one (each is clipped to 600 characters).
+const CONTINUE_MESSAGES = 40;
 const LOCALITY_WAIT_MS = 1_500;
 
 // The assistant cannot be reached: the app answers by itself.
@@ -122,14 +128,16 @@ async function run({ text, images, forModel, noteIds = undefined }: Message): Pr
   if (store.runningId) return;
   const startedAt = Date.now();
   let conv = store.active() ?? store.startNew(newId('c'), startedAt);
-  conv = addUserMessage(conv, newId('u'), text.trim(), images.length, startedAt);
+  conv = addUserMessage(dropFailedAttempt(conv, text.trim()), newId('u'), text.trim(), images.length, startedAt);
   store.save(conv);
   store.setRunning(conv.id);
   controller = new AbortController();
   const answerId = newId('a');
   // Notes are only ever sent to the assistant: never turned into a note again.
   const canGoOffline = noteIds == null;
-  let modelText = (forModel ?? text).trim();
+  // A pasted diagnostic capture reaches the model decoded by the app (one line per
+  // request), not as hex for it to read by hand; the screen keeps what was pasted.
+  let modelText = captureDigest((forModel ?? text).trim()) ?? (forModel ?? text).trim();
   try {
     if (canGoOffline && (await knownOffline())) {
       conv = await offlineTurn(conv, text, images.length, startedAt);
@@ -179,13 +187,16 @@ async function run({ text, images, forModel, noteIds = undefined }: Message): Pr
     if (r.ok) {
       conv = finishTurn(conv, r.result, answerId, startedAt, Date.now());
       if (noteIds) conv = clearNotes(conv, noteIds);
-      summarizeLater(conv.id, conv.summary ?? null, r.result.dropped);
-      proposeNext(conv, text);
+      // What fell out of the window this turn, or — past SUMMARY_FROM — the oldest turns, before it does.
+      summarizeLater(conv.id, conv.summary ?? null, r.result.dropped.length ? r.result.dropped : turnsToSummarize(conv.api));
+      // Next questions only follow a real answer: after the fallback (the tools'
+      // lines, no answer) they would propose to go on with a topic never answered.
+      if (r.result.answered !== false) proposeNext(conv, text);
     } else if (canGoOffline && UNREACHABLE.has(r.error) && !shown) {
       conv = await offlineTurn(conv, text, images.length, startedAt);
     } else {
       const retry = r.error === 'no_account' || !canGoOffline ? null : text;
-      conv = failTurn(conv, newId('e'), ERROR_TEXT[r.error], retry, Date.now());
+      conv = failTurn(conv, newId('e'), ERROR_TEXT[r.error], retry, Date.now(), r.error === 'too_long' ? 'continue_new' : undefined);
     }
   } catch {
     conv = failTurn(conv, newId('e'), ERROR_TEXT.server, canGoOffline ? text : null, Date.now());
@@ -242,7 +253,26 @@ export function useAssistant() {
     [],
   );
 
+  // The conversation no longer fits: a new one that starts with its summary, and
+  // the question that failed asked again there.
+  const continueInNew = useCallback(async (retry: string | null) => {
+    const store = useChatStore.getState();
+    const old = store.active();
+    if (!old || store.runningId) return;
+    store.setRunning(old.id);
+    let summary: string | null = null;
+    try {
+      // The latest part only: the whole is what did not fit.
+      summary = (await container.assistant.summarize(old.summary ?? null, old.api.slice(-CONTINUE_MESSAGES))) ?? old.summary ?? null;
+    } finally {
+      store.setRunning(null);
+    }
+    const now = Date.now();
+    store.save(continuation(store.startNew(newId('c'), now), summary, old, newId('a'), now));
+    if (retry) await run({ text: retry, images: [] });
+  }, []);
+
   const stop = useCallback(() => controller?.abort(), []);
 
-  return { send, sendSpoken, sendNotes, discardNotes, stop, running };
+  return { send, sendSpoken, sendNotes, discardNotes, continueInNew, stop, running };
 }

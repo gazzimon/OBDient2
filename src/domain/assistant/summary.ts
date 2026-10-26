@@ -8,13 +8,21 @@
 
 import type { ApiMessage, LlmRequest } from '@/domain/ports/llm.port';
 
-export const SUMMARY_MAX_TOKENS = 300;
+export const SUMMARY_MAX_TOKENS = 450;
 // Per message, in the text the model summarises.
 const MESSAGE_CHARS = 600;
 
+// What was measured is what a later "¿qué DIDs leíste bien?" needs (2026-10-21):
+// the summary keeps facts with their result, not an impression of the talk.
 const INSTRUCTIONS = `Resumí esta parte vieja de una conversación entre un conductor y OBDient, su asistente del auto.
-Conservá lo que sirva para seguir: el auto, los síntomas que contó, los códigos y valores medidos (con su hora si figura), lo que se revisó o se descartó, lo que quedó pendiente y destinos de navegación.
-Escribí en español, en texto plano, en menos de 120 palabras, sin introducción.`;
+Conservá lo que sirva para seguir, con datos concretos:
+- el auto (marca, modelo, año), el adaptador y el protocolo, y qué módulos o direcciones respondieron;
+- los síntomas que contó y lo que el conductor corrigió o afirmó (por ejemplo, "el auto es CAN FD");
+- los códigos y valores medidos con su unidad (y su hora si figura);
+- los comandos, DIDs o PIDs probados y su resultado: respondió (con qué), lo rechazó (por qué) o no respondió;
+- lo que se buscó en internet, qué sitio dio qué dato, y lo que no se encontró;
+- lo que se revisó o se descartó, lo que quedó pendiente y los destinos de navegación.
+No inventes nada que no esté. Escribí en español, en texto plano, en menos de 180 palabras, sin introducción.`;
 
 export const SUMMARY_PREFIX = '[Resumen de lo hablado antes en esta conversación]';
 const ACK = 'Entendido.';

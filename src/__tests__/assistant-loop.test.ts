@@ -96,7 +96,39 @@ describe('runTurn', () => {
 
     expect(requests).toHaveLength(MAX_MODEL_CALLS);
     expect(requests.map((q) => q.toolChoice)).toEqual([...Array(MAX_MODEL_CALLS - 1).fill('auto'), 'none']);
-    expect(r.text).toBe(Array(MAX_MODEL_CALLS - 1).fill('RPM: 812').join('\n'));
+    // The same summary four times is one line, and it says it is not an answer.
+    expect(r.text).toBe('No pude armar la respuesta completa. Esto es lo que consulté:\nRPM: 812');
+    // The history does not keep that list as if the model had said it.
+    expect(r.messages.at(-1)).toEqual({ role: 'assistant', content: 'No pude armar la respuesta a esto.' });
+  });
+
+  it('an empty round after tools gets one closing round without tools, and its answer is the turn answer', async () => {
+    // The 2026-10-21 chat: three searches, then the model came back empty and the
+    // user was shown "5 resultados de la web" three times.
+    const { llm, requests } = scripted(
+      ask(call('web_search', { query: 'Tracker 2023 odómetro DID' }, 's1')),
+      ask(call('web_search', { query: 'Tracker odómetro DID CAN FD' }, 's2')),
+      say(''),
+      say('No encontré el DID del odómetro en esas páginas; probemos leyendo una.'),
+    );
+    const { vehicle } = car({ web_search: { ok: true, data: { results: [] }, summary: '5 resultados de la web' } });
+    const r = await runTurn({ history: [], text: 'buscá el DID', context: STOPPED, llm, vehicle, confirmation: confirmWith(true).confirmation, memo: new ToolMemo(), now: () => 0 });
+
+    expect(r.text).toBe('No encontré el DID del odómetro en esas páginas; probemos leyendo una.');
+    expect(requests.map((q) => q.toolChoice)).toEqual(['auto', 'auto', 'auto', 'none']);
+    // The closing instruction travels in the request but not in the history.
+    expect(requests[3]!.messages.at(-1)).toMatchObject({ role: 'user', content: expect.stringContaining('Ya no podés usar herramientas') });
+    expect(JSON.stringify(r.messages)).not.toContain('Ya no podés usar herramientas');
+    expect(r.messages.at(-1)).toEqual({ role: 'assistant', content: r.text });
+    expect(r.rounds?.map((x) => x.closing)).toEqual([false, false, false, true]);
+  });
+
+  it('records why each call ended: finish reason, text, reasoning and tool calls', async () => {
+    const { llm } = scripted(
+      { content: '', toolCalls: [], finishReason: 'length', reasoningChars: 1800 },
+    );
+    const r = await runTurn({ history: [], text: 'hola', context: STOPPED, llm, vehicle: car().vehicle, confirmation: confirmWith(true).confirmation });
+    expect(r.rounds).toEqual([{ finishReason: 'length', contentChars: 0, reasoningChars: 1800, toolCalls: 0, promptTokensEst: expect.any(Number), closing: false }]);
   });
 
   it('refuses invalid, unknown and excess calls without running them, and tells the model', async () => {
@@ -202,6 +234,73 @@ describe('runTurn', () => {
     expect(r.dropped.length).toBeGreaterThan(0);
     expect(requests[0]!.messages.length).toBeLessThan(old.length + 2);
     expect(requests[0]!.messages[1]!.role).toBe('user');
+  });
+
+  it('the model never reads the VIN serial: not in a tool result, not in what the driver pasted, not in the history', async () => {
+    const vin = '8AGEA76C0RR000043';
+    const { llm, requests } = scripted(ask(call('read_vehicle_info', {}, 'v1')), say('Es un Chevrolet.'));
+    const { vehicle } = car({ read_vehicle_info: { ok: true, data: { vin, make: 'chevrolet' }, summary: `VIN ${vin}, 21 PIDs soportados` } });
+    const r = await runTurn({
+      history: [{ role: 'user', content: `mi VIN es ${vin}` }, { role: 'assistant', content: 'Anotado.' }],
+      text: `= ECU ?: 49 02 01 38 41 47 45 41 37 36 43 30 52 52 30 30 30 30 34 33`,
+      context: STOPPED,
+      llm,
+      vehicle,
+      confirmation: confirmWith(true).confirmation,
+    });
+    for (const q of requests) expect(JSON.stringify(q.messages)).not.toMatch(/000043|30 30 30 30 34 33/);
+    expect(JSON.stringify(requests[1]!.messages)).toContain('8AGEA76C0RR••••••');
+    expect(JSON.stringify(requests[1]!.messages)).toContain('chevrolet');
+    // The owner's history keeps what the car said, in full.
+    expect(JSON.stringify(r.messages)).toContain(vin);
+  });
+
+  it('the same search twice in a turn is refused with what to do instead; a third search too', async () => {
+    const { llm, requests } = scripted(
+      ask(call('research', { query: 'Odómetro  Tracker 2023' }, 'r1')),
+      ask(call('research', { query: 'odometro tracker 2023' }, 'r2')), // same words, other spelling
+      ask(call('web_search', { query: 'taller GM Posadas' }, 'w1')),
+      ask(call('research', { query: 'Tracker CAN FD odómetro UDS' }, 'r3')),
+      say('No apareció el DID en las páginas que leí.'),
+    );
+    const { vehicle, executed } = car({ research: { ok: true, data: { grade: 'none', passages: [] }, summary: 'no apareció' } });
+    const r = await runTurn({ history: [], text: 'buscá el DID', context: STOPPED, llm, vehicle, confirmation: confirmWith(true).confirmation, memo: new ToolMemo(), now: () => 0 });
+    expect(executed.map((c) => c.name)).toEqual(['research', 'web_search']);
+    expect(requests[2]!.messages.at(-1)).toMatchObject({ role: 'tool', content: expect.stringContaining('Ya buscaste eso') });
+    expect(requests[4]!.messages.at(-1)).toMatchObject({ role: 'tool', content: expect.stringContaining('Ya hiciste 2 búsquedas') });
+    expect(r.answered).toBe(true);
+  });
+
+  it('web lookups asked in one round run at the same time; car reads do not', async () => {
+    let running = 0;
+    let most = 0;
+    const slow: VehicleToolsPort = {
+      supportedPids: () => ['SPEED', 'RPM', 'COOLANT_TEMP', 'ENGINE_LOAD'],
+      async execute(c) {
+        running += 1;
+        most = Math.max(most, running);
+        await new Promise((res) => setTimeout(res, 20));
+        running -= 1;
+        return { ok: true, data: { name: c.name }, summary: c.name };
+      },
+    };
+    const web = scripted(ask(call('research', { query: 'odómetro GM' }, 'a'), call('docs_search', { query: 'F190' }, 'b'), call('knowledge_lookup', { make: 'chevrolet' }, 'c')), say('listo'));
+    await runTurn({ history: [], text: 'x', context: STOPPED, llm: web.llm, vehicle: slow, confirmation: confirmWith(true).confirmation });
+    expect(most).toBe(3);
+    // Results go back to the model in the order they were asked.
+    expect(web.requests[1]!.messages.slice(-3).map((m) => (m as { tool_call_id: string }).tool_call_id)).toEqual(['a', 'b', 'c']);
+
+    most = 0;
+    const carReads = scripted(ask(call('read_dtcs', { kind: 'stored' }, 'd'), call('read_readiness', {}, 'e')), say('listo'));
+    await runTurn({ history: [], text: 'x', context: STOPPED, llm: carReads.llm, vehicle: slow, confirmation: confirmWith(true).confirmation });
+    expect(most).toBe(1);
+  });
+
+  it('a turn that ends in the fallback is not "answered" (no next questions about it)', async () => {
+    const loop = () => ask(call('read_pids', { pids: ['RPM'] }));
+    const { llm } = scripted(...Array.from({ length: MAX_MODEL_CALLS - 1 }, () => loop), say(''));
+    const r = await runTurn({ history: [], text: 'rpm?', context: STOPPED, llm, vehicle: car().vehicle, confirmation: confirmWith(true).confirmation, memo: new ToolMemo(), now: () => 0 });
+    expect(r.answered).toBe(false);
   });
 
   it('answers shorter while driving', async () => {

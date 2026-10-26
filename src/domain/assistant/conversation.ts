@@ -7,9 +7,9 @@
 // base64 (the model already described them in its answer).
 
 import type { ApiMessage } from '@/domain/ports/llm.port';
-import type { AgentEvent, TurnResult } from './agent-loop';
+import type { AgentEvent, RoundStat, TurnResult } from './agent-loop';
 import { MAX_NOTES, type OfflineNote } from './offline';
-import type { MapPin, ToolName } from './tools';
+import type { MapPin, SourceLink, ToolName } from './tools';
 
 export type ToolStatus = 'running' | 'ok' | 'failed' | 'refused';
 
@@ -34,8 +34,11 @@ export type ChatItem =
       readonly detail: string | null;
       // Places it found, for the map card under the row.
       readonly places?: readonly MapPin[];
+      // Pages it read (research, web_fetch): buttons under the row.
+      readonly sources?: readonly SourceLink[];
     }
-  | { readonly kind: 'error'; readonly id: string; readonly at: number; readonly text: string; readonly retryText: string | null };
+  // `action`: what the screen offers besides retrying (the conversation no longer fits: go on in a new one).
+  | { readonly kind: 'error'; readonly id: string; readonly at: number; readonly text: string; readonly retryText: string | null; readonly action?: 'continue_new' };
 
 // Per-turn numbers, for the evaluation set (M3.4).
 export interface TurnStat {
@@ -44,6 +47,9 @@ export interface TurnStat {
   readonly modelCalls: number;
   readonly invalidCalls: number;
   readonly tools: readonly string[];
+  // One entry per model call: why a turn ended the way it did (an empty answer,
+  // a cut stream). Absent in older conversations.
+  readonly rounds?: readonly RoundStat[];
 }
 
 export interface Conversation {
@@ -106,6 +112,7 @@ export function applyEvent(c: Conversation, e: AgentEvent, now: number, answerId
         e.outcome.ok ? 'ok' : 'failed',
         e.outcome.ok ? e.outcome.summary : e.outcome.message,
         e.outcome.ok && e.outcome.places?.length ? e.outcome.places : undefined,
+        e.outcome.ok && e.outcome.sources?.length ? e.outcome.sources : undefined,
       );
     case 'tool_refused':
       return {
@@ -133,15 +140,24 @@ export function finishTurn(c: Conversation, r: TurnResult, answerId: string, sta
     api: bound([...c.api, ...r.messages.map(withoutPhotos)]),
     items: finalItems.slice(-MAX_MESSAGES),
     clears: c.clears + r.clears,
-    stats: [...c.stats, { at: startedAt, ms: now - startedAt, modelCalls: r.modelCalls, invalidCalls: r.invalidCalls, tools }].slice(-MAX_MESSAGES),
+    stats: [...c.stats, { at: startedAt, ms: now - startedAt, modelCalls: r.modelCalls, invalidCalls: r.invalidCalls, tools, ...(r.rounds?.length ? { rounds: r.rounds } : {}) }].slice(-MAX_MESSAGES),
   };
 }
 
 // The turn failed before an answer (network, server, no account). The text
 // stays on screen with a way to send it again; nothing joins the API history.
-export function failTurn(c: Conversation, id: string, text: string, retryText: string | null, now: number): Conversation {
+export function failTurn(c: Conversation, id: string, text: string, retryText: string | null, now: number, action?: 'continue_new'): Conversation {
   const items = c.items.map((i) => (i.kind === 'tool' && i.status === 'running' ? { ...i, status: 'failed' as const, detail: null } : i));
-  return { ...c, updatedAt: now, items: [...items, { kind: 'error', id, at: now, text, retryText }] };
+  return { ...c, updatedAt: now, items: [...items, { kind: 'error', id, at: now, text, retryText, ...(action ? { action } : {}) }] };
+}
+
+// A new conversation that goes on from one that no longer fits: it starts with
+// the old one's summary (the model reads it first) and says so on screen.
+export function continuation(fresh: Conversation, summary: string | null, from: Conversation, itemId: string, now: number): Conversation {
+  const text = summary
+    ? `Sigo desde la conversación "${from.title}", que quedó guardada. Lo que tengo de ella: ${summary}`
+    : `Sigo en una conversación nueva; "${from.title}" quedó guardada.`;
+  return { ...fresh, title: from.title, summary, updatedAt: now, items: [{ kind: 'assistant', id: itemId, at: now, text, cancelled: false, offline: true }] };
 }
 
 // Answered by the app itself, without the assistant (M4). Not in the API
@@ -152,7 +168,22 @@ export function addOfflineAnswer(c: Conversation, id: string, text: string, now:
 }
 
 export function addNote(c: Conversation, note: OfflineNote): Conversation {
-  return { ...c, notes: [...(c.notes ?? []), note].slice(-MAX_NOTES) };
+  const notes = c.notes ?? [];
+  // The same words sent again (the send failed and was tapped again) are one note.
+  if (notes.at(-1)?.text === note.text) return c;
+  return { ...c, notes: [...notes, note].slice(-MAX_NOTES) };
+}
+
+// A send that failed leaves the driver's message and an error (or the "I noted it"
+// answer). Sending the same words again replaces them instead of piling up
+// copies: the 2026-10-21 chat has the same note six times in a row.
+export function dropFailedAttempt(c: Conversation, text: string): Conversation {
+  const n = c.items.length;
+  const reply = c.items[n - 1];
+  const sent = c.items[n - 2];
+  const failed = reply?.kind === 'error' || (reply?.kind === 'assistant' && reply.offline === true);
+  if (failed && sent?.kind === 'user' && sent.photos === 0 && sent.text === text) return { ...c, items: c.items.slice(0, n - 2) };
+  return c;
 }
 
 // The notes reached the assistant, or the driver discarded them.
@@ -184,10 +215,10 @@ export function upsertConversation(list: readonly Conversation[], c: Conversatio
 // The answer's bubbles: answerId, then answerId.1, answerId.2… after tool rows.
 const isAnswerPart = (id: string, answerId: string) => id === answerId || id.startsWith(`${answerId}.`);
 
-function updateTool(c: Conversation, id: string, status: ToolStatus, detail: string | null, places?: readonly MapPin[]): Conversation {
+function updateTool(c: Conversation, id: string, status: ToolStatus, detail: string | null, places?: readonly MapPin[], sources?: readonly SourceLink[]): Conversation {
   return {
     ...c,
-    items: c.items.map((i) => (i.kind === 'tool' && i.id === id ? { ...i, status, detail, ...(places ? { places } : {}) } : i)),
+    items: c.items.map((i) => (i.kind === 'tool' && i.id === id ? { ...i, status, detail, ...(places ? { places } : {}), ...(sources ? { sources } : {}) } : i)),
   };
 }
 
