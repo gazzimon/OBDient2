@@ -3,11 +3,16 @@
 // reuses it and the next car of the same make starts knowing where to look.
 // Common to all users (lab), a JSON file on the K16.
 //
-//   report  { make, model, year?, vin?, protocol?, modules:[{id,reqHeader,rxHeader,label,partNumber?,vin?}], dids?, pids?, note? }
-//   lookup  { make?, model?, year?, vin? }  → merged facts for that vehicle
+//   report  { make, model, year?, protocol?, modules:[{id,reqHeader,rxHeader,label,partNumber?}], dids?, pids?, note? }
+//   lookup  { make?, model?, year? }  → merged facts for that vehicle
 //
 // Keyed by make/model/year ("ford/focus/2015"); a bare make merges everything
-// of that make. VIN, when present, pins the exact unit.
+// of that make.
+//
+// It is read by every user, so it never holds what names one car: a VIN sent
+// with a report is ignored, one that comes inside a part number or a note is
+// masked to its first 11 characters (what the car is, not which one), and a file
+// written before this rule is cleaned when the server starts (purge).
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -22,13 +27,35 @@ export function vehicleKey({ make, model, year }) {
   return [slug(make), slug(model), String(year ?? '').match(/^(19|20)\d\d$/) ? String(year) : ''].filter(Boolean).join('/');
 }
 
+// A VIN (17 characters, with a digit and a letter, no I/O/Q) inside any text.
+const VIN_IN_TEXT = /(?<![A-Z0-9])(?=[A-HJ-NPR-Z0-9]*\d)(?=[A-HJ-NPR-Z0-9]*[A-HJ-NPR-Z])[A-HJ-NPR-Z0-9]{17}(?![A-Z0-9])/gi;
+export const maskVins = (text) => (typeof text === 'string' ? text.replace(VIN_IN_TEXT, (v) => `${v.slice(0, 11)}••••••`) : text);
+
+// A vehicle record with nothing that names one car. Returns it, and whether it changed.
+function scrubVehicle(v) {
+  const before = JSON.stringify(v);
+  const { vins: _vins, ...rest } = v;
+  const clean = {
+    ...rest,
+    modules: (rest.modules ?? []).map((m) => (m.partNumber != null ? { ...m, partNumber: maskVins(m.partNumber) } : m)),
+    notes: (rest.notes ?? []).map((n) => ({ ...n, note: maskVins(n.note) })),
+  };
+  return [clean, JSON.stringify(clean) !== before];
+}
+
 export function knowledgeStore(file) {
-  const read = () => {
+  const readRaw = () => {
     try {
       return JSON.parse(readFileSync(file, 'utf8'));
     } catch {
       return { vehicles: {} };
     }
+  };
+  // Whatever is on disk, what the rest of the code sees has no VIN in it.
+  const read = () => {
+    const db = readRaw();
+    for (const k of Object.keys(db.vehicles ?? {})) db.vehicles[k] = scrubVehicle(db.vehicles[k])[0];
+    return db;
   };
   const write = (db) => {
     mkdirSync(dirname(file), { recursive: true });
@@ -44,6 +71,19 @@ export function knowledgeStore(file) {
   };
 
   return {
+    // Rewrites the file without the VINs an earlier version stored. Run at start.
+    purge() {
+      const db = readRaw();
+      let changed = 0;
+      for (const k of Object.keys(db.vehicles ?? {})) {
+        const [clean, did] = scrubVehicle(db.vehicles[k]);
+        db.vehicles[k] = clean;
+        if (did) changed += 1;
+      }
+      if (changed) write(db);
+      return changed;
+    },
+
     // Merge a discovery into the facts for its vehicle (and never lose old ones).
     report(rec) {
       const key = vehicleKey(rec);
@@ -54,12 +94,11 @@ export function knowledgeStore(file) {
         make: slug(rec.make),
         model: slug(rec.model) || prev.model || '',
         years: [...new Set([...(prev.years ?? []), ...(rec.year ? [String(rec.year)] : [])])],
-        vins: [...new Set([...(prev.vins ?? []), ...(rec.vin ? [rec.vin] : [])])].slice(0, 20),
         protocol: rec.protocol ?? prev.protocol ?? null,
-        modules: uniqBy([...(prev.modules ?? []), ...(rec.modules ?? [])], (m) => m.id, MAX_MODULES),
+        modules: uniqBy([...(prev.modules ?? []), ...(rec.modules ?? []).map((m) => (m?.partNumber != null ? { ...m, partNumber: maskVins(m.partNumber) } : m))], (m) => m.id, MAX_MODULES),
         dids: [...new Set([...(prev.dids ?? []), ...(rec.dids ?? [])])].slice(0, MAX_IDS),
         pids: [...new Set([...(prev.pids ?? []), ...(rec.pids ?? [])])].slice(0, MAX_IDS),
-        notes: [...(prev.notes ?? []), ...(rec.note ? [{ at: new Date().toISOString(), note: String(rec.note).slice(0, 300) }] : [])].slice(-20),
+        notes: [...(prev.notes ?? []), ...(rec.note ? [{ at: new Date().toISOString(), note: maskVins(String(rec.note).slice(0, 300)) }] : [])].slice(-20),
         updated: new Date().toISOString(),
       };
       db.vehicles[key] = next;
@@ -93,8 +132,7 @@ export function knowledgeStore(file) {
         }
       }
       const sameMake = [...byId.values()].sort((a, b) => b.seenIn - a.seenIn).slice(0, MAX_SAME_MAKE);
-      const byVin = q.vin ? Object.entries(db.vehicles).find(([, v]) => (v.vins ?? []).includes(q.vin)) : null;
-      return { exact: exact ? { key, ...exact } : null, close, byVin: byVin ? { key: byVin[0], ...byVin[1] } : null, sameMake };
+      return { exact: exact ? { key, ...exact } : null, close, sameMake };
     },
   };
 }

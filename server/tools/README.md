@@ -6,7 +6,9 @@ No registra claves, consultas ni posiciones.
 
 | Ruta (`POST /tools/v1/…`) | Datos | Fuente |
 |---|---|---|
-| `web_search { query }` | 5 resultados: título, sitio, fragmento ≤ 180, direcciones y precios encontrados | SearXNG local ([../searxng](../searxng/README.md)) |
+| `web_search { query }` | 5 resultados: título, sitio, fragmento ≤ 180, direcciones y precios encontrados (comercios, precios) | SearXNG local ([../searxng](../searxng/README.md)) |
+| `research { query, query_en? }` | busca (es y en), lee hasta 3 páginas, devuelve los fragmentos que responden con sitio, título, sección y fecha, y `grade` good/weak/none ([ADR-0012](../../docs/ADR/0012-busqueda-con-evidencia.md)) | SearXNG + páginas + base de textos (Qwen3-Embedding) |
+| `web_fetch { url, focus? }` | la página con su estructura (títulos, código, tablas, listas); con `focus`, solo sus fragmentos sobre eso | la página (archivos de GitHub, crudos) |
 | `fuel { lat, lng, product? }` | 5 estaciones más cercanas (≤ 30 km) con precio y antigüedad; la más barata a ≤ 10 km | Secretaría de Energía, Res. 314/2016 (datos abiertos), **diario** |
 | `dollar {}` | oficial, blue, MEP, CCL, mayorista, cripto, tarjeta | dolarapi.com (no oficial), **diario** |
 | `weather { lat, lng }` | ahora y próximas 6 h | Open-Meteo, en el momento |

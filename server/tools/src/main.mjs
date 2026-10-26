@@ -13,6 +13,7 @@ import { searxng } from './searxng.mjs';
 import { createApp, listen } from './server.mjs';
 import { keyOwnerLookup } from './key-owners.mjs';
 import { makeFetchPage } from './fetch-page.mjs';
+import { makeJudge, makeResearch } from './research.mjs';
 import { knowledgeStore } from './knowledge.mjs';
 import { docsStore } from './docs-store.mjs';
 import { makeDocs } from './docs.mjs';
@@ -53,8 +54,16 @@ const docs = makeDocs({
   log,
 });
 docs.store.purge();
+const knowledge = knowledgeStore(env.KNOWLEDGE_FILE ?? join(homedir(), '.local/share/obdient/knowledge.json'));
+{
+  // A file written before the lab stopped keeping VINs is cleaned once, here.
+  const cleaned = knowledge.purge();
+  if (cleaned) log(`knowledge: ${cleaned} vehicle records cleaned of VINs`);
+}
+const search = searxng({ baseUrl: env.SEARXNG_URL ?? 'http://127.0.0.1:8888' });
+const fetchPage = makeFetchPage();
 const app = createApp({
-  search: searxng({ baseUrl: env.SEARXNG_URL ?? 'http://127.0.0.1:8888' }),
+  search,
   isValidKey,
   data: (name) => readData(name),
   weather: async (p) => {
@@ -65,9 +74,18 @@ const app = createApp({
   // Driver of each position: the account's email (written by obdient-auth at login).
   ownerOf: keyOwnerLookup(env.KEY_OWNERS_FILE ?? join(homedir(), '.local/share/obdient/key-owners.json')),
   // Full-page reader for the agent (SSRF-guarded), and the lab's shared facts.
-  fetchPage: makeFetchPage(),
-  knowledge: knowledgeStore(env.KNOWLEDGE_FILE ?? join(homedir(), '.local/share/obdient/knowledge.json')),
+  fetchPage,
+  knowledge,
   docs,
+  // Search + read + rank in one call (research.mjs): the web part of the assistant.
+  research: makeResearch({
+    search,
+    fetchPage,
+    docs,
+    // The chat model on the Z440 tells an answer from a page on the same subject.
+    judge: makeJudge({ url: env.LLM_URL ?? 'http://192.168.100.210:8000', key: env.LLM_API_KEY ?? env.STT_API_KEY ?? null }),
+    log,
+  }),
   // Live position into Traccar's OsmAnd port (docker, server/traccar), local only.
   track: async (query) => {
     const res = await fetch(`${env.TRACCAR_OSMAND_URL ?? 'http://127.0.0.1:5055'}/?${query}`, {
