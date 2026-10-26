@@ -60,10 +60,12 @@ services:
       - --served-model-name=qwen3.8-27b
       - --host=192.168.100.210
       - --port=8000
-      - --max-model-len=16384
-      - --gpu-memory-utilization=0.92
+      # 32k desde 2026-10-26: el log de arranque dio 61.895 tokens de KV con estos
+      # tres valores (con 16384 / 0.92 / 8 eran 34.695). Hasta ~49k entra; 65k no.
+      - --max-model-len=32768
+      - --gpu-memory-utilization=0.95
       - --kv-cache-dtype=fp8
-      - --max-num-seqs=8
+      - --max-num-seqs=4
       - '--limit-mm-per-prompt={"image":2,"video":0}'
       - --reasoning-parser=qwen3
       - --enable-auto-tool-choice

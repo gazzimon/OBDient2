@@ -1,4 +1,4 @@
-// Keeps a conversation inside the model's context (16k tokens with the system
+// Keeps a conversation inside the model's context (32k tokens with the system
 // prompt and tools): the oldest whole turns go first.
 //
 // A turn starts at a user message, so an assistant tool call and its tool
@@ -85,8 +85,8 @@ export function trimHistory(messages: readonly ApiMessage[], budgetTokens: numbe
 // past SUMMARY_FROM tokens of history, the oldest turns down to SUMMARY_KEEP are
 // handed to the summary (in the background, after the answer). Then the next turns
 // start with a summary in place, and nothing measured is lost to a sudden cut.
-export const SUMMARY_FROM = 6_000;
-export const SUMMARY_KEEP = 3_500;
+export const SUMMARY_FROM = 12_000;
+export const SUMMARY_KEEP = 8_000;
 
 export function turnsToSummarize(messages: readonly ApiMessage[]): ApiMessage[] {
   const total = messages.reduce((sum, m) => sum + estimateTokens(m), 0);

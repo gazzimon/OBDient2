@@ -34,7 +34,7 @@ import { shareConversation } from '@/presentation/services/share-conversation';
 // Above this OBD speed the chat is only the microphone (Modo manejo).
 const MOVING_KMH = 8;
 
-// Each photo costs ~1.5k tokens of the 16k context.
+// Each photo costs ~1.5k tokens of the 32k context.
 const MAX_PHOTOS = 2;
 
 // The fixed fourth button: the destination is typed by the driver.

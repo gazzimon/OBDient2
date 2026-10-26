@@ -29,8 +29,10 @@ import { parseToolCall, toolSchemas, type ToolCall, type ToolOutcome } from './t
 export const MAX_MODEL_CALLS = 5;
 export const MAX_TOOLS_PER_ROUND = 6;
 export const MEMO_MS = 10_000;
-// The model's window (vLLM --max-model-len, ADR-0006).
-export const CONTEXT_TOKENS = 16_384;
+// The model's window (vLLM --max-model-len, ADR-0006). 32 768 since 2026-10-26: the
+// Z440 measured 61 895 tokens of KV cache with --max-num-seqs 4 and utilization 0.95
+// (it was 34 695 at 8 and 0.92, which is why 16k was the limit).
+export const CONTEXT_TOKENS = 32_768;
 // Kept free for what the turn itself adds: each round of tools costs ~300 tokens
 // (measured 2026-10-21) and a page read or a text search, 1–3k. If it is not
 // enough, the call fails with "context length" and is retried with less history.
@@ -41,7 +43,7 @@ export const ROUND_RESERVE_TOKENS = 1_500;
 const MIN_HISTORY_TOKENS = 1_000;
 // One tool result is cut here: a page or a dump must not eat the window by
 // itself. The 2026-10-21 chat had three searches and 27 raw replies.
-export const MAX_TOOL_RESULT_TOKENS = 1_500;
+export const MAX_TOOL_RESULT_TOKENS = 2_500;
 const MIN_RESULT_TOKENS = 200;
 // What an older result in the same turn is cut to when the window is short.
 const COMPACT_RESULT_CHARS = 400;

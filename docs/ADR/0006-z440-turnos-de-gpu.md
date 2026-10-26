@@ -57,3 +57,12 @@ Restricciones medidas:
 - Lo próximo en la Z440: OSRM + Photon (solo CPU) y el worker de lotes en la GPU1.
 - Si el chat necesita más contexto o más concurrencia que lo que deja la GPU0, la opción es un
   modelo más chico, no volver a TP=2.
+
+**Actualización 2026-10-26: el contexto del chat pasa de 16k a 32k.** El límite no era del hardware sino de
+la configuración: Qwen3.8-27B es un modelo híbrido (3 de cada 4 capas son de atención lineal, con un estado por
+secuencia) y con `--max-num-seqs=8` y 0,92 de memoria el log de arranque daba solo 34.695 tokens de KV. Con
+`--max-num-seqs=4` y 0,95 da **61.895 tokens** (concurrencia 1,89x para 32k; entraría hasta ~49k, no 65k).
+`--max-model-len=32768`. Medido antes y después con los mismos prompts: el prefill (~1.100 tok/s en frío) y la
+generación (~41 tok/s) no cambian, y entra un prompt de 27.727 tokens (27 s en frío). El prefix cache ya
+funcionaba (65 a 76 % de aciertos en el uso real). Queda la GPU0 en 22 de 24 GB. Pendiente: la cabeza MTP del
+checkpoint (0,85 GB) para decodificación especulativa.
