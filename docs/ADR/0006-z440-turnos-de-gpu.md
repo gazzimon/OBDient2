@@ -66,3 +66,22 @@ secuencia) y con `--max-num-seqs=8` y 0,92 de memoria el log de arranque daba so
 generación (~41 tok/s) no cambian, y entra un prompt de 27.727 tokens (27 s en frío). El prefix cache ya
 funcionaba (65 a 76 % de aciertos en el uso real). Queda la GPU0 en 22 de 24 GB. Pendiente: la cabeza MTP del
 checkpoint (0,85 GB) para decodificación especulativa.
+
+**Actualización 2026-10-26 (2): W4A8.** `VLLM_MARLIN_INPUT_DTYPE=int8` (activaciones int8 en el kernel Marlin;
+el checkpoint es compressed-tensors simétrico, no hace falta ningún parche; idea tomada de club-3090). Medido
+en la Z440 contra la configuración anterior, mismos prompts, arranque limpio de cada brazo:
+
+| Prompt | Prefill en frío antes → ahora | TTFT antes → ahora |
+|---|---|---|
+| ~1,2k tokens | ~1.050 → ~1.870 tok/s | 1,1 → 0,6 s |
+| ~9,3k | ~1.115 → ~1.775 | 8,4 → 5,2 s |
+| ~23k | ~1.045 → ~1.575 | 22,2 → 14,7 s |
+| ~30k | ~1.010 → ~1.485 | 29,8 → 20,4 s |
+
+La generación baja de ~42 a ~41 tok/s (−3 %). El pool KV no cambia (61.895 tokens). Evaluación del asistente
+(`assistant:eval --runs 2`): 52/58 con W4A8 y 50/58 sin él; los fallos son los mismos casos en ambos (10, 24 y el
+límite de palabras en movimiento), o sea que no hay pérdida de calidad medible. Soak de 25 turnos con contextos
+crecientes, dos veces: 0 respuestas vacías, 0 degeneradas, la VRAM crece 748 MiB en la primera pasada
+(calentamiento) y 0 en la segunda. La petición corta detrás de un prefill de 12k tarda 3,5 s antes y 2,1 s ahora:
+el bloqueo de 28 s que vimos antes no se reproduce, así que `--long-prefill-token-threshold` no se tocó.
+No probado: `--mamba-block-size` (podría romper el prefix cache del prefijo de ~5,7k tokens) ni MTP.
