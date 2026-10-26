@@ -207,7 +207,9 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
             ...summary,
             ...kept,
             ...added,
-            ...(closing ? [{ role: 'user' as const, content: CLOSING_INSTRUCTION }] : []),
+            // The last call has no tools either way: it must answer, not announce what it
+            // would do next (2026-10-26: "antes de armar la respuesta, déjame probar en vivo…").
+            ...(noTools && added.length > 1 ? [{ role: 'user' as const, content: CLOSING_INSTRUCTION }] : []),
           ])().map(hidingVin),
           tools,
           toolChoice: noTools ? 'none' : 'auto',
@@ -263,9 +265,12 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
         continue;
       }
       if (content) {
-        text = content;
+        // Cut by the token limit: said, not left to end mid-sentence as if it were whole.
+        const note = result.finishReason === 'length' ? '\n\n(Se cortó por el largo. Pedime que siga.)' : '';
+        if (note) emit({ type: 'text', delta: note });
+        text = `${content}${note}`;
         answered = true;
-        added.push({ role: 'assistant', content });
+        added.push({ role: 'assistant', content: text });
       } else {
         // Shown, but not kept: the model would read its own list of summaries
         // as the answer it gave, and copy it.

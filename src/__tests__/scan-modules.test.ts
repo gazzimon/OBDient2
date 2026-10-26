@@ -1,7 +1,8 @@
 import { NoDataError } from '@/core/errors/obd.errors';
 import type { CommandPort } from '@/data/adapters/protocol-manager';
 import type { ObdSession, SessionInfo } from '@/data/obd/obd-session';
-import { VehicleToolAdapter } from '@/data/obd/vehicle-tool-adapter';
+import { frameMessages, VehicleToolAdapter } from '@/data/obd/vehicle-tool-adapter';
+import { redactText } from '@/domain/privacy/redact';
 import { parseToolCall, type ToolOutcome } from '@/domain/assistant/tools';
 import { mergeTargets, needsFlowPair, noAnswer, refusalIn, requestHeader, type ScanTarget } from '@/domain/obd/module-scan';
 import { makeFromVin } from '@/domain/obd/vin-make';
@@ -180,7 +181,8 @@ describe('obd_command (lab)', () => {
   it('asks the module with its own reply filter, and leaves the adapter as telemetry needs it', async () => {
     const { tools, sent } = gmCar();
     const out = await tools.execute({ name: 'obd_command', command: '22 F1 90', header: '18DA11F1' }, signal);
-    expect(out).toMatchObject({ ok: true, data: { header: '18DA11F1', raw: expect.stringContaining('62 F1 90') } });
+    expect(out).toMatchObject({ ok: true, data: { header: '18DA11F1', messages: [{ ecu: '18DAF111', bytes: expect.stringContaining('62 F1 90') }] } });
+    expect(out.ok && (out.data as { raw?: string }).raw).toBeUndefined(); // assembled: no raw frames beside it
     expect(sent).toContain('ATSH 18DA11F1');
     expect(sent).toContain('ATCRA 18DAF111');
     // Restored: no filter, functional header, headers off.
@@ -199,6 +201,28 @@ describe('obd_command (lab)', () => {
   it('the header width must be the protocol’s', async () => {
     const { tools } = gmCar();
     expect(await tools.execute({ name: 'obd_command', command: '22 F1 90', header: '7E0' }, signal)).toMatchObject({ ok: false, error: 'invalid_arguments', message: expect.stringContaining('29 bits') });
+  });
+});
+
+describe('obd_command: the reply as the app reads it', () => {
+  const frames = '18DAF111 10 14 62 F1 90 38 41 47\n18DAF111 21 45 41 37 36 43 30 52\n18DAF111 22 52 30 30 30 30 34 33';
+
+  it('assembles a multi-frame answer (no 10 14 / 21 / 22 inside) and decodes the text', () => {
+    const [m] = frameMessages(frames, true);
+    expect(m).toMatchObject({ ecu: '18DAF111', complete: true, text: '8AGEA76C0RR000043' });
+    expect(m!.bytes).toBe('62 F1 90 38 41 47 45 41 37 36 43 30 52 52 30 30 30 30 34 33');
+  });
+
+  it('what the model gets has the serial hidden in the bytes and in the text (it saw it split across frames before)', () => {
+    const [m] = frameMessages(frames, true);
+    const seen = redactText(JSON.stringify(m));
+    expect(seen).not.toMatch(/000043|303030303433|30 30 30 30 34 33/);
+    expect(seen).toContain('8AGEA76C0RR••••••');
+  });
+
+  it('a short or non-text answer has no text', () => {
+    expect(frameMessages('18DAF111 06 62 F1 87 01 02 03', true)[0]).not.toHaveProperty('text');
+    expect(frameMessages('NO DATA', true)).toEqual([]);
   });
 });
 

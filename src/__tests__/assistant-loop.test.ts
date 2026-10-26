@@ -267,7 +267,7 @@ describe('runTurn', () => {
     const r = await runTurn({ history: [], text: 'buscá el DID', context: STOPPED, llm, vehicle, confirmation: confirmWith(true).confirmation, memo: new ToolMemo(), now: () => 0 });
     expect(executed.map((c) => c.name)).toEqual(['research', 'web_search']);
     expect(requests[2]!.messages.at(-1)).toMatchObject({ role: 'tool', content: expect.stringContaining('Ya buscaste eso') });
-    expect(requests[4]!.messages.at(-1)).toMatchObject({ role: 'tool', content: expect.stringContaining('Ya hiciste 2 búsquedas') });
+    expect(requests[4]!.messages.at(-2)).toMatchObject({ role: 'tool', content: expect.stringContaining('Ya hiciste 2 búsquedas') });
     expect(r.answered).toBe(true);
   });
 
@@ -316,5 +316,36 @@ describe('runTurn', () => {
     const r = await runTurn({ history: [], text: 'batería', context: STOPPED, llm, vehicle, confirmation: confirmWith(true).confirmation });
     expect(r.text).toBe('12,6 V.');
     expect(requests).toHaveLength(3);
+  });
+});
+
+describe('the last round', () => {
+  it('always asks for the answer itself, so the turn does not end in "let me check first…" (2026-10-26)', async () => {
+    const loop = () => ask(call('read_pids', { pids: ['RPM'] }));
+    const { llm, requests } = scripted(...Array.from({ length: MAX_MODEL_CALLS - 1 }, () => loop), say('Medí 812 rpm: está estable.'));
+    const r = await runTurn({ history: [], text: 'rpm?', context: STOPPED, llm, vehicle: car().vehicle, confirmation: confirmWith(true).confirmation, memo: new ToolMemo(), now: () => 0 });
+    expect(requests.at(-1)!.toolChoice).toBe('none');
+    expect(requests.at(-1)!.messages.at(-1)).toMatchObject({ role: 'user', content: expect.stringContaining('Respondé ahora al usuario') });
+    // The earlier rounds are not told that.
+    expect(JSON.stringify(requests[0]!.messages)).not.toContain('Respondé ahora al usuario');
+    expect(r.text).toBe('Medí 812 rpm: está estable.');
+    expect(JSON.stringify(r.messages)).not.toContain('Respondé ahora al usuario');
+  });
+});
+
+describe('an answer cut by the token limit', () => {
+  it('says it was cut, on screen and in the history, instead of ending mid-sentence', async () => {
+    const { llm } = scripted({ content: 'Los módulos de Ford se piden por', toolCalls: [], finishReason: 'length' });
+    const events: AgentEvent[] = [];
+    const r = await runTurn({ history: [], text: 'x', context: STOPPED, llm, vehicle: car().vehicle, confirmation: confirmWith(true).confirmation, onEvent: (e) => events.push(e) });
+    expect(r.text).toBe('Los módulos de Ford se piden por\n\n(Se cortó por el largo. Pedime que siga.)');
+    expect(r.messages.at(-1)).toEqual({ role: 'assistant', content: r.text });
+    expect(events.filter((e) => e.type === 'text').map((e) => (e as { delta: string }).delta).join('')).toContain('Se cortó por el largo');
+  });
+
+  it('a whole answer is left alone', async () => {
+    const { llm } = scripted(say('Listo.'));
+    const r = await runTurn({ history: [], text: 'x', context: STOPPED, llm, vehicle: car().vehicle, confirmation: confirmWith(true).confirmation });
+    expect(r.text).toBe('Listo.');
   });
 });
