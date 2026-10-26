@@ -85,3 +85,22 @@ crecientes, dos veces: 0 respuestas vacías, 0 degeneradas, la VRAM crece 748 Mi
 (calentamiento) y 0 en la segunda. La petición corta detrás de un prefill de 12k tarda 3,5 s antes y 2,1 s ahora:
 el bloqueo de 28 s que vimos antes no se reproduce, así que `--long-prefill-token-threshold` no se tocó.
 No probado: `--mamba-block-size` (podría romper el prefix cache del prefijo de ~5,7k tokens) ni MTP.
+
+**Actualización 2026-10-26 (3): `--mamba-block-size` y potencia.**
+- `--mamba-block-size=8192` (de club-3090, donde recupera ~20 % del pool): **sin efecto aquí**. El pool sigue en
+  61.895 tokens, el bloque de atención sigue en 1568 y el prefix cache da lo mismo con un prefijo de ~5,1k tokens
+  (73 % de aciertos, 2,8 s en frío → 0,28 s con cache) y de ~10k (74 %). Se revirtió; no se usa.
+- **Potencia de la GPU0, 250 W contra 290 W**, cuatro brazos alternados (A,B,A,B) con la misma carga y
+  muestreo de temperatura cada 2 s. Cada brazo repitió dentro de ~1 %:
+
+| | 250 W | 290 W | Cambio |
+|---|---|---|---|
+| Prefill en frío, 9k tokens | ~1.765 tok/s | ~2.220 | +26 % |
+| Prefill en frío, 30k tokens | ~1.500 | ~1.867 | +24 % |
+| Decode, un pedido | ~41,6 tok/s | ~45,5 | +9 % |
+| 4 pedidos de ~1,2k: total | ~148 tok/s | ~156 | +5 % |
+| 4 pedidos de ~12k: total | ~101 | ~112 | +11 % |
+| Pico de temperatura (núcleo / VRAM) | 57 / 82 °C | 57 / 84 °C | +2 °C en VRAM |
+
+La guardia avisa a 100 °C de VRAM y 85 °C de núcleo (corta a 107 y 90), así que hay ~16 °C de margen con la
+carga de la prueba (un minuto y medio). El límite se cambia en caliente con `sudo nvidia-smi -i 0 -pl N`.
