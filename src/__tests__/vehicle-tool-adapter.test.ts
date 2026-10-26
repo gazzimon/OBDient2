@@ -59,8 +59,8 @@ const B35 = {
   '03': { h0: '4300', h1: '18DAF111024300' },
   '020200': { h0: '4202000000', h1: '18DAF111054202000000' },
   '0902': {
-    h0: '014\n0:490201384147\n1:45413736433052\n2:52313137353235',
-    h1: '18DAF1111014490201384147\n18DAF1112145413736433052\n18DAF1112252313137353235',
+    h0: '014\n0:490201384147\n1:45413736433052\n2:52303030303433',
+    h1: '18DAF1111014490201384147\n18DAF1112145413736433052\n18DAF1112252303030303433',
   },
 };
 
@@ -155,7 +155,7 @@ describe('VehicleToolAdapter', () => {
     const { session } = fakeSession(B35);
     const data = ok(await new VehicleToolAdapter(() => session).execute({ name: 'read_vehicle_info' }, signal));
     expect(data).toEqual({
-      vin: '8AGEA76C0RR117525',
+      vin: '8AGEA76C0RR000043',
       vinWellFormed: true,
       supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP', 'DIST_SINCE_CLEAR'],
     });
@@ -219,7 +219,7 @@ describe('VehicleToolAdapter', () => {
     await tools.execute({ name: 'clear_dtcs' }, signal);
     expect(sent.filter((c) => c === '0902')).toHaveLength(1);
     expect(history.list().map((e) => e.type)).toEqual(['cleared', 'codes']);
-    expect(history.lastClear('8AGEA76C0RR117525')).toMatchObject({
+    expect(history.lastClear('8AGEA76C0RR000043')).toMatchObject({
       distSinceClearBeforeKm: 2197,
       codesBefore: [{ code: 'P0171', ecu: '18DAF111', owner: 'standard' }],
     });

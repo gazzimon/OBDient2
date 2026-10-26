@@ -40,9 +40,9 @@ describe('service log', () => {
   }
 
   it('writes with the confirmed car and the VIN the adapter knew', () => {
-    const t = tools('8AGEA76C0RR117525');
+    const t = tools('8AGEA76C0RR000043');
     const r = t.tools.execute({ name: 'log_service', car: 'Chevrolet Onix 2016', item: 'Cambio de aceite', km: 45000, note: null });
-    expect(r).toMatchObject({ ok: true, data: { saved: { car: 'Chevrolet Onix 2016', vin: '8AGEA76C0RR117525', km: 45000, date: '2026-10-20' } } });
+    expect(r).toMatchObject({ ok: true, data: { saved: { car: 'Chevrolet Onix 2016', vin: '8AGEA76C0RR000043', km: 45000, date: '2026-10-20' } } });
     expect(t.entries()).toHaveLength(1);
   });
 

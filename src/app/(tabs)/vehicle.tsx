@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
 import { formatBench } from '@/data/obd/adapter-bench';
 import { formatCapture } from '@/data/obd/diagnostic-capture';
+import { redactText } from '@/domain/privacy/redact';
 import { looksLikeObd } from '@/data/obd/obd-manager';
 import type { RequestStyle } from '@/data/obd/telemetry-poller';
 import type { ScannedDevice } from '@/data/adapters/ble-transport';
@@ -142,7 +143,7 @@ export default function VehicleScreen() {
                     <PillButton
                       label="Compartir resultado"
                       variant="secondary"
-                      onPress={() => void Share.share({ message: `OBDient2 · banco ${deviceName ?? ''}\n\n${bench}` })}
+                      onPress={() => void Share.share({ message: redactText(`OBDient2 · banco ${deviceName ?? ''}\n\n${bench}`) })}
                     />
                   </View>
                 </View>
@@ -172,7 +173,7 @@ export default function VehicleScreen() {
                     <PillButton
                       label="Compartir captura"
                       variant="secondary"
-                      onPress={() => void Share.share({ message: `OBDient2 · ${deviceName ?? ''}\n\n${capture}` })}
+                      onPress={() => void Share.share({ message: redactText(`OBDient2 · ${deviceName ?? ''}\n\n${capture}`) })}
                     />
                   </View>
                 </View>

@@ -6,14 +6,16 @@
 //
 // The app must be open (decision 2026-10-19): no background location.
 //
-// The same samples feed the live position for the lab's Traccar, always while
-// the adapter is connected (decision 2026-10-20): every 5 s moving, every minute stopped, queued
-// while there is no signal, through obdient-tools (checked with the account key).
+// The same samples feed the live position for the lab's Traccar, while the
+// adapter is connected and only if the driver agreed (Ajustes → "Compartir mi
+// recorrido", ADR-0011): every 5 s moving, every minute stopped, queued while there
+// is no signal, through obdient-tools (checked with the account key).
 
 import { useSyncExternalStore } from 'react';
 import { container } from '@/data/container';
 import { TripStore } from '@/data/trips/trip-store';
-import { TrackQueue, deviceIdFor, newDeviceId, trackDue } from '@/domain/trips/live-track';
+import { newSalt } from '@/domain/privacy/hash';
+import { TrackQueue, carOf, trackDeviceFor, trackDue } from '@/domain/trips/live-track';
 import { END_AFTER_MS, TripBuilder, type Trip } from '@/domain/trips/trip-builder';
 import { useEgoStore } from '@/store/egoStore';
 import { useOBDStore } from '@/store/obdStore';
@@ -24,6 +26,12 @@ const DRAFT_EVERY = 30;
 const FRESH_MS = 3000;
 // g/s → L/h for petrol at 14.7:1 (core/utils/fuel.ts).
 const MAF_TO_LPH = 3600 / (14.7 * 740);
+
+// Randomness for this install's salt: the platform's when it has one.
+function secureRandom(): number {
+  const c = (globalThis as { crypto?: { getRandomValues?: (a: Uint32Array) => Uint32Array } }).crypto;
+  return c?.getRandomValues ? c.getRandomValues(new Uint32Array(1))[0]! / 2 ** 32 : Math.random();
+}
 
 export const trips = new TripStore();
 
@@ -99,12 +107,13 @@ class MyTripsRecorder {
   }
 
   private track(now: number, lat: number, lng: number, kmh: number, bearing: number | null, acc: number): void {
-    // Always on while the adapter is connected (decision 2026-10-20, lab vehicle
-    // monitoring). Before Google Play: an explicit consent screen (ROADMAP).
-    // Device = the adapter (its Bluetooth address); a random id only if unknown.
+    // Only with the driver's yes (Ajustes → "Compartir mi recorrido"; ADR-0011
+    // replaces the always-on of 2026-10-20). What is sent identifies the adapter and
+    // the car by pseudonyms of this install, not by their addresses.
     const settings = useSettingsStore.getState();
-    let trackingDevice = deviceIdFor(settings.lastDeviceId) ?? settings.trackingDevice;
-    if (!trackingDevice) trackingDevice = newDeviceId();
+    if (!settings.trackingConsent) return;
+    if (!settings.privacySalt) settings.setPrivacySalt(newSalt(secureRandom));
+    const trackingDevice = trackDeviceFor(useSettingsStore.getState().privacySalt, settings.lastDeviceId);
     if (trackingDevice !== settings.trackingDevice) settings.setLiveTracking(true, trackingDevice);
     if (!trackDue(this.lastTrackAt, now, kmh)) return;
     this.lastTrackAt = now;
@@ -120,7 +129,7 @@ class MyTripsRecorder {
     put('voltage', fresh(p.VOLTAGE));
     const maf = fresh(p.MAF);
     put('fuelLph', maf !== undefined ? maf * MAF_TO_LPH : undefined);
-    this.queue.push({ t: now, lat, lng, kmh: Math.round(kmh), bearing, acc: Math.round(acc), obd, vin: container.vehicleTools.knownVin() });
+    this.queue.push({ t: now, lat, lng, kmh: Math.round(kmh), bearing, acc: Math.round(acc), obd, vin: carOf(container.vehicleTools.knownVin()) });
     void this.flush(trackingDevice);
   }
 

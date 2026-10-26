@@ -5,7 +5,7 @@ function memory(initial: string | null = null): FaultHistoryStorage & { json: st
   return s;
 }
 
-const VIN = '8AGEA76C0RR117525';
+const VIN = '8AGEA76C0RR000043';
 const P0171 = { code: 'P0171', ecu: '18DAF111', owner: 'standard' } as const;
 const P0301 = { code: 'P0301', ecu: '18DAF111', owner: 'standard' } as const;
 

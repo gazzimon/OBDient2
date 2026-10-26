@@ -11,6 +11,7 @@ import { AdapterResetError, CommandTimeoutError, ConnectionLostError, NoDataErro
 import type { CommandPort } from '@/data/adapters/protocol-manager';
 import type { Unsubscribe } from '@/data/adapters/transport';
 import { readMessages, type EcuMessage } from '@/core/utils/obdFrames';
+import { redactText, vinFromBytes, vinFromRaw } from '@/domain/privacy/redact';
 
 export interface CapturePort extends CommandPort {
   onRaw(listener: (raw: string) => void): Unsubscribe;
@@ -173,8 +174,19 @@ const OUTCOME_LABEL: Record<CaptureOutcome, string> = {
   lost: ' · CONEXIÓN PERDIDA',
 };
 
-// Plain text to share: one block per command, raw answers indented.
+// Plain text to share: one block per command, raw answers indented. The capture
+// is made to be sent to someone else, so the car's VIN serial is hidden in it
+// (domain/privacy/redact.ts): what the lab needs is how the car answers.
 export function formatCapture(report: CaptureReport): string {
+  const vins = report.rounds
+    .flatMap((r) => r.entries)
+    .filter((e) => e.command === '0902')
+    .flatMap((e) => [...(e.messages ?? []).map((m) => vinFromBytes(m.bytes.slice(3))), vinFromRaw(e.raw)])
+    .filter((v): v is string => v != null);
+  return redactText(captureText(report), vins);
+}
+
+function captureText(report: CaptureReport): string {
   const lines = [
     `Captura de diagnóstico · ${new Date(report.startedAt).toISOString()}`,
     `Adaptador: ${report.adapter}`,
