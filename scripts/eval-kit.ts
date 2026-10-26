@@ -78,7 +78,7 @@ export const common: Car = {
   read_fault_history: () =>
     ok(
       {
-        vin: '8AGEA76C0RR117525',
+        vin: '8AGEA76C0RR000099',
         events: [
           { type: 'cleared', at: '2026-10-18 20:00', codesBefore: ['P0171'], distSinceClearBeforeKm: 2204 },
           { type: 'codes', kind: 'stored', codes: ['P0171'], firstSeen: '2026-09-02 08:10', lastSeen: '2026-10-18 19:58', distSinceClearKm: 2204 },
@@ -95,7 +95,7 @@ export const common: Car = {
       },
       `RPM 760–870 durante ${c.name === 'sample_pids' ? c.seconds : 0} s`,
     ),
-  read_vehicle_info: () => ok({ vin: '8AGEA76C0RR117525', vinWellFormed: true, supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP'] }, 'VIN 8AGEA76C0RR117525'),
+  read_vehicle_info: () => ok({ vin: '8AGEA76C0RR000099', vinWellFormed: true, supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP'] }, 'VIN 8AGEA76C0RR000099'),
   read_adapter_info: () => ok({ chip: 'STN1040 v1.3.6', stn: true, protocol: 'ISO_15765_4_CAN_29BIT_500K', speedHz: 20.7, requestStyle: 'stpx', adapterResets: 0, volts: 14.3 }, 'STN1040, 20.7 Hz'),
   run_adapter_bench: () => ok({ styles: [{ style: 'stpx', hz: 20.7, ok: 20, total: 20 }] }, 'Mejor: stpx a 20.7 Hz'),
 };

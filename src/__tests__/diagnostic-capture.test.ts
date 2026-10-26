@@ -92,7 +92,10 @@ describe('diagnostic capture', () => {
       { title: 'b', commands: ['ATH1', '03'] },
     ]);
     const text = formatCapture(report);
-    expect(text).toContain('  = ECU ?: 49 02 01 31 44 34 47 50 30 30 52 35 35 42 31 32 33 34 35 36');
+    // The serial of the VIN (its last 6 characters) is hidden, in the assembled line and in the frames.
+    expect(text).toContain('  = ECU ?: 49 02 01 31 44 34 47 50 30 30 52 35 35 42 ** ** ** ** ** **');
+    expect(text).toContain('  2:42************');
+    expect(text).not.toContain('313233343536');
     expect(text).toContain('  = 18DAF110: 43 01 71');
     expect(text).toContain('  = 18DAF118: 43');
     expect(report.rounds[1]!.entries[0]!.messages).toBeUndefined();
@@ -101,6 +104,7 @@ describe('diagnostic capture', () => {
   it('formats raw answers under each command', async () => {
     const port = fakePort({ '0902': '014 0: 490201314731 1: 4A433534343452 2: 37323532333637' });
     const report = await runDiagnosticCapture(port, ctx, [{ title: 'VIN', commands: ['0902'] }], () => 0);
-    expect(formatCapture(report)).toContain('> 0902 (0 ms)\n  014 0: 490201314731 1: 4A433534343452 2: 37323532333637');
+    // Raw frames stay (they show how the car frames its answer); the serial bytes do not.
+    expect(formatCapture(report)).toContain('> 0902 (0 ms)\n  014 0: 490201314731 1: 4A433534343452 2: 37************');
   });
 });

@@ -70,8 +70,16 @@ interface SettingsState {
   recordMyTrips: boolean;
   // Live position to the lab's Traccar (off by default: where the car is, is personal).
   liveTracking: boolean;
-  // Traccar device id of this phone ("obd_" + 8 characters), made when first turned on.
+  // Traccar device id of this phone ("obd_" + 16 hex characters of a salted hash
+  // of the adapter's address, never the address itself).
   trackingDevice: string;
+  // The driver said yes to sharing the route with the lab (Ajustes). Without it
+  // nothing is sent: the lab used to receive it always (decision 2026-10-20) and
+  // that is what ADR-0011 replaces with an explicit yes.
+  trackingConsent: boolean;
+  // Random per install: the key of the pseudonyms the lab receives instead of the
+  // adapter address and the VIN (domain/privacy/hash.ts). Never leaves the phone.
+  privacySalt: string;
   disclaimerAccepted: boolean;
   // "Not now" on the first-run sign-in: the app works without an account.
   accountPromptDismissed: boolean;
@@ -93,6 +101,8 @@ interface SettingsState {
   setRecordTrips: (on: boolean) => void;
   setRecordMyTrips: (on: boolean) => void;
   setLiveTracking: (on: boolean, device?: string) => void;
+  setTrackingConsent: (on: boolean) => void;
+  setPrivacySalt: (salt: string) => void;
   setDisclaimerAccepted: (on: boolean) => void;
   setAccountPromptDismissed: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
@@ -114,6 +124,8 @@ export const useSettingsStore = create<SettingsState>()(
       recordMyTrips: true,
       liveTracking: false,
       trackingDevice: '',
+      trackingConsent: false,
+      privacySalt: '',
       disclaimerAccepted: false,
       accountPromptDismissed: false,
       debugOverlay: false,
@@ -130,6 +142,8 @@ export const useSettingsStore = create<SettingsState>()(
       setRecordTrips: (on) => set({ recordTrips: on }),
       setRecordMyTrips: (on) => set({ recordMyTrips: on }),
       setLiveTracking: (on, device) => set((s) => ({ liveTracking: on, trackingDevice: device ?? s.trackingDevice })),
+      setTrackingConsent: (on) => set({ trackingConsent: on }),
+      setPrivacySalt: (salt) => set({ privacySalt: salt }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setAccountPromptDismissed: (on) => set({ accountPromptDismissed: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
@@ -153,6 +167,8 @@ export const useSettingsStore = create<SettingsState>()(
         recordMyTrips: s.recordMyTrips,
         liveTracking: s.liveTracking,
         trackingDevice: s.trackingDevice,
+        trackingConsent: s.trackingConsent,
+        privacySalt: s.privacySalt,
         disclaimerAccepted: s.disclaimerAccepted,
         accountPromptDismissed: s.accountPromptDismissed,
         debugOverlay: s.debugOverlay,

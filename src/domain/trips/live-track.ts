@@ -2,6 +2,8 @@
 // queue for the stretches without signal, so the web still gets the whole
 // path when the phone is back online.
 
+import { pseudonym } from '@/domain/privacy/hash';
+
 export interface TrackPoint {
   readonly t: number;
   readonly lat: number;
@@ -10,7 +12,7 @@ export interface TrackPoint {
   readonly bearing: number | null;
   readonly acc: number;
   readonly obd?: Readonly<Record<string, number>>;
-  // The car (always sent when the adapter has read it).
+  // The car: the first 11 characters of its VIN (carOf), when the adapter has read it.
   readonly vin?: string | null;
 }
 
@@ -24,19 +26,20 @@ export function trackDue(lastAt: number | null, now: number, kmh: number): boole
   return now - lastAt >= (kmh >= 3 ? EVERY_MOVING_MS : EVERY_STILL_MS);
 }
 
-// The device is the adapter (decision 2026-10-20): today its Bluetooth address,
-// later its serial number. "obd_" + letters and digits: what Traccar accepts.
-export function deviceIdFor(adapterId: string | null): string | null {
+// The device is the adapter (decision 2026-10-20), but the lab receives a
+// pseudonym of its Bluetooth address, not the address (ADR-0011): "obd_" + 16 hex
+// characters of a hash salted with this install's secret, which is what Traccar
+// accepts and what keeps one adapter's trips together. Without an address, the
+// phone itself.
+export function trackDeviceFor(salt: string, adapterId: string | null): string {
   const clean = (adapterId ?? '').replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-  return clean.length >= 4 ? `obd_${clean.slice(0, 36)}` : null;
+  return `obd_${pseudonym(salt, clean.length >= 4 ? `adapter:${clean}` : 'phone')}`;
 }
 
-// Fallback when the adapter's id is unknown: "obd_" and 8 letters or digits.
-export function newDeviceId(random: () => number = Math.random): string {
-  const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
-  let id = 'obd_';
-  for (let i = 0; i < 8; i++) id += chars[Math.floor(random() * chars.length)];
-  return id;
+// The car as the lab gets it: the first 11 characters of the VIN (make, model
+// line, engine, year, plant), never the serial that names the unit.
+export function carOf(vin: string | null): string | null {
+  return vin && vin.length >= 11 ? vin.slice(0, 11) : null;
 }
 
 export class TrackQueue {

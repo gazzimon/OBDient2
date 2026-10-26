@@ -1455,7 +1455,7 @@
    "turns": [
     {
      "prompt": "¿Cuál es el historial de fallas de mi auto?",
-     "text": "Según el historial guardado en el teléfono (VIN 8AGEA76C0RR117525), tu auto tuvo un solo código:\n\n- P0171 (mezcla pobre, banco 1): apareció por primera vez el 2/9/2026 y se vio por última vez el 18/10/2026, a 2.204 km del último borrado.\n- Ese mismo día, 18/10/2026 a las 20:00, se borró.\n\nEs decir: el código P0171 estuvo activo desde septiembre hasta octubre, y luego se limpió. Si querés, puedo medir ahora si volvió a aparecer o revisar el freeze frame para ver en qué condiciones se registró. ¿Te interesa?",
+     "text": "Según el historial guardado en el teléfono (VIN 8AGEA76C0RR000099), tu auto tuvo un solo código:\n\n- P0171 (mezcla pobre, banco 1): apareció por primera vez el 2/9/2026 y se vio por última vez el 18/10/2026, a 2.204 km del último borrado.\n- Ese mismo día, 18/10/2026 a las 20:00, se borró.\n\nEs decir: el código P0171 estuvo activo desde septiembre hasta octubre, y luego se limpió. Si querés, puedo medir ahora si volvió a aparecer o revisar el freeze frame para ver en qué condiciones se registró. ¿Te interesa?",
      "tools": [
       "read_fault_history({})"
      ],

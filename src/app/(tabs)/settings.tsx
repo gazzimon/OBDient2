@@ -77,10 +77,15 @@ export default function SettingsScreen() {
           <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
         </Pressable>
 
-        {/* Disclosure, not a switch: the lab monitors its vehicles while the adapter is connected. */}
+        {/* Opt-in (ADR-0011): where the car is, is personal. Off until the driver says yes. */}
+        <Row label="Compartir mi recorrido con el laboratorio">
+          <Switch value={s.trackingConsent} onValueChange={s.setTrackingConsent} trackColor={{ true: COLORS.mintDark }} thumbColor={COLORS.text} />
+        </Row>
         <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-6">
-          Monitoreo del laboratorio: mientras el adaptador está conectado, la posición del auto se envía al servidor de la
-          Fundación{s.trackingDevice ? ` (dispositivo ${s.trackingDevice})` : ''}.
+          Con el adaptador conectado, la app envía al servidor de la Fundación la posición, la velocidad y algunos valores
+          del motor (RPM, temperatura, carga, batería), junto con tu cuenta y el modelo del auto. No envía el VIN
+          completo ni la dirección del adaptador: llegan como un código que solo identifica a este teléfono. Podés
+          apagarlo cuando quieras{s.trackingConsent && s.trackingDevice ? ` (código ${s.trackingDevice})` : ''}.
         </Text>
 
         <SectionHeader title="Laboratorio" />

@@ -152,9 +152,9 @@ describe('maskToPids', () => {
 
 describe('parseVin', () => {
   it('B35 car, with and without headers, built in Argentina', () => {
-    const withHeaders = parseVin(read('18DAF1111014490201384147\n18DAF1112145413736433052\n18DAF1112252313137353235'), true);
-    const without = parseVin(readMessages('014\n0:490201384147\n1:45413736433052\n2:52313137353235', CAN), true);
-    expect(withHeaders).toEqual({ vin: '8AGEA76C0RR117525', ecu: '18DAF111', wellFormed: true, checkDigitOk: false });
+    const withHeaders = parseVin(read('18DAF1111014490201384147\n18DAF1112145413736433052\n18DAF1112252303030303939'), true);
+    const without = parseVin(readMessages('014\n0:490201384147\n1:45413736433052\n2:52303030303939', CAN), true);
+    expect(withHeaders).toEqual({ vin: '8AGEA76C0RR000099', ecu: '18DAF111', wellFormed: true, checkDigitOk: false });
     expect(without!.vin).toBe(withHeaders!.vin);
   });
 
