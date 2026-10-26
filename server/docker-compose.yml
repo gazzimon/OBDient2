@@ -48,6 +48,8 @@ services:
       stack: 67108864
     environment:
       - VLLM_API_KEY=${VLLM_API_KEY}
+      # W4A8 (activaciones int8 en Marlin): prefill +50%, decode −3%; medido 2026-10-26 (ADR-0006).
+      - VLLM_MARLIN_INPUT_DTYPE=int8
     volumes:
       - /home/fiui-pss/models:/models:ro
     # Una sola GPU (sin TP): el enlace PCIe entre las 3090 no tiene NVLink.
