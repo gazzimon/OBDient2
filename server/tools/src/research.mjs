@@ -13,6 +13,10 @@
 //      site, page title, section and date, in delimiters that mark it third-party.
 //   4. Say how good that evidence is: `good`, `weak` or `none`. With `none` the
 //      model is told to say so and not to search the same thing again.
+//   5. Corrective round (2026-10-26): with `weak` or `none`, read the next few
+//      pages (other sites), rank and judge again over everything read. A model that
+//      is handed half an answer fills the rest in from what it knows; better to
+//      hand it more of the web than to leave the gap.
 //
 // The pieces are injected, so it runs in tests without a network.
 
@@ -28,6 +32,12 @@ const PASSAGES = 5;
 const PER_SOURCE = 3;
 const BUDGET_CHARS = 5200; // ~1 500 tokens of prose
 const ALSO = 4;
+// The corrective round: more pages, other sites, only if the first round was quick
+// (the app waits 55 s for the whole call).
+const EXTRA_PAGES = 3;
+const EXTRA_SPARE = 3;
+const EXTRA_DEADLINE_MS = 15_000;
+const SECOND_ROUND_BEFORE_MS = 20_000;
 
 // Candidates for the judge: a fragment at least this close, or with this share of
 // the question's words (docs/ADR/0012-busqueda-con-evidencia.md).
@@ -211,45 +221,62 @@ export function makeResearch({ search, fetchPage, docs, judge = null, log = () =
       const settled = await Promise.allSettled(queries.map((x) => search(x.q, { language: x.language })));
       if (settled.every((s) => s.status === 'rejected')) throw settled[0].reason;
       const ranked = mergeResults(settled.map((s) => (s.status === 'fulfilled' ? s.value : [])));
-      // READ_PAGES lanes in parallel; a lane whose page fails (a site that refuses
-      // readers, HTTP 403, or a scanned PDF) takes the next candidate.
-      const queue = pickPages(ranked, READ_PAGES + SPARE_PAGES).map((p, i) => ({ ...p, i }));
-      const attempts = [];
-      const lane = async () => {
-        while (queue.length) {
-          const p = queue.shift();
-          const r = await withDeadline(readPage(p), PAGE_DEADLINE_MS);
-          const done = r.timedOut ? { url: p.url, site: p.domain, title: p.title, status: 'failed' } : r;
-          attempts.push({ ...done, i: p.i });
-          if (done.status !== 'failed') return;
-        }
-      };
-      await Promise.all(Array.from({ length: READ_PAGES }, lane));
-      const read = attempts.sort((a, b) => a.i - b.i).map(({ i: _i, ...r }) => r);
-      const readable = read.filter((r) => r.status !== 'failed');
-
-      let found = [];
-      let grade = 'none';
-      let judged = false;
-      if (readable.length) {
-        const sources = readable.map((r) => r.url);
-        const question = queryEn ? `${query} ${queryEn}` : query;
-        const candidates = (await docs.search(question, 8, { sources })).filter((h) => (h.sim ?? 0) >= WEAK_SIM || h.lex >= 0.4);
-        ({ grade, hits: found, judged } = await assess(queryEn ? `${query} (${queryEn})` : query, candidates, judge, log));
+      // `lanes` pages at a time, in parallel; a lane whose page fails (a site that
+      // refuses readers, HTTP 403, or a scanned PDF) takes the next candidate.
+      async function readAll(candidates, lanes, deadline) {
+        const queue = candidates.map((p, i) => ({ ...p, i }));
+        const attempts = [];
+        const lane = async () => {
+          while (queue.length) {
+            const p = queue.shift();
+            const r = await withDeadline(readPage(p), deadline);
+            const done = r.timedOut ? { url: p.url, site: p.domain, title: p.title, status: 'failed' } : r;
+            attempts.push({ ...done, i: p.i });
+            if (done.status !== 'failed') return;
+          }
+        };
+        await Promise.all(Array.from({ length: lanes }, lane));
+        return attempts.sort((a, b) => a.i - b.i).map(({ i: _i, ...r }) => r);
       }
-      const hits = found;
+      // Rank the fragments of the pages read so far and judge them.
+      async function gradeRead(read) {
+        const readable = read.filter((r) => r.status !== 'failed');
+        if (!readable.length) return { grade: 'none', hits: [], judged: false };
+        const question = queryEn ? `${query} ${queryEn}` : query;
+        const candidates = (await docs.search(question, 8, { sources: readable.map((r) => r.url) })).filter((h) => (h.sim ?? 0) >= WEAK_SIM || h.lex >= 0.4);
+        return assess(queryEn ? `${query} (${queryEn})` : query, candidates, judge, log);
+      }
+
+      const started = now();
+      let read = await readAll(pickPages(ranked, READ_PAGES + SPARE_PAGES), READ_PAGES, PAGE_DEADLINE_MS);
+      let { grade, hits, judged } = await gradeRead(read);
+
+      let rounds = 1;
+      if (grade !== 'good' && now() - started < SECOND_ROUND_BEFORE_MS) {
+        const tried = new Set(read.map((r) => canonical(r.url)));
+        const sites = new Set(read.filter((r) => r.status !== 'failed').map((r) => r.site));
+        const more = pickPages(ranked.filter((r) => !tried.has(canonical(r.url)) && !sites.has(r.domain)), EXTRA_PAGES + EXTRA_SPARE);
+        if (more.length) {
+          rounds = 2;
+          const extra = await readAll(more, EXTRA_PAGES, EXTRA_DEADLINE_MS);
+          read = [...read, ...extra];
+          if (extra.some((r) => r.status !== 'failed')) ({ grade, hits, judged } = await gradeRead(read));
+        }
+      }
 
       const passages = buildPassages(hits, grade);
 
       const readUrls = new Set(read.map((r) => canonical(r.url)));
       const also = ranked.filter((r) => !readUrls.has(canonical(r.url)) && !LOW_VALUE.test(r.domain ?? '')).slice(0, ALSO).map((r) => ({ site: r.domain, title: r.title, url: r.url }));
-      log(`research: ${queries.length} queries, ${ranked.length} results, read ${read.map((r) => r.status).join('/') || '-'}, ${hits.length} fragments, grade ${grade}${judged ? '' : ' (unjudged)'} (${now()})`);
+      log(`research: ${queries.length} queries, ${ranked.length} results, read ${read.map((r) => r.status).join('/') || '-'}, ${hits.length} fragments, grade ${grade}${judged ? '' : ' (unjudged)'}${rounds > 1 ? ', 2 rounds' : ''} (${now()})`);
       return {
         query,
         grade,
         // false: the model that judges evidence did not answer; the grade is a guess by closeness.
         judged,
         passages,
+        // 2: the first pages did not hold it and more were read (see the corrective round).
+        rounds,
         read: read.map(({ url, site, title, status }) => ({ url, site, title, status })),
         also,
         hint: HINT[grade],

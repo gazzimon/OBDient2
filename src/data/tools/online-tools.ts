@@ -44,8 +44,8 @@ interface ResearchReply {
   readonly hint: string;
 }
 
-// Reading three pages and indexing them takes longer than a plain search.
-const RESEARCH_TIMEOUT_MS = 35_000;
+// Reading three pages and indexing them takes longer than a plain search; the corrective round (more pages) can double it.
+const RESEARCH_TIMEOUT_MS = 60_000;
 
 // The line under the tool row: which sites were read and whether the answer is there.
 export function researchSummary(d: ResearchReply): string {

@@ -52,3 +52,12 @@ Las causas estaban en el diseño, no en el modelo:
 - Cada `research` hace una llamada corta más al modelo de chat (la GPU0), unos segundos.
 - Algunos sitios rechazan al lector (HTTP 403); no se disfraza de navegador: se lee el siguiente candidato.
 - Un reranker dedicado en la Z440 reemplazaría al juez si su latencia o su costo en la GPU0 molestan.
+
+**Actualización 2026-10-26: ronda correctiva.** Si el juez califica `weak` o `none` y la primera ronda tardó menos de
+20 s, `research` lee hasta 3 páginas más (con 3 de repuesto) de **sitios que todavía no leyó**, vuelve a rankear los
+fragmentos de todo lo leído y vuelve a juzgar. Motivo: con evidencia parcial el modelo completa lo que falta con lo que
+sabe (el caso de "Ford usa 29 bits 18DA", atribuido a una fuente que mostraba 11 bits); darle más web es mejor que
+dejarle el hueco. La respuesta trae `rounds` (1 o 2). El tiempo de espera del cliente sube de 35 a 60 s. Probado en
+vivo: un caso solo en español pasó por 2 rondas (6 páginas, 22,8 s) y terminó en `none`; los dos casos con consulta
+en inglés salieron `good` en la primera ronda (5 y 12 s). Tests: 4 nuevos (encuentra en la segunda ronda, solo lee
+otros sitios, una primera ronda buena no lee más, una primera ronda lenta se salta la segunda).

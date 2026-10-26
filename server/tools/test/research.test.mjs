@@ -19,6 +19,8 @@ const html = (title, body) => `<html><head><title>${title}</title></head><body>$
 const PAGES = {
   'https://github.com/x/gm-dids/blob/main/README.md': html('GM DIDs', '<h1>GM Global B</h1><h2>Odómetro</h2><p>El odómetro (mileage) se lee con 22 F1 90 hacia el BCM.</p><pre>22 F1 90\n62 F1 90 00 12 34</pre>'),
   'https://foro.example/tracker': html('Foro Tracker', '<h2>Guantera</h2><p>La luz de cortesía de la guantera se cambia sacando el panel.</p>'),
+  'https://tres.example/x': html('Tres', '<p>Otra página sobre la guantera y su luz de cortesía.</p>'),
+  'https://respuesta.example/did': html('DID', '<h2>Odómetro</h2><p>El odómetro se lee con 22 F1 90 hacia el BCM.</p>'),
   'https://otro.example/nada': html('Nada', '<p>Texto sin relación con la pregunta, sobre la guantera.</p>'),
 };
 
@@ -206,4 +208,39 @@ test('research cites the page of a PDF', async () => {
   const out = await makeResearch({ search: async () => [r(url)], fetchPage, docs, judge }).run({ query: 'odómetro STCFCPA' });
   assert.equal(out.grade, 'good');
   assert.equal(out.passages[0].page, 37);
+});
+
+const ROUND1 = [r('https://foro.example/tracker', 'Foro'), r('https://otro.example/nada', 'Nada'), r('https://tres.example/x', 'Tres')];
+
+test('research: the first pages do not hold it, a second round reads others and finds it', async () => {
+  const f = fakes({ results: { 'es-AR': [...ROUND1, r('https://respuesta.example/did', 'DID')] } });
+  const out = await makeResearch(f).run({ query: 'odómetro 22 F1 90' });
+  assert.equal(out.rounds, 2);
+  assert.equal(out.grade, 'good');
+  assert.equal(out.passages[0].site, 'respuesta.example');
+  assert.deepEqual(out.read.map((x) => x.site), ['foro.example', 'otro.example', 'tres.example', 'respuesta.example']);
+});
+
+test('research: the second round only reads other sites, and says none if they do not hold it either', async () => {
+  const f = fakes({ results: { 'es-AR': [...ROUND1, r('https://foro.example/otra', 'Foro 2'), r('https://tres.example/y', 'Tres 2')] } });
+  const out = await makeResearch(f).run({ query: 'odómetro 22 F1 90' });
+  assert.equal(out.rounds, 1); // the only other candidates are of sites already read
+  assert.equal(out.grade, 'none');
+  assert.ok(!f.fetched.some((u) => /otra|\/y$/.test(u)));
+});
+
+test('research: a good first round does not read more', async () => {
+  const f = fakes({ results: { 'es-AR': [r('https://respuesta.example/did', 'DID'), ...ROUND1, r('https://extra.example/z')] } });
+  const out = await makeResearch(f).run({ query: 'odómetro 22 F1 90' });
+  assert.equal(out.rounds, 1);
+  assert.equal(out.grade, 'good');
+  assert.ok(!f.fetched.includes('https://extra.example/z'));
+});
+
+test('research: a slow first round skips the second', async () => {
+  const f = fakes({ results: { 'es-AR': [...ROUND1, r('https://respuesta.example/did', 'DID')] } });
+  let t = 0;
+  const out = await makeResearch({ ...f, now: () => (t += 25_000) }).run({ query: 'odómetro 22 F1 90' });
+  assert.equal(out.rounds, 1);
+  assert.equal(out.grade, 'none');
 });
