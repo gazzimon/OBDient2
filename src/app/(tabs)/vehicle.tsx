@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
 import { formatBench } from '@/data/obd/adapter-bench';
 import { formatCapture } from '@/data/obd/diagnostic-capture';
+import { formatM7Bench } from '@/data/obd/m7-bench';
 import { redactText } from '@/domain/privacy/redact';
 import { looksLikeObd } from '@/data/obd/obd-manager';
 import type { RequestStyle } from '@/data/obd/telemetry-poller';
@@ -34,6 +35,8 @@ export default function VehicleScreen() {
   const [benching, setBenching] = useState(false);
   const [capture, setCapture] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [measuring, setMeasuring] = useState(false);
+  const [m7, setM7] = useState<string | null>(null);
   const [devices, setDevices] = useState<ScannedDevice[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -88,6 +91,18 @@ export default function VehicleScreen() {
     }
   };
 
+  const runM7 = async () => {
+    setMeasuring(true);
+    setM7(null);
+    try {
+      setM7(formatM7Bench(await container.obd.runM7Bench()));
+    } catch (err) {
+      setM7(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setMeasuring(false);
+    }
+  };
+
   const connect = async (d: ScannedDevice) => {
     endScan();
     if (!(await ensurePermission('bluetooth'))) return;
@@ -131,7 +146,7 @@ export default function VehicleScreen() {
                 label={benching ? 'Midiendo…' : 'Ejecutar banco'}
                 onPress={runBench}
                 loading={benching}
-                disabled={capturing}
+                disabled={capturing || measuring}
                 variant="secondary"
               />
               {bench && (
@@ -161,7 +176,7 @@ export default function VehicleScreen() {
                 label={capturing ? 'Capturando…' : 'Capturar diagnóstico'}
                 onPress={runCapture}
                 loading={capturing}
-                disabled={benching}
+                disabled={benching || measuring}
                 variant="secondary"
               />
               {capture && (
@@ -174,6 +189,36 @@ export default function VehicleScreen() {
                       label="Compartir captura"
                       variant="secondary"
                       onPress={() => void Share.share({ message: redactText(`OBDient2 · ${deviceName ?? ''}\n\n${capture}`) })}
+                    />
+                  </View>
+                </View>
+              )}
+            </View>
+
+            <View className="mt-6">
+              <SectionHeader title="Medición M7.0" />
+              <Text className="text-brand-muted font-mono text-[10px] leading-4 mb-3">
+                Mide cuántos datos por segundo da este auto con varios PIDs por pedido y cómo contesta el
+                diagnóstico con STPX y STCSEGR. Solo lectura. Pausa la telemetría un par de minutos: con el
+                auto detenido y el motor en marcha. Compartí el resultado completo.
+              </Text>
+              <PillButton
+                label={measuring ? 'Midiendo…' : 'Medir M7.0'}
+                onPress={runM7}
+                loading={measuring}
+                disabled={benching || capturing}
+                variant="secondary"
+              />
+              {m7 && (
+                <View className="bg-brand-surface rounded-2xl p-3 mt-3">
+                  <Text selectable className="text-brand-text font-mono text-[10px] leading-4">
+                    {m7}
+                  </Text>
+                  <View className="mt-3">
+                    <PillButton
+                      label="Compartir medición"
+                      variant="secondary"
+                      onPress={() => void Share.share({ message: redactText(`OBDient2 · M7.0 ${deviceName ?? ''}\n\n${m7}`) })}
                     />
                   </View>
                 </View>

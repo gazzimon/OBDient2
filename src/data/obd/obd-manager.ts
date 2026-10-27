@@ -11,6 +11,7 @@ import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { BenchReport } from './adapter-bench';
 import type { CaptureReport } from './diagnostic-capture';
+import type { M7Report } from './m7-bench';
 import { ObdSession } from './obd-session';
 
 // Names that look like an OBD adapter, to sort them to the top of the list.
@@ -105,6 +106,11 @@ export class ObdManager {
   async runCapture(): Promise<CaptureReport> {
     if (!this.session) throw new Error('No hay adaptador conectado');
     return this.session.runCapture();
+  }
+
+  async runM7Bench(): Promise<M7Report> {
+    if (!this.session) throw new Error('No hay adaptador conectado');
+    return this.session.runM7Bench();
   }
 
   async disconnect(error: string | null = null): Promise<void> {
