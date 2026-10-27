@@ -12,6 +12,7 @@ import type { ByteTransport, Unsubscribe } from '@/data/adapters/transport';
 import type { OBDProtocol } from '@/domain/entities/vehicle';
 import type { PidId } from '@/core/constants/pids';
 import { runAdapterBench, type BenchReport } from './adapter-bench';
+import { runM7Bench, type M7Report } from './m7-bench';
 import { runDiagnosticCapture, type CaptureReport } from './diagnostic-capture';
 import { applyFastSettings, identifyAdapter, type AdapterIdentity } from './stn';
 import { SECONDARY_PIDS, TelemetryPoller, stylesFor, type RequestStyle, type TelemetryListener } from './telemetry-poller';
@@ -133,6 +134,34 @@ export class ObdSession {
           protocol: info.protocol,
           stn: info.identity.stn != null,
           can: isCan(info.protocol),
+        });
+      } finally {
+        this.capturing = false;
+        try {
+          if (this.port === port) this.info = await configure(port);
+        } catch {
+          // The link is gone or still browned out: the session ends or recovers upstream.
+        }
+      }
+    });
+  }
+
+  // M7.0: PIDs per request, today's loop and the diagnostic requests, timed.
+  // Same care as the capture: STCSEGR is switched on and off inside, and the
+  // adapter is configured from scratch after.
+  runM7Bench(): Promise<M7Report> {
+    return this.exclusive(async (port, info) => {
+      this.capturing = true;
+      try {
+        const stn = info.identity.stn != null;
+        const can = isCan(info.protocol);
+        return await runM7Bench(port, {
+          adapter: info.identity.stn ?? (info.identity.elm || 'ELM327'),
+          protocol: info.protocol,
+          stn,
+          can,
+          styles: stylesFor(stn, can),
+          supported: info.supportedPids,
         });
       } finally {
         this.capturing = false;
