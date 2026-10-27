@@ -174,6 +174,6 @@ export const plain: Check = (t) => (/\*\*|^#+ /m.test(t.text) ? 'usa negritas o 
 export const short: Check = (t) => {
   const words = t.text.trim().split(/\s+/).length;
   if (/^\s*[-•*] /m.test(t.text)) return 'usa listas en movimiento';
-  return words > 25 ? `${words} palabras en movimiento (máx. 25)` : null;
+  return words > 30 ? `${words} palabras en movimiento (máx. 30)` : null;
 };
 
