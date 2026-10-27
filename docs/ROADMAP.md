@@ -40,7 +40,7 @@ Se avanza con **E4 (detector en el teléfono)**.
 | Hito | Qué | Estado |
 |---|---|---|
 | M0–M1 | Gateway y loop del agente (ADR-0007/0008) | ✅ |
-| M2 | Herramientas OBD reales (tramas, parsers, sesión, adaptador) | ✅ código · ⏳ pruebas de campo en curso desde 2026-10-27 (B14 y un auto con códigos) |
+| M2 | Herramientas OBD reales (tramas, parsers, sesión, adaptador) | ✅ código · ⏳ pruebas de campo en curso desde 2026-10-27 (B14 y un auto con códigos; [plan de pruebas M2/M5/M8](plans/pruebas-de-campo-m2-m5-m8.md)) |
 | M3 | Chat, fotos, borrado con confirmación, historial de fallas, evaluación | ✅ probado en el auto (B35) |
 | Cuentas | Login por código de correo (Magic), clave por cuenta | ✅ |
 | Navegación | Direcciones, esquinas, enlaces de mapas, destino confirmado en el chat | ✅ probado en el teléfono |
@@ -133,7 +133,7 @@ Hoy el poller (`data/obd/telemetry-poller.ts`) pide la velocidad en cada ciclo m
 rotando, con `STPX d:010D, r:1, t:100` (24,2 Hz medidos en el B35; el límite es la latencia BLE, ~40 ms,
 no el chip). M7 busca más datos por segundo y diagnóstico más rápido, sin perder esos 24 Hz.
 
-1. **M7.0 Medir en el auto** (con la misma captura de M2.0, en una sola salida): Hz con 1, 2, 4 y 6 PIDs
+1. **M7.0 Medir en el auto** (✅ código: botón *Medir M7.0* en Vehículo, `data/obd/m7-bench.ts`; ⏳ correrlo en la salida A del [plan de pruebas](plans/pruebas-de-campo-m2-m5-m8.md)) (con la misma captura de M2.0, en una sola salida): Hz con 1, 2, 4 y 6 PIDs
    por pedido (`01 0D 0C 05 …`, ISO 15765 admite hasta 6), con `STPX r:`, con el sufijo de conteo y sin
    nada; en el B35 (STN) y en el B14 (ELM327). Anotar qué ECUs contestan solo al primer PID. Sin esto no
    se escribe código: el resultado decide si vale la pena.
@@ -145,6 +145,9 @@ no el chip). M7 busca más datos por segundo y diagnóstico más rápido, sin pe
    espera, no rechazo.
 4. **M7.3 Guardas**: la velocidad no baja de ~20 Hz con el grupo activo; en teléfonos de gama baja se mide
    el uso de CPU del hilo JS; el B14 conserva el sufijo de conteo como respaldo.
+
+Para saber si un `22` que no contesta es del adaptador o del DID: diseño de `did_probe` en
+[plans/herramienta-did-probe.md](plans/herramienta-did-probe.md) (propuesta, M9).
 
 Fuera de M7 (ver [adaptador-stn.md](hardware/adaptador-stn.md)): escucha pasiva del bus (`STM`), UDS del
 fabricante (M9) y J1939. Criterio de salida: Tablero con RPM, velocidad y temperatura refrescando varias
