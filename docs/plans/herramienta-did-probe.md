@@ -106,7 +106,10 @@ primeros bytes como muestra.
    `did-probe-tool.test.ts`, y los casos 30 y 31 del eval). Se prueba en la salida A (ver
    [pruebas-de-campo-m2-m5-m8.md](pruebas-de-campo-m2-m5-m8.md)), solo `control`. Sin confirmación todavía:
    `control` y `list` (≤ 32 DIDs) tardan ~2 s; la confirmación llega con `scan`.
-3. Modo `scan` con confirmación y cursor.
+3. ✅ (2026-10-27, código y tests; ⏳ el auto) Modo `scan` con confirmación en cada barrido
+   (`ProbeScanModal`), cursor y rango por defecto `F100`–`F1FF`. Solo se acepta sobre un módulo cuyo
+   `control` dio `link_ok` en la misma sesión del adaptador; al modelo le llegan solo los DIDs que
+   contestaron algo distinto de «no existe» o silencio, y el resto va contado. Casos 32 y 33 del eval.
 4. Envío a la base del laboratorio y una nota en ADR-0009.
 
 ## Lo que no hace

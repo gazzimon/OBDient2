@@ -37,7 +37,7 @@ import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
-import { CONTROL_DIDS, listPlan, newCodes, STOP_TEXT, summarize, verdictText } from '@/domain/obd/did-probe';
+import { CONTROL_DIDS, DEFAULT_RANGE, listPlan, newCodes, rangePlan, STOP_TEXT, summarize, verdictText } from '@/domain/obd/did-probe';
 import { runDidProbe } from './did-probe-runner';
 import { makeFromVin } from '@/domain/obd/vin-make';
 import { redactText } from '@/domain/privacy/redact';
@@ -119,6 +119,8 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   private readonly now: () => number;
   // VIN per session, read once: the history is kept per car.
   private readonly vins = new WeakMap<ObdSession, string | null>();
+  // Request headers whose link a did_probe `control` proved, per session.
+  private readonly probed = new WeakMap<ObdSession, Set<string>>();
 
   constructor(
     private readonly session: () => ObdSession | null,
@@ -195,7 +197,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'obd_command':
         return this.obdCommand(s, call.command, call.header);
       case 'did_probe':
-        return this.didProbe(s, call.header, call.mode, call.dids);
+        return this.didProbe(s, call);
       case 'read_freeze_frame':
         return this.readFreezeFrame(s);
       case 'read_readiness':
@@ -589,19 +591,35 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   // Lab (Modo laboratorio): does this module's link work, and which of these DIDs
   // does it answer? Reads only (22 of one DID, 3E 00); the rules are in
   // domain/obd/did-probe.ts. Never sends the module's VIN or serial to the model.
-  private async didProbe(s: ObdSession, header: string, mode: 'control' | 'list', given: readonly string[]): Promise<ToolOutcome> {
+  // A sweep (`scan`) is only taken for a module whose link a `control` probe
+  // proved in this session: the first field test cannot be a blind sweep.
+  private async didProbe(s: ObdSession, call: Extract<ToolCall, { name: 'did_probe' }>): Promise<ToolOutcome> {
+    const { header, mode } = call;
     const info = s.sessionInfo!;
     const bit29 = /29BIT/.test(info.protocol);
     const checked = requestHeader(header, bit29);
     if (!checked.ok) return fail('invalid_arguments', checked.message);
     if (!checked.rxHeader) return fail('invalid_arguments', 'Hace falta la dirección de pedido de un módulo concreto (no la funcional).');
-    const plan = mode === 'control' ? { ok: true as const, dids: CONTROL_DIDS } : listPlan(given);
+    const verified = this.probed.get(s) ?? new Set<string>();
+    const plan =
+      mode === 'control'
+        ? { ok: true as const, dids: CONTROL_DIDS }
+        : mode === 'list'
+          ? listPlan(call.dids)
+          : rangePlan(call.from ?? DEFAULT_RANGE.from, call.to ?? DEFAULT_RANGE.to);
     if (!plan.ok) return fail('invalid_arguments', plan.message);
+    if (mode === 'scan' && !verified.has(checked.reqHeader)) {
+      return fail('not_supported', `Antes de barrer ${checked.reqHeader}, probá ese módulo con did_probe en modo "control": el barrido solo se hace sobre un módulo cuyo enlace ya se comprobó.`);
+    }
 
     const run = await s.exclusive((port) =>
       runDidProbe(port, { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader! }, plan.dids, { bit29, stn: info.identity.stn != null, can: isCan(info.protocol) }),
     );
     if (run.blocked !== null) return fail('not_supported', run.blocked);
+    if (mode === 'control' && run.verdict === 'link_ok') {
+      verified.add(checked.reqHeader);
+      this.probed.set(s, verified);
+    }
 
     const counts = summarize(run.results);
     const codes = run.codesBefore && run.codesAfter ? newCodes(run.codesBefore, run.codesAfter) : [];
@@ -609,15 +627,20 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       `${checked.reqHeader}: ${run.results.length} DIDs`,
       ...(['supported', 'unsupported', 'locked', 'needs_conditions', 'silent', 'incomplete'] as const).filter((k) => counts[k] > 0).map((k) => `${counts[k]} ${k}`),
     ];
+    // A sweep reads hundreds: the model gets the DIDs that answered something other
+    // than "not there" or silence, and the counts of the rest (its window is small).
+    const quiet = new Set(['unsupported', 'silent']);
+    const listed = mode === 'scan' ? run.results.filter((r) => !quiet.has(r.outcome)) : run.results;
     return {
       ok: true,
       data: {
         module: { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader },
         mode,
+        ...(mode === 'scan' ? { range: { from: plan.dids[0], to: plan.dids[plan.dids.length - 1] }, read: run.results.length, counts } : {}),
         verdict: run.verdict,
         explanation: verdictText(run.verdict, bit29),
         testerPresent: run.alive,
-        results: run.results,
+        results: listed,
         ...(run.stopped ? { stopped: STOP_TEXT[run.stopped], cursor: run.cursor } : {}),
         batteryVolts: run.volts,
         ...(codes.length ? { newCodes: codes } : {}),
