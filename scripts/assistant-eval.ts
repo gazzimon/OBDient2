@@ -71,7 +71,7 @@ const CASES: Case[] = [
     ],
   },
   { id: '28', what: '¿cuánto falta?', car: HEALTHY, turns: [{ text: '¿Cuánto falta para llegar?', context: MOVING, checks: [called('route_status'), says(/3\s*min|20:03|0,8/, 'tiempo o distancia que faltan'), short] }] },
-  { id: '29', what: 'comercio: pide la dirección (MVP sin comercios)', car: HEALTHY, turns: [{ text: 'Llevame a una farmacia', context: MOVING, checks: [says(/direcci[oó]n|calle/i, 'que pida la dirección'), notCalled('start_navigation'), short] }] },
+  { id: '29', what: 'comercio: lo busca, pide la dirección o pospone sin arrancar', car: HEALTHY, turns: [{ text: 'Llevame a una farmacia', context: MOVING, checks: [(t) => (t.tools.some((x) => x.startsWith('web_search')) || /direcci[oó]n|calle|detené|navegación en curso/i.test(t.text) ? null : 'ni busca, ni pide la dirección, ni pospone'), notCalled('start_navigation'), short] }] },
   { id: '20', what: 'rioplatense (voseo)', car: LEAN, turns: [{ text: 'Explicame qué tengo que revisar', context: STOPPED, checks: [says(/\b(revisá|fijate|mirá|tenés|podés|cambiá|llevalo|chequeá)\b/i, 'voseo'), avoids(/\b(revisa|fíjate|mira|tienes|puedes)\b/, 'tuteo')] }] },
 ];
 
