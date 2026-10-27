@@ -111,8 +111,17 @@ primeros bytes como muestra.
 No desbloquea (`27`), no cambia de sesión, no escribe ni activa nada, no lee memoria (`23`) y no importa
 listas de DIDs de terceros: las listas se suman a mano a `list` después de revisar su licencia.
 
-## A decidir
+## Decisiones (2026-10-27)
 
-1. ¿Confirmación en cada `scan`, o una sola al activar el modo laboratorio? (Recomiendo en cada `scan`.)
-2. ¿Rango por defecto `F100`–`F1FF` (256 DIDs, ~15 s) o también `0100`–`0FFF`?
-3. ¿Se guarda una muestra del valor en los DIDs que no son de identificación, o solo el largo?
+1. **Confirmación en cada barrido**, decidida por el dueño. No hay confirmación única al activar el modo
+   laboratorio.
+2. **Rango por defecto `F100`–`F1FF`** (256 DIDs, ~15 s). Es el bloque que la norma reserva a la
+   identificación y lo contestan todos los módulos UDS, así que sirve de control. Los rangos del fabricante
+   (`0100`–`0FFF` y más) se barren después, por tramos de 512 con su confirmación, cuando el control ya
+   salió bien en ese módulo y haya un motivo concreto (un DID candidato de una fuente, o una captura de
+   la herramienta de referencia que acote el rango).
+3. **Valores: largo siempre; muestra del valor solo fuera de la identificación.** En `F18x`–`F19x` (VIN,
+   número de pieza, serie) se guarda solo el largo. En el resto se guardan el largo y hasta 8 bytes de
+   muestra, pasados por `redactText` (si el valor contiene un VIN, se descarta la muestra). Sin la muestra
+   no se puede averiguar qué es un DID (un odómetro se reconoce porque sube con los km); con ella, la
+   base del laboratorio sirve de verdad.
