@@ -1,6 +1,6 @@
 # ADR-0007 — Asistente conversacional: el loop en el teléfono, el modelo en el servidor
 
-**Estado:** propuesta · 2026-10-18
+**Estado:** aceptada · 2026-10-27 (propuesta el 2026-10-18; implementada y en uso desde M0–M4)
 
 ## Contexto
 

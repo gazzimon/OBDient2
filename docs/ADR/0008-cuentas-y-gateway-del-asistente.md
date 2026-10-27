@@ -1,6 +1,6 @@
 # ADR-0008 — Cuentas (correo con código) y acceso al modelo (new-api)
 
-**Estado:** propuesta · 2026-10-18 (revisada el mismo día: token por cuenta; identidad con Magic en lugar de Firebase)
+**Estado:** aceptada · 2026-10-27 (propuesta el 2026-10-18; implementada y en uso; revisada el mismo día: token por cuenta; identidad con Magic en lugar de Firebase)
 
 ## Contexto
 

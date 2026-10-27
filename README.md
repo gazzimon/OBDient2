@@ -9,8 +9,9 @@ assistant that can read your car. Successor to OBDient.
 
 - **Drive mode**: 3D map navigation with voice guidance and rerouting.
 - **Dashboard**: RPM, speed, coolant and battery gauges, with an optional camera view.
-- **Assistant**: voice and text chat. It can search places, fuel prices and the web, and read
-  fault codes and vehicle data.
+- **Assistant**: voice and text chat. It can search places, fuel prices and the web (it reads the
+  pages and answers with cited sources), and read fault codes and vehicle data. The VIN never leaves
+  the phone in full: it is masked before it reaches the model, a capture or an export.
 - **Trips**: recorded automatically while the OBD adapter is connected. Includes a speed map, GPX
   export and optional live tracking (Traccar).
 - **Diagnostics (lab)**: read-only module scan across HS/MS/SW-CAN. Writes, resets and flashing are
@@ -50,7 +51,8 @@ src/
   data/          adapters: OBD transport, sensors, routing, LLM, server tools
   presentation/  components and hooks
   app/           screens (expo-router)
-server/          optional self-hosted services (routing, search, STT, LLM gateway, Traccar)
+server/          optional self-hosted services (routing, search with evidence, STT, embeddings, reranker,
+                 LLM gateway, Traccar)
 docs/ADR/        architecture decisions
 ```
 
