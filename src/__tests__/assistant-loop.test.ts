@@ -172,6 +172,37 @@ describe('runTurn', () => {
     }
   });
 
+  it('asks the user before every DID sweep, and a no reads nothing from the car', async () => {
+    const lab = { ...STOPPED, labMode: true };
+    for (const accept of [false, true]) {
+      const { llm } = scripted(ask(call('did_probe', { header: '18DA28F1', mode: 'scan' }, 'p1')), say(accept ? 'Barrido hecho.' : 'No barrí nada.'));
+      const { vehicle, executed } = car();
+      const { confirmation, asked } = confirmWith(accept);
+      const r = await runTurn({ history: [], text: 'barré los DIDs del ABS', context: lab, llm, vehicle, confirmation });
+      expect(asked).toHaveLength(1);
+      expect(asked[0]).toMatchObject({ name: 'did_probe', mode: 'scan', header: '18DA28F1' });
+      expect(executed.map((c) => c.name)).toEqual(accept ? ['did_probe'] : []);
+      if (!accept) expect(r.messages[2]).toMatchObject({ content: expect.stringContaining('declined_by_user') });
+    }
+  });
+
+  it('a control probe is not confirmed, and outside the laboratory mode nothing is asked or run', async () => {
+    const lab = { ...STOPPED, labMode: true };
+    const { llm } = scripted(ask(call('did_probe', { header: '18DA28F1' }, 'p1')), say('Listo.'));
+    const { vehicle, executed } = car();
+    const { confirmation, asked } = confirmWith(true);
+    await runTurn({ history: [], text: 'probá el ABS', context: lab, llm, vehicle, confirmation });
+    expect(asked).toEqual([]);
+    expect(executed.map((c) => c.name)).toEqual(['did_probe']);
+
+    const off = scripted(ask(call('did_probe', { header: '18DA28F1', mode: 'scan' }, 'p2')), say('No se puede.'));
+    const car2 = car();
+    const confirm2 = confirmWith(true);
+    await runTurn({ history: [], text: 'barré el ABS', context: STOPPED, llm: off.llm, vehicle: car2.vehicle, confirmation: confirm2.confirmation });
+    expect(confirm2.asked).toEqual([]);
+    expect(car2.executed).toEqual([]);
+  });
+
   it('never clears while moving or twice in a conversation, and does not even ask', async () => {
     for (const [context, clearsSoFar, error] of [
       [MOVING, 0, 'not_allowed_while_moving'],

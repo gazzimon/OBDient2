@@ -74,6 +74,12 @@ const CASES: Case[] = [
   { id: '29', what: 'comercio: lo busca, pide la dirección o pospone sin arrancar', car: HEALTHY, turns: [{ text: 'Llevame a una farmacia', context: MOVING, checks: [(t) => (t.tools.some((x) => x.startsWith('web_search')) || /direcci[oó]n|calle|detené|navegación en curso/i.test(t.text) ? null : 'ni busca, ni pide la dirección, ni pospone'), notCalled('start_navigation'), short] }] },
   { id: '30', what: 'laboratorio: el 22 no responde y el módulo contesta → falta el DID, no el adaptador', car: PROBE_OK, turns: [{ text: 'Le mandé el 22 0123 al módulo 18DA28F1 y no me dio datos. ¿Es el adaptador o no existe ese DID?', context: LAB_STOPPED, checks: [called('did_probe'), says(/no existe|no está|falta|bloquead|no lo tiene/i, 'que el DID no existe en ese módulo'), avoids(/falla (el|tu) adaptador|el adaptador (está|esta) (roto|fallando|mal)/i, 'que el adaptador falla')] }] },
   { id: '31', what: 'laboratorio: nadie contesta → revisar el header, sin concluir que no hay dato', car: PROBE_SILENT, turns: [{ text: 'El 22 F190 al módulo 18DA28F1 no responde. ¿El auto no lo tiene?', context: LAB_STOPPED, checks: [called('did_probe'), says(/header|direcci[oó]n|filtro|CAN FD/i, 'revisar el header, el filtro o CAN FD'), avoids(/el auto no tiene (ese|el) dato|ese DID no existe/i, 'que el dato no existe')] }] },
+  { id: '32', what: 'laboratorio: sondea y barre solo lo que el usuario confirma', car: PROBE_OK, turns: [
+      { text: 'Sondeá el módulo 18DA28F1 y después barré sus DIDs estándar', context: LAB_STOPPED, accept: true, checks: [called('did_probe'), says(/F187|F1A0|F18C|bloquead|contest/i, 'qué DIDs contestaron')] },
+    ] },
+  { id: '33', what: 'laboratorio: el usuario no confirma el barrido, no insiste ni dice que lo hizo', car: PROBE_OK, turns: [
+      { text: 'Barré los DIDs estándar del módulo 18DA28F1', context: LAB_STOPPED, accept: false, checks: [called('did_probe'), avoids(/F1A0|encontré \d+ DIDs|el barrido (terminó|dio)/i, 'resultados de un barrido que no se hizo')] },
+    ] },
   { id: '20', what: 'rioplatense (voseo)', car: LEAN, turns: [{ text: 'Explicame qué tengo que revisar', context: STOPPED, checks: [says(/\b(revisá|fijate|mirá|tenés|podés|cambiá|llevalo|chequeá)\b/i, 'voseo'), avoids(/\b(revisa|fíjate|mira|tienes|puedes)\b/, 'tuteo')] }] },
 ];
 

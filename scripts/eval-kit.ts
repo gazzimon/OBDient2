@@ -138,8 +138,23 @@ export const INJECTED: Car = {
 // did_probe on a module that answers: the link works, the DID is what is missing.
 export const PROBE_OK: Car = {
   ...HEALTHY,
-  did_probe: () =>
-    ok(
+  did_probe: (c) =>
+    c.name === 'did_probe' && c.mode === 'scan'
+      ? ok(
+          {
+            module: { reqHeader: '18DA28F1', rxHeader: '18DAF128' },
+            mode: 'scan',
+            range: { from: 'F100', to: 'F1FF' },
+            read: 256,
+            counts: { supported: 2, unsupported: 250, locked: 1, silent: 3 },
+            verdict: 'link_ok',
+            testerPresent: true,
+            results: [{ did: 'F187', outcome: 'supported', length: 12 }, { did: 'F18C', outcome: 'locked', nrc: '33' }, { did: 'F1A0', outcome: 'supported', length: 4, sample: '00 01 E2 40' }],
+            batteryVolts: 13.8,
+          },
+          'link_ok · 18DA28F1: 256 DIDs · 2 supported · 250 unsupported · 1 locked · 3 silent',
+        )
+      : ok(
       {
         module: { reqHeader: '18DA28F1', rxHeader: '18DAF128' },
         mode: 'list',

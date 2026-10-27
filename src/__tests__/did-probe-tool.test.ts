@@ -71,8 +71,15 @@ function absCar(opts: CarOptions = {}) {
 }
 
 const signal = new AbortController().signal;
-const probe = (header: string, mode: 'control' | 'list' = 'control', dids: string[] = []) => ({ name: 'did_probe' as const, header, mode, dids });
-type Data = { verdict: string; explanation: string; testerPresent: boolean; results: { did: string; outcome: string; nrc?: string; length?: number; sample?: string }[]; stopped?: string; cursor?: string | null; newCodes?: string[]; batteryVolts: number | null };
+const probe = (header: string, mode: 'control' | 'list' | 'scan' = 'control', dids: string[] = [], range: { from?: string; to?: string } = {}) => ({
+  name: 'did_probe' as const,
+  header,
+  mode,
+  dids,
+  from: range.from ?? null,
+  to: range.to ?? null,
+});
+type Data = { range?: { from: string; to: string }; read?: number; counts?: Record<string, number>; verdict: string; explanation: string; testerPresent: boolean; results: { did: string; outcome: string; nrc?: string; length?: number; sample?: string }[]; stopped?: string; cursor?: string | null; newCodes?: string[]; batteryVolts: number | null };
 const data = (o: ToolOutcome): Data => {
   if (!o.ok) throw new Error(`${o.error}: ${o.message}`);
   return o.data as Data;
@@ -190,15 +197,77 @@ describe('did_probe: guards', () => {
   });
 });
 
+describe('did_probe: scan', () => {
+  it('is refused until a control probe proved that module, and touches nothing meanwhile', async () => {
+    const { tools, sent } = absCar();
+    const out = await tools.execute(probe('18DA28F1', 'scan', [], { from: 'F186', to: 'F18C' }), signal);
+    expect(out).toMatchObject({ ok: false, message: expect.stringContaining('modo "control"') });
+    expect(sent).toEqual([]);
+  });
+
+  it('after a control with link_ok it reads the range and hands the model only what answered', async () => {
+    const { tools, sent } = absCar();
+    expect(data(await tools.execute(probe('18DA28F1'), signal)).verdict).toBe('link_ok');
+    sent.length = 0;
+    const out = await tools.execute(probe('18DA28F1', 'scan', [], { from: 'F186', to: 'F18C' }), signal);
+    const d = data(out);
+    expect(d.range).toEqual({ from: 'F186', to: 'F18C' });
+    expect(d.read).toBe(7);
+    expect(d.counts).toMatchObject({ supported: 1, unsupported: 1, locked: 1, needs_conditions: 1, silent: 3 });
+    // The 4 that said nothing useful are only counted; the 3 that answered are listed.
+    expect(d.results.map((r) => r.did)).toEqual(['F186', 'F187', 'F18C']);
+    expect(sent.filter((c) => !isProbeCommand(c) && c !== 'STVR')).toEqual([]);
+    expect(sent.filter((c) => c.startsWith('22'))).toHaveLength(7);
+  });
+
+  it('a control that found the module silent does not open the door, nor does another module', async () => {
+    const { tools } = absCar();
+    expect(data(await tools.execute(probe('18DA77F1'), signal)).verdict).toBe('link_silent');
+    expect(await tools.execute(probe('18DA77F1', 'scan', [], { from: 'F186', to: 'F18C' }), signal)).toMatchObject({ ok: false });
+    expect(data(await tools.execute(probe('18DA28F1'), signal)).verdict).toBe('link_ok');
+    expect(await tools.execute(probe('18DA60F1', 'scan', [], { from: 'F186', to: 'F18C' }), signal)).toMatchObject({ ok: false, message: expect.stringContaining('18DA60F1') });
+  });
+
+  it('refuses a range that is backwards or past 512 DIDs', async () => {
+    const { tools } = absCar();
+    await tools.execute(probe('18DA28F1'), signal);
+    expect(await tools.execute(probe('18DA28F1', 'scan', [], { from: '0000', to: 'FFFF' }), signal)).toMatchObject({ ok: false, error: 'invalid_arguments' });
+    expect(await tools.execute(probe('18DA28F1', 'scan', [], { from: 'F1FF', to: 'F100' }), signal)).toMatchObject({ ok: false, error: 'invalid_arguments' });
+  });
+
+  it('with no range it reads F100–F1FF, and keeps going from the cursor when it stops', async () => {
+    const { tools } = absCar();
+    await tools.execute(probe('18DA28F1'), signal);
+    // Nobody answers F100–F109: ten silences in a row stop it, with the next DID.
+    const d = data(await tools.execute(probe('18DA28F1', 'scan'), signal));
+    expect(d.range).toEqual({ from: 'F100', to: 'F1FF' });
+    expect(d.read).toBe(10);
+    expect(d.stopped).toContain('sin respuesta');
+    expect(d.cursor).toBe('F10A');
+  });
+});
+
 describe('did_probe: the tool call and its policy', () => {
   it('parses the header, defaults to control and refuses what does not fit', () => {
-    expect(parseToolCall('did_probe', '{"header":"18da28f1"}', [])).toMatchObject({ ok: true, call: { name: 'did_probe', header: '18DA28F1', mode: 'control', dids: [] } });
+    expect(parseToolCall('did_probe', '{"header":"18da28f1"}', [])).toMatchObject({ ok: true, call: { name: 'did_probe', header: '18DA28F1', mode: 'control', dids: [], from: null, to: null } });
     expect(parseToolCall('did_probe', '{"header":"7E0","mode":"list","dids":["F190"]}', [])).toMatchObject({ ok: true, call: { mode: 'list', dids: ['F190'] } });
     expect(parseToolCall('did_probe', '{"header":"7E0","mode":"list"}', [])).toMatchObject({ ok: false });
-    expect(parseToolCall('did_probe', '{"header":"7E0","mode":"scan"}', [])).toMatchObject({ ok: false });
+    expect(parseToolCall('did_probe', '{"header":"7E0","mode":"scan"}', [])).toMatchObject({ ok: true, call: { mode: 'scan', from: null, to: null } });
+    expect(parseToolCall('did_probe', '{"header":"7E0","mode":"scan","from":"f100","to":"F1FF"}', [])).toMatchObject({ ok: true, call: { from: 'F100', to: 'F1FF' } });
+    expect(parseToolCall('did_probe', '{"header":"7E0","mode":"scan","from":"F1"}', [])).toMatchObject({ ok: false });
+    expect(parseToolCall('did_probe', '{"header":"7E0","mode":"control","from":"F100"}', [])).toMatchObject({ ok: false });
+    expect(parseToolCall('did_probe', '{"header":"7E0","mode":"sweep"}', [])).toMatchObject({ ok: false });
     expect(parseToolCall('did_probe', '{}', [])).toMatchObject({ ok: false });
     expect(parseToolCall('did_probe', '{"header":"7E0","range":"F100"}', [])).toMatchObject({ ok: false });
     expect(parseToolCall('did_probe', `{"header":"7E0","mode":"list","dids":${JSON.stringify(Array(33).fill('F190'))}}`, [])).toMatchObject({ ok: false });
+  });
+
+  it('a sweep is confirmed by the user every time; control and list are not', () => {
+    const ctx = { moving: false, navigating: false, labMode: true, clearsThisConversation: 0 };
+    expect(evaluatePolicy(probe('18DA28F1', 'scan'), ctx)).toEqual({ kind: 'confirm' });
+    expect(evaluatePolicy(probe('18DA28F1', 'list', ['F190']), ctx)).toEqual({ kind: 'allow' });
+    expect(evaluatePolicy(probe('18DA28F1', 'scan'), { ...ctx, moving: true })).toMatchObject({ kind: 'deny' });
+    expect(evaluatePolicy(probe('18DA28F1', 'scan'), { ...ctx, labMode: false })).toMatchObject({ kind: 'deny' });
   });
 
   it('only in laboratory mode, with the car stopped and no navigation', () => {

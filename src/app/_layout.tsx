@@ -13,6 +13,7 @@ import {
   IBMPlexMono_700Bold,
 } from '@expo-google-fonts/ibm-plex-mono';
 import { ClearDtcsModal } from '@/presentation/components/assistant/ClearDtcsModal';
+import { ProbeScanModal } from '@/presentation/components/assistant/ProbeScanModal';
 import { AccountGate } from '@/presentation/components/feedback/AccountGate';
 import { DisclaimerGate } from '@/presentation/components/feedback/Disclaimer';
 import { PermissionSheet } from '@/presentation/components/permissions/PermissionSheet';
@@ -64,6 +65,7 @@ export default function RootLayout() {
       <PermissionsIntro />
       <AccountGate />
       <ClearDtcsModal />
+      <ProbeScanModal />
       {/* The explanation before a permission, whoever asks for it. */}
       <PermissionSheet />
       {/* Magic's code and device-approval screens (email login, ADR-0008). Last, so it draws on top. */}

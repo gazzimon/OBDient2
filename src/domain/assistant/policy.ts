@@ -96,7 +96,8 @@ export function evaluatePolicy(call: ToolCall, ctx: PolicyContext): PolicyDecisi
       if (!ctx.labMode) return deny('not_supported', 'El sondeo de DIDs está en Modo laboratorio (Ajustes).');
       if (ctx.moving) return deny('not_allowed_while_moving', 'El sondeo de DIDs se hace con el auto detenido.');
       if (ctx.navigating) return deny('not_allowed_while_moving', 'Terminá la navegación primero.');
-      return ALLOW;
+      // A sweep is long and reads a lot: the user confirms every one (2026-10-27).
+      return call.mode === 'scan' ? { kind: 'confirm' } : ALLOW;
     case 'clear_dtcs':
       if (ctx.moving) return deny('not_allowed_while_moving', 'Los códigos se borran con el auto detenido.');
       if (ctx.clearsThisConversation > 0) return deny('already_done', 'Los códigos ya se borraron en esta conversación.');
