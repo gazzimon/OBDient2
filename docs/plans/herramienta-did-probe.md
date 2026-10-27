@@ -100,7 +100,7 @@ primeros bytes como muestra.
 
 ## Fases
 
-1. `domain/obd/did-probe.ts` y sus tests. Sin tocar el auto.
+1. ✅ (2026-10-27) `domain/obd/did-probe.ts` y sus tests (`__tests__/did-probe.test.ts`, 25). Sin tocar el auto.
 2. Herramienta `did_probe` en modos `control` y `list`. Se prueba en la salida A (ver
    [pruebas-de-campo-m2-m5-m8.md](pruebas-de-campo-m2-m5-m8.md)), solo `control`.
 3. Modo `scan` con confirmación y cursor.
