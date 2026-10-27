@@ -37,6 +37,8 @@ import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
 import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
+import { CONTROL_DIDS, listPlan, newCodes, STOP_TEXT, summarize, verdictText } from '@/domain/obd/did-probe';
+import { runDidProbe } from './did-probe-runner';
 import { makeFromVin } from '@/domain/obd/vin-make';
 import { redactText } from '@/domain/privacy/redact';
 import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
@@ -192,6 +194,8 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         return this.scanModules(s, call.make, call.model, signal);
       case 'obd_command':
         return this.obdCommand(s, call.command, call.header);
+      case 'did_probe':
+        return this.didProbe(s, call.header, call.mode, call.dids);
       case 'read_freeze_frame':
         return this.readFreezeFrame(s);
       case 'read_readiness':
@@ -580,6 +584,46 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     }
     const first = messages[0];
     return { ok: true, data, summary: `Respuesta: ${(first ? `${first.ecu ?? ''} ${first.bytes}` : flat).trim().slice(0, 60)}` };
+  }
+
+  // Lab (Modo laboratorio): does this module's link work, and which of these DIDs
+  // does it answer? Reads only (22 of one DID, 3E 00); the rules are in
+  // domain/obd/did-probe.ts. Never sends the module's VIN or serial to the model.
+  private async didProbe(s: ObdSession, header: string, mode: 'control' | 'list', given: readonly string[]): Promise<ToolOutcome> {
+    const info = s.sessionInfo!;
+    const bit29 = /29BIT/.test(info.protocol);
+    const checked = requestHeader(header, bit29);
+    if (!checked.ok) return fail('invalid_arguments', checked.message);
+    if (!checked.rxHeader) return fail('invalid_arguments', 'Hace falta la dirección de pedido de un módulo concreto (no la funcional).');
+    const plan = mode === 'control' ? { ok: true as const, dids: CONTROL_DIDS } : listPlan(given);
+    if (!plan.ok) return fail('invalid_arguments', plan.message);
+
+    const run = await s.exclusive((port) =>
+      runDidProbe(port, { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader! }, plan.dids, { bit29, stn: info.identity.stn != null, can: isCan(info.protocol) }),
+    );
+    if (run.blocked !== null) return fail('not_supported', run.blocked);
+
+    const counts = summarize(run.results);
+    const codes = run.codesBefore && run.codesAfter ? newCodes(run.codesBefore, run.codesAfter) : [];
+    const parts = [
+      `${checked.reqHeader}: ${run.results.length} DIDs`,
+      ...(['supported', 'unsupported', 'locked', 'needs_conditions', 'silent', 'incomplete'] as const).filter((k) => counts[k] > 0).map((k) => `${counts[k]} ${k}`),
+    ];
+    return {
+      ok: true,
+      data: {
+        module: { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader },
+        mode,
+        verdict: run.verdict,
+        explanation: verdictText(run.verdict, bit29),
+        testerPresent: run.alive,
+        results: run.results,
+        ...(run.stopped ? { stopped: STOP_TEXT[run.stopped], cursor: run.cursor } : {}),
+        batteryVolts: run.volts,
+        ...(codes.length ? { newCodes: codes } : {}),
+      },
+      summary: `${run.verdict} · ${parts.join(' · ')}${run.stopped ? ` · ${STOP_TEXT[run.stopped]}` : ''}${codes.length ? ` · códigos nuevos: ${codes.join(', ')}` : ''}`,
+    };
   }
 
   private diag<T>(s: ObdSession, work: (send: Send, can: boolean) => Promise<T>): Promise<T> {

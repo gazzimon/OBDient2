@@ -36,6 +36,7 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   // Use the bus in exclusive mode (like the adapter bench); car stopped.
   scan_modules: 'exclusive',
   obd_command: 'exclusive',
+  did_probe: 'exclusive',
   fuel_prices: 'read',
   dollar_rate: 'read',
   weather: 'read',
@@ -89,6 +90,11 @@ export function evaluatePolicy(call: ToolCall, ctx: PolicyContext): PolicyDecisi
     case 'obd_command':
       if (!ctx.labMode) return deny('not_supported', 'Enviar comandos sueltos al auto está en Modo laboratorio (Ajustes).');
       if (ctx.moving) return deny('not_allowed_while_moving', 'Los comandos al bus se mandan con el auto detenido.');
+      if (ctx.navigating) return deny('not_allowed_while_moving', 'Terminá la navegación primero.');
+      return ALLOW;
+    case 'did_probe':
+      if (!ctx.labMode) return deny('not_supported', 'El sondeo de DIDs está en Modo laboratorio (Ajustes).');
+      if (ctx.moving) return deny('not_allowed_while_moving', 'El sondeo de DIDs se hace con el auto detenido.');
       if (ctx.navigating) return deny('not_allowed_while_moving', 'Terminá la navegación primero.');
       return ALLOW;
     case 'clear_dtcs':

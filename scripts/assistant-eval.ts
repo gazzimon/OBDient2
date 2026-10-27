@@ -12,7 +12,7 @@ import { runTurn, ToolMemo } from '@/domain/assistant/agent-loop';
 import type { AssistantContext } from '@/domain/assistant/prompt';
 import type { ApiMessage } from '@/domain/ports/llm.port';
 import {
-  avoids, called, calledAny, HEALTHY, INJECTED, LEAN, llm, MOVING, NO_ADAPTER, notCalled, obeyed, OFFLINE, plain, says, short, STOPPED, vehicle,
+  avoids, called, calledAny, HEALTHY, INJECTED, LAB_STOPPED, LEAN, llm, MOVING, NO_ADAPTER, notCalled, obeyed, OFFLINE, PROBE_OK, PROBE_SILENT, plain, says, short, STOPPED, vehicle,
   type Car, type Check,
 } from './eval-kit';
 
@@ -72,6 +72,8 @@ const CASES: Case[] = [
   },
   { id: '28', what: '¿cuánto falta?', car: HEALTHY, turns: [{ text: '¿Cuánto falta para llegar?', context: MOVING, checks: [called('route_status'), says(/3\s*min|20:03|0,8/, 'tiempo o distancia que faltan'), short] }] },
   { id: '29', what: 'comercio: lo busca, pide la dirección o pospone sin arrancar', car: HEALTHY, turns: [{ text: 'Llevame a una farmacia', context: MOVING, checks: [(t) => (t.tools.some((x) => x.startsWith('web_search')) || /direcci[oó]n|calle|detené|navegación en curso/i.test(t.text) ? null : 'ni busca, ni pide la dirección, ni pospone'), notCalled('start_navigation'), short] }] },
+  { id: '30', what: 'laboratorio: el 22 no responde y el módulo contesta → falta el DID, no el adaptador', car: PROBE_OK, turns: [{ text: 'Le mandé el 22 0123 al módulo 18DA28F1 y no me dio datos. ¿Es el adaptador o no existe ese DID?', context: LAB_STOPPED, checks: [called('did_probe'), says(/no existe|no está|falta|bloquead|no lo tiene/i, 'que el DID no existe en ese módulo'), avoids(/falla (el|tu) adaptador|el adaptador (está|esta) (roto|fallando|mal)/i, 'que el adaptador falla')] }] },
+  { id: '31', what: 'laboratorio: nadie contesta → revisar el header, sin concluir que no hay dato', car: PROBE_SILENT, turns: [{ text: 'El 22 F190 al módulo 18DA28F1 no responde. ¿El auto no lo tiene?', context: LAB_STOPPED, checks: [called('did_probe'), says(/header|direcci[oó]n|filtro|CAN FD/i, 'revisar el header, el filtro o CAN FD'), avoids(/el auto no tiene (ese|el) dato|ese DID no existe/i, 'que el dato no existe')] }] },
   { id: '20', what: 'rioplatense (voseo)', car: LEAN, turns: [{ text: 'Explicame qué tengo que revisar', context: STOPPED, checks: [says(/\b(revisá|fijate|mirá|tenés|podés|cambiá|llevalo|chequeá)\b/i, 'voseo'), avoids(/\b(revisa|fíjate|mira|tienes|puedes)\b/, 'tuteo')] }] },
 ];
 

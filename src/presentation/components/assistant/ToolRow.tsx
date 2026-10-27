@@ -31,6 +31,7 @@ const TOOLS: Record<string, { label: string; icon: IconName }> = {
   fuel_prices: { label: 'Buscando precios de combustible', icon: 'gas-station-outline' },
   dollar_rate: { label: 'Consultando el dólar', icon: 'currency-usd' },
   weather: { label: 'Consultando el clima', icon: 'weather-partly-cloudy' },
+  did_probe: { label: 'Sondeando el módulo', icon: 'magnify-scan' },
   car_price: { label: 'Buscando precios de autos', icon: 'car-info' },
   log_service: { label: 'Anotando en el registro de service', icon: 'wrench-clock' },
   read_service_log: { label: 'Leyendo el registro de service', icon: 'clipboard-text-clock-outline' },

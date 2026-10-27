@@ -40,6 +40,7 @@ Pendiente según el ROADMAP: B14, un auto con códigos y freeze frame, y verific
 | 2.9 | Borrado | Chat: «borrá los códigos» → cancelar, después aceptar (**solo si querés borrar**) | Cancelar no borra nada; aceptar pide confirmación con los km previos y queda en el histórico |
 | 2.10 | Rechazo del auto | Pedir borrado con el motor en marcha | `rejected_by_car` con el motivo que da el `7F` del auto, sin reintentos |
 | 2.11 | Adaptador | Chat: «¿anda bien mi adaptador?» | `read_adapter_info` con chip, firmware, protocolo y calidad |
+| 2.12 | Sondeo del módulo (Modo laboratorio) | Chat: «sondeá el módulo 18DA28F1» (el que dio `scan_modules`) | `did_probe` en `control`: veredicto `link_ok` y los `F1xx` clasificados; con un header inventado, `link_silent` y el texto de qué revisar. Sin cambios en los códigos |
 
 Auto con códigos: lo ideal es uno que ya los tenga. No generes fallas a propósito en un auto que usás.
 Sin códigos, 2.4–2.6, 2.8–2.10 se prueban a medias; se anotan como «sin códigos» y quedan abiertos.

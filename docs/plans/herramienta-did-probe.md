@@ -101,8 +101,11 @@ primeros bytes como muestra.
 ## Fases
 
 1. ✅ (2026-10-27) `domain/obd/did-probe.ts` y sus tests (`__tests__/did-probe.test.ts`, 25). Sin tocar el auto.
-2. Herramienta `did_probe` en modos `control` y `list`. Se prueba en la salida A (ver
-   [pruebas-de-campo-m2-m5-m8.md](pruebas-de-campo-m2-m5-m8.md)), solo `control`.
+2. ✅ (2026-10-27, código y tests; ⏳ el auto) Herramienta `did_probe` en modos `control` y `list`
+   (`data/obd/did-probe-runner.ts`, `vehicle-tool-adapter.ts`, `tools.ts`, `policy.ts`; tests en
+   `did-probe-tool.test.ts`, y los casos 30 y 31 del eval). Se prueba en la salida A (ver
+   [pruebas-de-campo-m2-m5-m8.md](pruebas-de-campo-m2-m5-m8.md)), solo `control`. Sin confirmación todavía:
+   `control` y `list` (≤ 32 DIDs) tardan ~2 s; la confirmación llega con `scan`.
 3. Modo `scan` con confirmación y cursor.
 4. Envío a la base del laboratorio y una nota en ADR-0009.
 
