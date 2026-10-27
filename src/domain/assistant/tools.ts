@@ -34,6 +34,7 @@ export const TOOL_NAMES = [
   'web_fetch',
   'scan_modules',
   'obd_command',
+  'did_probe',
   'knowledge_lookup',
   'docs_search',
   'chat_search',
@@ -83,6 +84,8 @@ export type ToolCall =
   | { readonly name: 'scan_modules'; readonly make: string | null; readonly model: string | null }
   // Lab (Modo laboratorio): a free READ command/frame; writes are blocked.
   | { readonly name: 'obd_command'; readonly command: string; readonly header: string | null }
+  // Lab: does a module's link work, and which DIDs does it answer? One DID per request, 22 only.
+  | { readonly name: 'did_probe'; readonly header: string; readonly mode: 'control' | 'list'; readonly dids: readonly string[] }
   // The lab's shared facts about what a car supports.
   | { readonly name: 'knowledge_lookup'; readonly make: string | null; readonly model: string | null; readonly year: number | null }
   // The lab's text base: pages already read and manuals, by words and by meaning.
@@ -354,6 +357,25 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
       },
     ),
     fn(
+      'did_probe',
+      'Solo en Modo laboratorio: sondea UN módulo con lecturas 22 de un DID por vez y dice si el enlace funciona o si el DID ' +
+        'no existe. Úsala cuando un 22 no devuelve datos y no se sabe si falla el adaptador o falta el DID. mode "control" ' +
+        '(por defecto): 3E 00 y los DIDs estándar de identificación (F190, F187, F189, F18C, F186), que todo módulo UDS debería ' +
+        'contestar. mode "list": los DIDs de "dids" (hasta 32). El veredicto link_ok significa que el adaptador y el software ' +
+        'funcionan (cualquier respuesta, incluso un rechazo 7F, lo prueba); link_silent, que nadie contestó (revisar el header, ' +
+        'no el DID). Nunca escribe ni desbloquea. El auto detenido.',
+      {
+        type: 'object',
+        properties: {
+          header: { type: 'string', minLength: 3, maxLength: 8, description: 'Dirección de PEDIDO al módulo: 11 bits "7E0"; 29 bits "18DA<módulo>F1", p. ej. "18DA28F1". La de respuesta no sirve.' },
+          mode: { type: 'string', enum: ['control', 'list'] },
+          dids: { type: 'array', maxItems: 32, items: { type: 'string', minLength: 4, maxLength: 6 }, description: 'Solo con mode "list": DIDs de 4 dígitos hexadecimales, p. ej. ["F190", "F187"].' },
+        },
+        required: ['header'],
+        additionalProperties: false,
+      },
+    ),
+    fn(
       'knowledge_lookup',
       'Qué se sabe en el laboratorio sobre un auto: módulos que responden, direcciones y DIDs ya descubiertos, de este modelo ' +
         'y de la misma marca. Consultalo antes de barrer o explorar, para no empezar de cero.',
@@ -571,6 +593,18 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       const h = a.header;
       if (h !== undefined && (typeof h !== 'string' || !/^[0-9A-Fa-f]{3,8}$/.test(h.trim()))) return bad('"header" es la dirección del módulo en hexadecimal.');
       return { ok: true, call: { name, command: cmd.trim(), header: typeof h === 'string' ? h.trim().toUpperCase() : null } };
+    }
+    case 'did_probe': {
+      const extra = only('header', 'mode', 'dids');
+      if (extra) return bad(extra);
+      const h = a.header;
+      if (typeof h !== 'string' || !/^[0-9A-Fa-f]{3,8}$/.test(h.trim())) return bad('"header" es la dirección de pedido del módulo, en hexadecimal.');
+      const mode = a.mode ?? 'control';
+      if (mode !== 'control' && mode !== 'list') return bad('"mode" es "control" o "list".');
+      const d = a.dids ?? [];
+      if (!Array.isArray(d) || d.length > 32 || d.some((x) => typeof x !== 'string' || x.length > 6)) return bad('"dids" es una lista de hasta 32 DIDs de 4 dígitos hexadecimales.');
+      if (mode === 'list' && d.length === 0) return bad('Con mode "list" hacen falta los "dids".');
+      return { ok: true, call: { name, header: h.trim().toUpperCase(), mode, dids: d as string[] } };
     }
     case 'knowledge_lookup': {
       const extra = only('make', 'model', 'year');

@@ -135,6 +135,43 @@ export const INJECTED: Car = {
     ),
 };
 
+// did_probe on a module that answers: the link works, the DID is what is missing.
+export const PROBE_OK: Car = {
+  ...HEALTHY,
+  did_probe: () =>
+    ok(
+      {
+        module: { reqHeader: '18DA28F1', rxHeader: '18DAF128' },
+        mode: 'list',
+        verdict: 'link_ok',
+        explanation: 'El módulo contestó: el adaptador y el software funcionan. Si un DID no devuelve datos, es porque ese DID no existe, está bloqueado o pide otras condiciones.',
+        testerPresent: true,
+        results: [{ did: '0123', outcome: 'unsupported', nrc: '31' }],
+        batteryVolts: 13.8,
+      },
+      'link_ok · 18DA28F1: 1 DIDs · 1 unsupported',
+    ),
+};
+
+// did_probe on an address nobody answers: not the DID's fault.
+export const PROBE_SILENT: Car = {
+  ...HEALTHY,
+  did_probe: () =>
+    ok(
+      {
+        module: { reqHeader: '18DA28F1', rxHeader: '18DAF128' },
+        mode: 'control',
+        verdict: 'link_silent',
+        explanation:
+          'Nadie contestó, ni siquiera a los DIDs estándar: no es un problema del DID. Revisar el header (en 29 bits el pedido es 18DA<módulo>F1; 18DAF1<módulo> es el de respuesta), el filtro de respuesta, el control de flujo, o que el módulo esté en CAN FD (un ELM o un STN no lo ven).',
+        testerPresent: false,
+        results: [{ did: 'F190', outcome: 'silent' }, { did: 'F187', outcome: 'silent' }],
+        batteryVolts: 13.8,
+      },
+      'link_silent · 18DA28F1: 5 DIDs · 5 silent',
+    ),
+};
+
 export const NO_ADAPTER: Car = Object.fromEntries(
   (['read_pids', 'sample_pids', 'read_dtcs', 'read_freeze_frame', 'read_readiness', 'read_vehicle_info', 'read_adapter_info', 'run_adapter_bench', 'clear_dtcs'] as const).map((n) => [
     n,
@@ -150,6 +187,8 @@ export function vehicle(car: Car): VehicleToolsPort {
 }
 
 export const STOPPED: AssistantContext = { connected: true, protocol: 'ISO 15765-4 CAN 29/500', supportedPids: 34, moving: false, speedKmh: 0, navigating: false, labMode: false };
+// Modo laboratorio: the lab tools (obd_command, did_probe) are offered.
+export const LAB_STOPPED: AssistantContext = { ...STOPPED, labMode: true };
 export const MOVING: AssistantContext = { ...STOPPED, moving: true, speedKmh: 52, navigating: true };
 export const OFFLINE: AssistantContext = { ...STOPPED, connected: false, protocol: null, supportedPids: 0 };
 

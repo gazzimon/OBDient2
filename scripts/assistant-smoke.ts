@@ -85,6 +85,7 @@ function simulated(): VehicleToolsPort {
       case 'chat_search':
       case 'scan_modules':
       case 'obd_command':
+      case 'did_probe':
         return { ok: false, error: 'not_supported', message: 'Sin navegación en el humo.' };
     }
   };
