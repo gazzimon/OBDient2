@@ -1,0 +1,113 @@
+# Banco de pruebas del chat (brazo A: vLLM + MTP). NO es producción: copia de
+# llm-chat con --speculative-config, en la GPU0, con la misma IP y puerto, así que
+# solo corre con llm-chat parado.
+#
+#   ssh fiui-pss@192.168.100.210 'docker stop llm-chat'
+#   SPEC_N=3 docker compose -f docker-compose.bench.yml --profile bench up -d
+#   ... medir ...
+#   docker compose -f docker-compose.bench.yml --profile bench down
+#   cd ~/obdient-stack && docker compose --profile online up -d llm-chat
+#
+# SPEC_N = num_speculative_tokens (por defecto 3, el de la ficha del checkpoint).
+
+name: obdient-bench
+
+services:
+  llm-chat-bench:
+    profiles: [bench]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["GPU-8e2f7908-bea0-9010-5bae-78a82a3ca503"]
+              capabilities: [gpu]
+    image: vllm/vllm-openai@sha256:c1c9f6fd5c109ba7f0546a59f5b2f15fb87f64c77782e90a27b648b42a8e67c3
+    container_name: llm-chat-bench
+    network_mode: host
+    ipc: host
+    restart: "no"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    environment:
+      - VLLM_API_KEY=${VLLM_API_KEY}
+      - VLLM_MARLIN_INPUT_DTYPE=int8
+    volumes:
+      - /home/fiui-pss/models:/models:ro
+    command:
+      - /models/qwen3.8-27b-int4
+      - --served-model-name=qwen3.8-27b
+      - --host=192.168.100.210
+      - --port=8000
+      - --max-model-len=32768
+      - --gpu-memory-utilization=0.95
+      - --kv-cache-dtype=fp8
+      - --max-num-seqs=4
+      - '--limit-mm-per-prompt={"image":2,"video":0}'
+      - --reasoning-parser=qwen3
+      - --enable-auto-tool-choice
+      - --tool-call-parser=qwen3_coder
+      - --enable-sleep-mode
+      - '--speculative-config={"method":"mtp","num_speculative_tokens":${SPEC_N:-3}}'
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://192.168.100.210:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 600s
+    logging:
+      driver: json-file
+      options: {max-size: "50m", max-file: "3"}
+
+  # Brazo B: ninfer-3090 (rama integration/ashalliants-adoption-20261016, d8c2925),
+  # imagen local `ninfer-3090:sm86`, modelo .ninfer de WarlaxZ (17,7 GiB).
+  # Misma IP y puerto que llm-chat: corre con llm-chat parado.
+  #   NINFER_N=3 docker compose -f docker-compose.bench.yml --profile ninfer up -d
+  ninfer-bench:
+    profiles: [ninfer]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["GPU-8e2f7908-bea0-9010-5bae-78a82a3ca503"]
+              capabilities: [gpu]
+    image: ninfer-3090:sm86
+    container_name: ninfer-bench
+    network_mode: host
+    ipc: host
+    restart: "no"
+    volumes:
+      - /home/fiui-pss/ninfer-bench/models:/workspace/models:ro
+    command:
+      - ninfer-serve
+      - models/qwen3_8_27b.ninfer
+      - --host
+      - "192.168.100.210"
+      - --port
+      - "8000"
+      - --model-id
+      - "qwen3.8-27b"
+      - --api-key
+      - "${VLLM_API_KEY}"
+      - --max-context
+      - "32768"
+      - --kv-capacity
+      - "32768"
+      - --max-concurrency
+      - "${NINFER_C:-1}"
+      - --max-pending-requests
+      - "16"
+      - --pending-timeout-ms
+      - "600000"
+      - --prefill-chunk
+      - "1024"
+      - --kv-dtype
+      - "int8"
+      - --spec
+      - "mtp"
+      - --draft-tokens
+      - "${NINFER_N:-3}"
+      - --lm-head-draft
+      - --vision
