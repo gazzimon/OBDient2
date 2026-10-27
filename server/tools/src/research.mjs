@@ -21,6 +21,7 @@
 // The pieces are injected, so it runs in tests without a network.
 
 import { domainWeight } from './fetch-page.mjs';
+import { rerankHits } from './rerank.mjs';
 import { domainOf, plain, untrusted } from './results.mjs';
 
 const READ_PAGES = 3;
@@ -36,6 +37,8 @@ const ALSO = 4;
 // (the app waits 55 s for the whole call).
 const EXTRA_PAGES = 3;
 const EXTRA_SPARE = 3;
+const POOL = 16; // fragments the reranker orders...
+const JUDGED = 8; // ...and the judge reads
 const EXTRA_DEADLINE_MS = 15_000;
 const SECOND_ROUND_BEFORE_MS = 20_000;
 
@@ -197,7 +200,7 @@ export const HINT = {
 const withDeadline = (promise, ms) =>
   Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve({ timedOut: true }), ms).unref?.())]);
 
-export function makeResearch({ search, fetchPage, docs, judge = null, log = () => {}, now = () => Date.now() }) {
+export function makeResearch({ search, fetchPage, docs, judge = null, rerank = null, log = () => {}, now = () => Date.now() }) {
   async function readPage(page) {
     const { url, domain } = page;
     if (docs.store.freshSource(url, FRESH_MS)) return { url, site: domain, title: page.title, status: 'cached' };
@@ -243,7 +246,9 @@ export function makeResearch({ search, fetchPage, docs, judge = null, log = () =
         const readable = read.filter((r) => r.status !== 'failed');
         if (!readable.length) return { grade: 'none', hits: [], judged: false };
         const question = queryEn ? `${query} ${queryEn}` : query;
-        const candidates = (await docs.search(question, 8, { sources: readable.map((r) => r.url) })).filter((h) => (h.sim ?? 0) >= WEAK_SIM || h.lex >= 0.4);
+        // A wider net, then the reranker keeps the 8 that read most like an answer.
+        const found = (await docs.search(question, rerank ? POOL : JUDGED, { sources: readable.map((r) => r.url) })).filter((h) => (h.sim ?? 0) >= WEAK_SIM || h.lex >= 0.4);
+        const candidates = await rerankHits(rerank, question, found, JUDGED, log);
         return assess(queryEn ? `${query} (${queryEn})` : query, candidates, judge, log);
       }
 

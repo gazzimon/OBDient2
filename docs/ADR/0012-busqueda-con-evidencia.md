@@ -61,3 +61,11 @@ dejarle el hueco. La respuesta trae `rounds` (1 o 2). El tiempo de espera del cl
 vivo: un caso solo en español pasó por 2 rondas (6 páginas, 22,8 s) y terminó en `none`; los dos casos con consulta
 en inglés salieron `good` en la primera ronda (5 y 12 s). Tests: 4 nuevos (encuentra en la segunda ronda, solo lee
 otros sitios, una primera ronda buena no lee más, una primera ronda lenta se salta la segunda).
+
+## Actualización 2026-10-26 — reranker antes del juez
+
+Qwen3-Reranker-0.6B (`rerank` en `server/docker-compose.yml`, GPU1, puerto 8004, ~2,6 GB junto a `stt` y `embed`) ordena los candidatos antes del juez: `docs.search` pide 16 fragmentos, el reranker (`server/tools/src/rerank.mjs`, `/score`) deja los 8 mejores y el juez sigue decidiendo bueno/débil/nada.
+
+Medido con 10 preguntas reales y 95 fragmentos, con las etiquetas del juez (el chat) como referencia: la primera respuesta queda en el puesto ideal 0,94 de las veces (MRR) frente a 0,65 del orden por palabras + significado; respuestas dentro de los 3 primeros, 15 de 23 frente a 11; 78 ms por pregunta. **No decide**: da la relevancia al tema, no si trae el dato (AUC ~0,86; con cualquier umbral deja pasar fragmentos que el juez descarta), así que no reemplaza al juez. El juez sigue siendo el modelo del chat (Qwen3.8-27B, sin razonamiento, mediana 1,2 s): en la GPU1 no queda lugar para otro modelo mejor.
+
+Si el reranker no responde (o `RERANK_URL=` vacío en `tools.env`), se conserva el orden de la búsqueda y se lee el log `reranker unavailable`; el usuario no nota cambio. Límites: pocas preguntas y etiquetas del juez, no de una persona.

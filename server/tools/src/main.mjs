@@ -13,6 +13,7 @@ import { searxng } from './searxng.mjs';
 import { createApp, listen } from './server.mjs';
 import { keyOwnerLookup } from './key-owners.mjs';
 import { makeFetchPage } from './fetch-page.mjs';
+import { rerankClient } from './rerank.mjs';
 import { makeJudge, makeResearch } from './research.mjs';
 import { knowledgeStore } from './knowledge.mjs';
 import { docsStore } from './docs-store.mjs';
@@ -84,6 +85,9 @@ const app = createApp({
     docs,
     // The chat model on the Z440 tells an answer from a page on the same subject.
     judge: makeJudge({ url: env.LLM_URL ?? 'http://192.168.100.210:8000', key: env.LLM_API_KEY ?? env.STT_API_KEY ?? null }),
+    // Qwen3-Reranker-0.6B on the second GPU orders the candidates before the judge;
+    // RERANK_URL empty turns it off, and if it is down the search order stays.
+    rerank: env.RERANK_URL === '' ? null : rerankClient({ url: env.RERANK_URL ?? 'http://192.168.100.210:8004', key: env.RERANK_API_KEY ?? env.STT_API_KEY ?? null }),
     log,
   }),
   // Live position into Traccar's OsmAnd port (docker, server/traccar), local only.

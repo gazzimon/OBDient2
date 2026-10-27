@@ -244,3 +244,30 @@ test('research: a slow first round skips the second', async () => {
   assert.equal(out.rounds, 1);
   assert.equal(out.grade, 'none');
 });
+
+test('research: the reranker puts the fragment that answers inside the 8 the judge reads', async () => {
+  // The page has 12 sections about the subject; the answer is the last one, which
+  // the search order alone would leave out of the judge's 8.
+  const filler = Array.from({ length: 12 }, (_, i) => `<h2>Odómetro ${i}</h2><p>El odómetro (mileage) del Tracker es un dato del tablero ${i}.</p>`).join('');
+  PAGES['https://largo.example/p'] = html('Largo', `${filler}<h2>DID</h2><p>El odómetro se lee con 22 F1 90 hacia el BCM, respuesta 62 F1 90.</p>`);
+  const f = fakes({ results: { 'es-AR': [r('https://largo.example/p', 'Largo')] } });
+  let judged = [];
+  const judge = async (q, hits) => {
+    judged = hits;
+    return { answers: new Set(hits.map((h, i) => (/62 F1 90/.test(h.text) ? i : -1)).filter((i) => i >= 0)), partial: new Set() };
+  };
+  const rerank = async (q, hits) => hits.map((h) => (/62 F1 90/.test(h.text) ? 1 : 0));
+  const out = await makeResearch({ ...f, judge, rerank }).run({ query: 'odómetro 22 F1 90' });
+  assert.equal(out.grade, 'good');
+  assert.ok(judged.length <= 8);
+  assert.match(judged[0].text, /62 F1 90/);
+});
+
+test('research: a failing reranker changes nothing', async () => {
+  const f = fakes({ results: { 'es-AR': [r('https://respuesta.example/did', 'DID')] } });
+  const rerank = async () => {
+    throw new Error('rerank HTTP 503');
+  };
+  const out = await makeResearch({ ...f, rerank }).run({ query: 'odómetro 22 F1 90' });
+  assert.equal(out.grade, 'good');
+});

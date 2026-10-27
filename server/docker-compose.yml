@@ -168,6 +168,44 @@ services:
       driver: json-file
       options: {max-size: "20m", max-file: "3"}
 
+  # Reordena los fragmentos antes del juez (server/tools/src/rerank.mjs, ADR-0012).
+  # Pesos: hf download Qwen/Qwen3-Reranker-0.6B --local-dir ~/models/qwen3-reranker-0.6b
+  # Entra en la GPU1 junto a stt y embed (~2,6 GB); si cae, la búsqueda sigue con su orden.
+  rerank:
+    profiles: [rerank]
+    <<: *gpu1
+    image: vllm/vllm-openai@sha256:c1c9f6fd5c109ba7f0546a59f5b2f15fb87f64c77782e90a27b648b42a8e67c3
+    container_name: rerank
+    network_mode: host
+    ipc: host
+    restart: unless-stopped # si la guardia térmica lo para, NO se reinicia solo
+    environment:
+      - VLLM_API_KEY=${VLLM_API_KEY}
+      - VLLM_DISABLE_COMPILE_CACHE=1
+    volumes:
+      - /home/fiui-pss/models:/models:ro
+    command:
+      - /models/qwen3-reranker-0.6b
+      - --served-model-name=qwen3-reranker-0.6b
+      - --host=192.168.100.210
+      - --port=8004
+      - --runner=pooling
+      - --enforce-eager
+      - --max-model-len=4096
+      # stt 0.70 + embed 0.12 + esto: la suma queda debajo de 0.95.
+      - --gpu-memory-utilization=0.10
+      - --max-num-seqs=16
+      - '--hf-overrides={"architectures":["Qwen3ForSequenceClassification"],"classifier_from_token":["no","yes"],"is_original_qwen3_reranker":true}'
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://192.168.100.210:8004/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+    logging:
+      driver: json-file
+      options: {max-size: "20m", max-file: "3"}
+
   # ── CPU: rutas y búsqueda (perfil propio: sigue en pie aunque se pare lo de GPU) ──
   # Datos preparados por server/maps/prepare.sh en ~/obdient-stack/maps.
   # Solo LAN: la K16 (Caddy) es la única entrada desde internet.
