@@ -35,20 +35,22 @@ Se avanza con **E4 (detector en el teléfono)**.
 
 ## Próximos pasos (2026-10-18)
 
-### E7 · Hitos del asistente (estado 2026-10-19)
+### E7 · Hitos del asistente (estado 2026-10-27)
 
 | Hito | Qué | Estado |
 |---|---|---|
 | M0–M1 | Gateway y loop del agente (ADR-0007/0008) | ✅ |
-| M2 | Herramientas OBD reales (tramas, parsers, sesión, adaptador) | ✅ código · ⏳ B14 y un auto con códigos |
+| M2 | Herramientas OBD reales (tramas, parsers, sesión, adaptador) | ✅ código · ⏳ pruebas de campo en curso desde 2026-10-27 (B14 y un auto con códigos) |
 | M3 | Chat, fotos, borrado con confirmación, historial de fallas, evaluación | ✅ probado en el auto (B35) |
 | Cuentas | Login por código de correo (Magic), clave por cuenta | ✅ |
 | Navegación | Direcciones, esquinas, enlaces de mapas, destino confirmado en el chat | ✅ probado en el teléfono |
 | M4 | Sin conexión (router de frases, notas), resumen de conversaciones largas | ✅ |
-| M5 | Una sola voz: alertas > maniobras; nivel de alertas | ✅ código · ⏳ probar manejando |
+| M5 | Una sola voz: alertas > maniobras; nivel de alertas | ✅ código · ⏳ pruebas manejando en curso desde 2026-10-27 |
 | **M6** | **Voz al chat**: Voxtral Mini 4B Realtime en la GPU1 (en vivo, por `obdient-tools`), reconocedor de Android sin conexión | ✅ cerrado (2026-10-20): probado en el teléfono; en manejo, conversación por voz con subtítulos, ≤ 60 palabras y escucha continua |
 | **Manejo** | **Modo manejo** (F1 del [plan](plans/modo-navegacion-ux.md)): mapa 3D/2D, cartel con "luego", riel (hablar, sonido en 3 estados, GPS), barra de viaje y acciones rápidas; YOLO fuera (rama `etapa-camara`); mapa en el chat, animaciones de espera, teclado | ✅ cerrado como MVP (2026-10-20), con detalles estéticos pendientes · F2–F6 siguen en el plan |
-| — | APK standalone y prueba todo junto manejando | **ahora** (2026-10-19) |
+| Privacidad | VIN enmascarado hacia el modelo, la captura y el export; sin VIN en la base común; consentimiento y hash en Traccar ([ADR-0011](ADR/0011-privacidad-del-vin-y-del-recorrido.md)) | ✅ código · ⏳ probar en el teléfono (consentimiento, captura pegada, export enmascarado, botones de fuentes y de continuar) |
+| Servidor del chat | Z440: Qwen3.8-27B INT4 en la GPU0 con 32k de contexto, W4A8 y 290 W; GPU1 con `stt`, `embed` y `rerank` ([ADR-0006](ADR/0006-z440-turnos-de-gpu.md)). MTP no entra en 24 GB; ninfer-3090 medido y descartado por ahora ([informe](benchmarks/2026-10-26-vllm-mtp-vs-ninfer.md)) | ✅ 2026-10-26 |
+| — | APK standalone y prueba todo junto manejando | ⏳ build `preview` del commit `c75f2b2` en la Z440 (2026-10-27) |
 
 **Decisión 2026-10-20 (cámara, cierre):** la guía AR sale del código (preservada en la rama
 `etapa-camara`, igual que YOLO) junto con VisionCamera, la calibración y la pantalla de cámaras. La
@@ -68,8 +70,8 @@ Estado al cerrar: el detector corre (corregido el orden de las funciones worklet
 detecte; la captura de cuadros para el maestro queda apagada (copiar ~3,6 MB por cuadro al hilo JS
 trababa la cámara y cerraba la app en `libworklets`).
 | **Historial** | Conversaciones: botón junto a "nueva" ✅, compartir ✅; lista agrupada por fecha y buscador (pendiente). **Mis viajes** ✅ código (2026-10-20): automático con la app abierta y el OBD conectado, lista simple, detalle con mapa por velocidad, paradas, consumo, códigos, GPX. **Traccar** ✅ en la K16 ([server/traccar](../server/traccar/README.md)): posición en vivo opcional vía `obdient-tools` (`/tools/v1/track`), web en la red local | ⏳ probar en un viaje |
-| M7 | STN a fondo: multi-PID, muestreo rápido, `STPX` | pendiente |
-| M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM | ✅ código, servicio y ruta `/tools` en la K16 (2026-10-19) · falta probar en el teléfono |
+| M7 | STN a fondo: varios PIDs por pedido, muestreo rápido, `STPX r:/t:` y `STCSEGR 1` en diagnóstico. Primero se mide en el auto, después se diseña (plan en *E7 · M7*) | pendiente · se mide junto con las pruebas de M2 |
+| M8 | `obdient-tools`: búsqueda web (SearXNG), combustibles y dólar (diario), clima, precios de autos (CCA, mensual); registro de service en el teléfono · pendiente: comercios (HERE), LiteLLM. Desde 2026-10-25 la búsqueda web es `research` (busca, lee, ordena y juzga la evidencia; [ADR-0012](ADR/0012-busqueda-con-evidencia.md)); desde 2026-10-26 con ronda correctiva y reranker en la GPU1 | ✅ código, servicio y ruta `/tools` en la K16 (2026-10-19) · ⏳ pruebas en el teléfono en curso desde 2026-10-27 |
 | M9 | Diagnóstico del fabricante (UDS solo lectura). **En curso (2026-10-20):** `scan_modules` (barrido 11/29 bits, 3E/22 F190), `obd_command` (trama de lectura libre en Modo laboratorio, clasificador que bloquea escritura/flasheo/reinicio), base de conocimiento compartida del laboratorio (`knowledge_lookup`), y `web_fetch` para leer fuentes técnicas. Datos de marca vía **gemelo del adaptador** Datos de marca vía **gemelo del adaptador** en modo laboratorio ([ADR-0009](ADR/0009-gemelo-del-adaptador-modo-laboratorio.md)) | pendiente · después de cerrar la navegación |
 | Después | Modo manejo sin chat (voz de ida y vuelta, palabra "OBDient"), animaciones de espera, base de conocimiento ampliada | ideas |
 
@@ -124,6 +126,29 @@ sincronización cuando exista el login.
   km); freeze frames distintos; cada borrado con los códigos previos y los km desde el borrado anterior;
   500 eventos. Lo alimenta `VehicleToolAdapter` · ⏳ mostrarlo (M3) y sincronizarlo con la cuenta
   (Firestore; ADR-0008 §5 revisado: el VIN sí va a Firebase).
+
+### E7 · M7 — STN a fondo (propuesta 2026-10-27; se mide antes de diseñar)
+
+Hoy el poller (`data/obd/telemetry-poller.ts`) pide la velocidad en cada ciclo más **un** PID secundario
+rotando, con `STPX d:010D, r:1, t:100` (24,2 Hz medidos en el B35; el límite es la latencia BLE, ~40 ms,
+no el chip). M7 busca más datos por segundo y diagnóstico más rápido, sin perder esos 24 Hz.
+
+1. **M7.0 Medir en el auto** (con la misma captura de M2.0, en una sola salida): Hz con 1, 2, 4 y 6 PIDs
+   por pedido (`01 0D 0C 05 …`, ISO 15765 admite hasta 6), con `STPX r:`, con el sufijo de conteo y sin
+   nada; en el B35 (STN) y en el B14 (ELM327). Anotar qué ECUs contestan solo al primer PID. Sin esto no
+   se escribe código: el resultado decide si vale la pena.
+2. **M7.1 Varios PIDs por pedido**: agrupar los PIDs soportados por pedido y repartir la respuesta
+   (`41 0D xx 0C yy yy …`, largo por PID en `pids.ts`). Si la ECU devuelve solo el primero, el grupo
+   baja a uno por pedido, y se recuerda por ECU. Los tests usan tramas grabadas en M7.0, no inventadas.
+3. **M7.2 Diagnóstico**: `STPX r:` con la cantidad de ECUs medida y `t:` largo para `04` y freeze frame;
+   `STCSEGR 1` (el STN arma las respuestas de varios cuadros); la respuesta pendiente `7F xx 78` es
+   espera, no rechazo.
+4. **M7.3 Guardas**: la velocidad no baja de ~20 Hz con el grupo activo; en teléfonos de gama baja se mide
+   el uso de CPU del hilo JS; el B14 conserva el sufijo de conteo como respaldo.
+
+Fuera de M7 (ver [adaptador-stn.md](hardware/adaptador-stn.md)): escucha pasiva del bus (`STM`), UDS del
+fabricante (M9) y J1939. Criterio de salida: Tablero con RPM, velocidad y temperatura refrescando varias
+veces por segundo, en el auto, sin perder velocidad ni fallar en el B14.
 
 ### E7 · Cuentas (ADR-0008, antes de M3)
 

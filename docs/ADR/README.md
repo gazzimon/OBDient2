@@ -18,8 +18,8 @@ Cada decisión vive en un ADR con estado y fecha. Reglas, para que nada quede de
 | [0004](0004-proyeccion-ar-y-fusion.md) | Proyección AR y fusión de sensores | aceptada |
 | [0005](0005-deteccion-maestro-alumno-multicamara.md) | Detección: maestro en la Z440, alumno en el teléfono, varias cámaras | aceptada |
 | [0006](0006-z440-turnos-de-gpu.md) | Z440: una GPU en línea, una GPU para lotes | aceptada |
-| [0007](0007-asistente-conversacional-en-el-telefono.md) | Asistente conversacional: el loop en el teléfono, el modelo en el servidor | propuesta |
-| [0008](0008-cuentas-y-gateway-del-asistente.md) | Cuentas (Firebase) y acceso al modelo (new-api) | propuesta |
+| [0007](0007-asistente-conversacional-en-el-telefono.md) | Asistente conversacional: el loop en el teléfono, el modelo en el servidor | aceptada |
+| [0008](0008-cuentas-y-gateway-del-asistente.md) | Cuentas (correo con código) y acceso al modelo (new-api) | aceptada |
 | [0009](0009-gemelo-del-adaptador-modo-laboratorio.md) | Gemelo del adaptador: modo laboratorio con OBDient como puente (M9) | propuesta, después de la navegación |
 | [0010](0010-memoria-del-asistente-en-el-telefono.md) | La memoria del asistente vive en el teléfono; sin Honcho por ahora | aceptada |
 | [0011](0011-privacidad-del-vin-y-del-recorrido.md) | El VIN y el recorrido no salen del teléfono con la identidad del auto | aceptada |
