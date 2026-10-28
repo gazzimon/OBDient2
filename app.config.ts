@@ -27,8 +27,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...base,
       name: 'OBDient FIUI Socios',
       scheme: 'obdient2-socios',
-      android: { ...base.android, package: 'com.obdient.obdient2.socios' },
-      // TODO: FIUI logo (icon + adaptive icon) once the file is provided.
+      icon: './assets/socios/icon.png',
+      web: { ...base.web, favicon: './assets/socios/favicon.png' },
+      android: {
+        ...base.android,
+        package: 'com.obdient.obdient2.socios',
+        adaptiveIcon: {
+          ...base.android?.adaptiveIcon,
+          foregroundImage: './assets/socios/android-icon-foreground.png',
+          backgroundImage: './assets/socios/android-icon-background.png',
+          monochromeImage: './assets/socios/android-icon-monochrome.png',
+        },
+      },
     };
   }
   if (process.env.APP_VARIANT !== 'development') return base;
