@@ -1,6 +1,6 @@
 # Guía de revisión de la política (30 minutos)
 
-Esto no es asesoramiento letrado: lo redacté contra el código del repo. Un abogado matriculado debe validarlo antes de publicar.
+Esto no es asesoramiento legal: lo redactó una IA contra el código del repo y puede contener errores. Las normas citadas (Ley 25.326, Disposición 60-E/2016, etc.) hay que verificarlas contra el texto oficial. Una persona con conocimiento legal debe validarlo antes de publicar.
 
 ## A. Cosas que el borrador afirma y que TENÉS que confirmar vos (10 min)
 

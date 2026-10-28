@@ -4,7 +4,7 @@
 **Responsable del tratamiento:** [RAZÓN SOCIAL / NOMBRE], CUIT [COMPLETAR], con domicilio en [DOMICILIO], Argentina.
 **Contacto de privacidad:** [CORREO DE PRIVACIDAD] · **Registro en la AAIP:** [Nº DE INSCRIPCIÓN DE LA BASE DE DATOS]
 
-> Este documento es un borrador técnico-legal para revisión. Los campos entre corchetes deben completarse y el texto debe ser validado por un abogado matriculado en Argentina antes de publicarse. Ver `revision-politica.md`.
+> Este documento es un borrador redactado con ayuda de una IA y **puede contener errores o afirmaciones inexactas** (incluidas las citas de normas, que no fueron verificadas contra el texto oficial). Debe ser revisado por una persona con conocimiento legal antes de publicarse o de actuar en base a él. Los campos entre corchetes deben completarse. Ver `revision-politica.md`.
 
 ---
 
