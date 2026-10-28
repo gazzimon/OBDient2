@@ -46,7 +46,7 @@ describe('exportConversation', () => {
       ],
     };
     const text = exportConversation(leaky, Date.UTC(2026, 9, 21, 21, 47), '0.1.0');
-    expect(text).not.toMatch(/000043/);
+    expect(text).not.toMatch(/000099/);
     expect(text).not.toContain('303030303939');
     expect(text).not.toContain('30 30 30 30 39 39');
     expect(text).not.toContain('Posadas, Misiones]');

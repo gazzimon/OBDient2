@@ -184,7 +184,7 @@ function AccountSection() {
   const confirmDelete = () =>
     Alert.alert(
       'Borrar cuenta',
-      'Se borra tu cuenta, su acceso al asistente y los datos guardados en ella. No se puede deshacer.',
+      'Se borra para siempre: tu cuenta y su acceso al asistente, y en este teléfono tus conversaciones, viajes, historial de fallas y bitácora de servicio. Tus aportes a la base técnica del laboratorio quedan sin tu nombre. Necesitás conexión. No se puede deshacer.',
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Borrar', style: 'destructive', onPress: () => void deleteAccount() },

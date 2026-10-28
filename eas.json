@@ -20,6 +20,15 @@
         "buildType": "apk"
       }
     },
+    "socios": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "socios"
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"

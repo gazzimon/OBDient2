@@ -8,6 +8,7 @@ interface MMKVLike {
   getString(key: string): string | undefined;
   set(key: string, value: string): void;
   remove(key: string): void;
+  clearAll(): void;
 }
 
 export function createMMKV(_options?: { id?: string }): MMKVLike {
@@ -16,5 +17,6 @@ export function createMMKV(_options?: { id?: string }): MMKVLike {
     getString: (key) => store.get(key),
     set: (key, value) => { store.set(key, value); },
     remove: (key) => { store.delete(key); },
+    clearAll: () => { store.clear(); },
   };
 }

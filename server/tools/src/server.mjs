@@ -14,7 +14,8 @@
 //   /tools/v1/docs        { action:'search', query, k? } → { results: [{ text, source, title, page, fetchedAt, score }] }
 //                         { action:'add', source, title?, text | pages:[{page,text}] } → { chunks }   (docs.mjs: filtered per fragment)
 //                         { action:'list' } → { sources }   { action:'delete', source } → { removed }  (only what you added)
-//   GET /tools/healthz                               → 200
+//   /tools/v1/forget      {}                         → { anonymized }   (account deletion: contributions stop naming the person)
+//   GET /tools/healthz                             → 200
 //
 // Errors: 400 bad input, 401 bad key, 429 too many, 502 a source is down,
 // 503 no data yet. Keys, queries and positions are never logged.
@@ -169,6 +170,12 @@ export function createApp({ search, isValidKey, data = () => null, weather = nul
         default:
           throw new BadInput('bad_action');
       }
+    },
+    // Account deletion, step 1 (the app calls it with the key BEFORE obdient-auth revokes it):
+    // the person's contributions to the shared base stop naming them.
+    async forget(_b, key) {
+      const who = ownerOf(key);
+      return { anonymized: docs && who ? docs.store.anonymize(who) : 0 };
     },
     async knowledge(b) {
       if (!knowledge) throw Object.assign(new Error('no knowledge'), { status: 503 });

@@ -23,7 +23,7 @@ const CAPTURE = `> 0902 (77 ms)
 describe('maskVin', () => {
   it('keeps what the car is (11 characters) and hides its serial', () => {
     expect(maskVin(VIN)).toBe(`8AGEA76C0RR${VIN_MASK}`);
-    expect(maskVin(VIN)).not.toContain('000043');
+    expect(maskVin(VIN)).not.toContain('000099');
   });
 
   it('a string that is not a VIN is hidden whole', () => {
@@ -64,7 +64,7 @@ describe('redactText: the VIN in its three forms', () => {
 
   it('nothing in a whole capture still has the serial', () => {
     const out = redactText(CAPTURE);
-    expect(out).not.toMatch(/000043|303030303939|30 30 30 30 39 39/);
+    expect(out).not.toMatch(/000099|303030303939|30 30 30 30 39 39/);
   });
 });
 

@@ -257,6 +257,13 @@ export function docsStore(file, { now = () => Date.now() } = {}) {
       });
     },
 
+    // Account deleted: what that person added stays in the lab's base (technical
+    // knowledge, no personal data) but no longer names them. Returns fragments touched.
+    anonymize(by) {
+      if (!by) return 0;
+      return db.prepare("UPDATE chunks SET added_by = 'anonimizado' WHERE added_by = ?").run(by).changes;
+    },
+
     // Expired fragments leave the file (searches already skip them).
     purge() {
       return tx(() => {

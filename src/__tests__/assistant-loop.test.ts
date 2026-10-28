@@ -279,7 +279,7 @@ describe('runTurn', () => {
       vehicle,
       confirmation: confirmWith(true).confirmation,
     });
-    for (const q of requests) expect(JSON.stringify(q.messages)).not.toMatch(/000043|30 30 30 30 39 39/);
+    for (const q of requests) expect(JSON.stringify(q.messages)).not.toMatch(/000099|30 30 30 30 39 39/);
     expect(JSON.stringify(requests[1]!.messages)).toContain('8AGEA76C0RR••••••');
     expect(JSON.stringify(requests[1]!.messages)).toContain('chevrolet');
     // The owner's history keeps what the car said, in full.

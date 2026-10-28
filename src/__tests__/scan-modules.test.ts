@@ -216,7 +216,7 @@ describe('obd_command: the reply as the app reads it', () => {
   it('what the model gets has the serial hidden in the bytes and in the text (it saw it split across frames before)', () => {
     const [m] = frameMessages(frames, true);
     const seen = redactText(JSON.stringify(m));
-    expect(seen).not.toMatch(/000043|303030303939|30 30 30 30 39 39/);
+    expect(seen).not.toMatch(/000099|303030303939|30 30 30 30 39 39/);
     expect(seen).toContain('8AGEA76C0RR••••••');
   });
 

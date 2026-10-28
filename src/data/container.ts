@@ -56,7 +56,14 @@ const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
 
 // Accounts (ADR-0008): email code login (Magic), model key from obdient-auth.
 const extra = Constants.expoConfig?.extra as { authUrl: string; toolsUrl: string };
-const account = new AccountService({ identity: magicIdentity, secrets: secureStore, authUrl: extra.authUrl });
+const account = new AccountService({
+  identity: magicIdentity,
+  secrets: secureStore,
+  authUrl: extra.authUrl,
+  toolsUrl: extra.toolsUrl,
+  // Lazy: the wipe touches presentation stores, which import this container.
+  wipeLocal: async () => (await import('@/presentation/services/wipe-local-data')).wipeLocalData(),
+});
 
 // The assistant's tools: navigation ones go to NavigationTools (presentation,
 // registered at start to avoid an import cycle), the rest to the car.

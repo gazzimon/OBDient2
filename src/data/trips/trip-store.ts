@@ -55,6 +55,13 @@ export class TripStore {
     this.changed();
   }
 
+  // Account deleted: every trip and the draft go.
+  clear(): void {
+    this.mmkv.clearAll();
+    this.ids = [];
+    this.changed();
+  }
+
   saveDraft(d: TripDraft | null): void {
     if (d) this.mmkv.set(DRAFT, JSON.stringify(d));
     else this.mmkv.remove(DRAFT);

@@ -105,7 +105,7 @@ describe('did_probe: control', () => {
     const out = await tools.execute(probe('18DA28F1'), signal);
     const text = JSON.stringify(out);
     expect(text).not.toContain('8AGEA76C0RR');
-    expect(text).not.toContain('000043');
+    expect(text).not.toContain('000099');
     expect(text).not.toContain('38 41 47');
   });
 

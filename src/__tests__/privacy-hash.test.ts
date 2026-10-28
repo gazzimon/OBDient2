@@ -26,7 +26,7 @@ describe('pseudonym', () => {
     const salt = newSalt(() => 0.3);
     expect(pseudonym(salt, VIN)).toBe(pseudonym(salt, VIN));
     expect(pseudonym(salt, VIN)).toMatch(/^[0-9a-f]{16}$/);
-    expect(pseudonym(salt, VIN)).not.toContain('000043');
+    expect(pseudonym(salt, VIN)).not.toContain('000099');
   });
 
   it('differs between installs and between values', () => {

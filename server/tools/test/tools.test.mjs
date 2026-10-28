@@ -224,7 +224,7 @@ test('knowledge: it never keeps or returns a VIN, even one inside a part number 
   const k = knowledgeStore(file);
   assert.equal(k.purge(), 1);
   const disk = readFileSync(file, 'utf8');
-  assert.ok(!disk.includes('000043'), 'the file still has the serial');
+  assert.ok(!disk.includes('000099'), 'the file still has the serial');
   assert.ok(disk.includes('8AGEA76C0RR••••••'), 'the first 11 characters stay');
   assert.ok(disk.includes('12345678'), 'a real part number stays');
   assert.equal(k.purge(), 0);
@@ -233,7 +233,7 @@ test('knowledge: it never keeps or returns a VIN, even one inside a part number 
   k.report({ make: 'Chevrolet', model: 'Tracker', year: 2023, vin, modules: [{ ...mod, partNumber: vin }], note: `mi VIN es ${vin}` });
   const r = k.lookup({ make: 'Chevrolet', model: 'Tracker', year: 2023, vin });
   const out = JSON.stringify(r) + readFileSync(file, 'utf8');
-  assert.ok(!out.includes('000043'), 'a VIN serial got through');
+  assert.ok(!out.includes('000099'), 'a VIN serial got through');
   assert.equal(r.byVin, undefined);
   assert.equal(r.exact.vins, undefined);
 });

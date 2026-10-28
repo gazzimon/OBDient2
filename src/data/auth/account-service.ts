@@ -52,6 +52,10 @@ export class AccountService {
       readonly identity: IdentityPort;
       readonly secrets: SecretStore;
       readonly authUrl: string;
+      // obdient-tools: asked to forget the person's contributions before the key is revoked.
+      readonly toolsUrl?: string;
+      // Erases what the phone keeps (chats, trips, faults, service log) once the account is gone.
+      readonly wipeLocal?: () => Promise<void> | void;
       readonly fetchFn?: typeof fetch;
     },
   ) {}
@@ -124,12 +128,25 @@ export class AccountService {
     try {
       const idToken = await this.deps.identity.idToken();
       if (!idToken) return { ok: false, reason: 'session_expired' };
+      // 1) The lab's shared base stops naming the person. Needs the key, so it goes first.
+      //    A 401 means the key is already revoked (a half-done earlier attempt): go on.
+      if (this.deps.toolsUrl) {
+        const r = await this.fetchFn(`${this.deps.toolsUrl.replace(/\/$/, '')}/v1/forget`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.stored.llm.apiKey}`, 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        if (!r.ok && r.status !== 401) return { ok: false, reason: 'failed', detail: `tools ${r.status}` };
+      }
+      // 2) The account and its model key.
       const res = await this.fetchFn(`${this.deps.authUrl}/v1/account`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${idToken}` },
       });
       if (res.status !== 204 && res.status !== 200) return { ok: false, reason: 'failed', detail: `auth ${res.status}` };
+      // 3) The phone: the session first, then every local copy of the person's data.
       await this.signOut();
+      await this.deps.wipeLocal?.();
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: 'failed', detail: describe(err) };

@@ -99,6 +99,30 @@ describe('AccountService (email code)', () => {
     expect(await ended.s.deleteAccount()).toEqual({ ok: false, reason: 'session_expired' });
   });
 
+  it('deleting asks the tools to forget first, then revokes the key, then wipes the phone', async () => {
+    const order: string[] = [];
+    const f = fakeFetch((url) => {
+      order.push(url);
+      if (url === `${AUTH}/v1/session`) return { status: 200, body: { apiKey: 'sk-account', model: 'm', baseUrl: 'https://x' } };
+      return { status: url.endsWith('/v1/forget') ? 200 : 204, body: {} };
+    });
+    const wipeLocal = jest.fn(async () => { order.push('wipe'); });
+    const s = new AccountService({ identity: identity(), secrets: memorySecrets(), authUrl: AUTH, toolsUrl: 'https://example.test/tools', wipeLocal, fetchFn: f.fn });
+    await s.signIn('a@b.co');
+    expect(await s.deleteAccount()).toEqual({ ok: true });
+    expect(order.slice(1)).toEqual(['https://example.test/tools/v1/forget', `${AUTH}/v1/account`, 'wipe']);
+  });
+
+  it('if the tools cannot forget, nothing is deleted and the phone keeps its data', async () => {
+    const f = fakeFetch((url) => (url === `${AUTH}/v1/session` ? { status: 200, body: { apiKey: 'k', model: 'm', baseUrl: 'x' } } : { status: 502, body: {} }));
+    const wipeLocal = jest.fn();
+    const s = new AccountService({ identity: identity(), secrets: memorySecrets(), authUrl: AUTH, toolsUrl: 'https://example.test/tools', wipeLocal, fetchFn: f.fn });
+    await s.signIn('a@b.co');
+    expect(await s.deleteAccount()).toMatchObject({ ok: false, reason: 'failed' });
+    expect(wipeLocal).not.toHaveBeenCalled();
+    expect(s.profile()).not.toBeNull();
+  });
+
   it('a saved account from the old Google sign-in (no email) means signed out', async () => {
     const { s, secrets } = service();
     secrets.data.set('obdient2.account', JSON.stringify({ uid: 'x', email: null, llm: { apiKey: 'k' } }));
