@@ -1,9 +1,8 @@
 # Política de Privacidad — OBDient FIUI Socios
 
-**Versión:** BORRADOR 0.1 · **Vigencia:** [FECHA DE PUBLICACIÓN]
-**Responsable del tratamiento:** [RAZÓN SOCIAL / NOMBRE], CUIT [COMPLETAR], con domicilio en [DOMICILIO], Argentina.
-**Contacto de privacidad:** [CORREO DE PRIVACIDAD] · **Registro en la AAIP:** [Nº DE INSCRIPCIÓN DE LA BASE DE DATOS]
-
+**Versión:** BORRADOR 0.1 · **Vigencia:** 28 de octubre de 2026
+**Responsable del tratamiento:** Fundación Iniciativa Urbana Inteligente (FIUI), CUIT 30-71882909-3, con domicilio en Av. Uruguay 2651, Piso 1, Posadas, Misiones, CP 3300, Argentina.
+**Contacto de privacidad:** fiui.org.ar@gmail.com
 > Este documento es un borrador redactado con ayuda de una IA y **puede contener errores o afirmaciones inexactas** (incluidas las citas de normas, que no fueron verificadas contra el texto oficial). Debe ser revisado por una persona con conocimiento legal antes de publicarse o de actuar en base a él. Los campos entre corchetes deben completarse. Ver `revision-politica.md`.
 
 ---
@@ -36,6 +35,10 @@ A personas mayores de 18 años que actúan en carácter profesional (mecánicos 
 | **Ubicación precisa** | GPS, solo con la app en uso | Calcular rutas y guiarte | Las coordenadas de origen/destino se envían a nuestro servidor de rutas |
 | **Seguimiento en vivo** (posición, velocidad, algunas lecturas OBD, 11 primeros caracteres del VIN, tu correo como conductor) | **Solo si lo activás vos en Ajustes** | Monitoreo del laboratorio de OBDient | Servidor propio; el dispositivo se identifica con un código seudónimo, no por la MAC del adaptador ni por el VIN |
 | **Viajes y bitácora de servicio** | Los genera la app | Tu historial | Solo en tu teléfono, salvo que los compartas |
+| **Lo habitual de cada auto** (ralentí, tensión, temperatura, consumo, por VIN) | Lo aprende la app mientras el adaptador está conectado | Comparar una lectura con el pasado del mismo auto en el diagnóstico | Solo en tu teléfono |
+| **Sonido del motor** | Micrófono, solo cuando tocás "Grabar" o "Escuchar" | Comparar el motor con una grabación de referencia | Solo una huella numérica del sonido, en tu teléfono; **la grabación no se guarda ni se envía** |
+| **Pruebas 0–100 y peso del auto** | Las hacés vos, con la velocidad del adaptador | Mostrarte tiempos y una potencia estimada | Solo en tu teléfono |
+| **Informes PDF** | Los generás vos | Compartirlos con un taller o con el dueño del auto | En el teléfono hasta que los compartas; el VIN sale sin sus últimos 6 caracteres |
 | **Aportes a la base técnica** (documentos, notas) | Solo si los agregás | Mejorar el asistente para el equipo | Servidor propio; ver sección 8 |
 
 **Bases del tratamiento (Ley 25.326):** tu **consentimiento libre, expreso e informado** (art. 5) al registrarte y al activar funciones opcionales (seguimiento en vivo, fotos, voz, ubicación); y la **necesidad del tratamiento** para prestarte el servicio que pediste.
@@ -44,7 +47,7 @@ A personas mayores de 18 años que actúan en carácter profesional (mecánicos 
 
 ## 4. Dónde están tus datos y cómo los protegemos
 
-- **Servidor propio en la República Argentina.** Los datos de tu cuenta, el procesamiento del asistente (modelo de lenguaje y transcripción de voz), el cálculo de rutas, la búsqueda de lugares y la base técnica corren en infraestructura de [RAZÓN SOCIAL] ubicada físicamente en [CIUDAD, PROVINCIA], Argentina. No usamos servicios de IA en la nube de terceros para procesar tus consultas.
+- **Servidor propio en la República Argentina.** Los datos de tu cuenta, el procesamiento del asistente (modelo de lenguaje y transcripción de voz), el cálculo de rutas, la búsqueda de lugares y la base técnica corren en infraestructura de FIUI ubicada físicamente en Posadas, Misiones, Argentina (en el domicilio indicado arriba). No usamos servicios de IA en la nube de terceros para procesar tus consultas.
 - **Cifrado en tránsito:** toda comunicación entre la app y el servidor usa HTTPS.
 - **Minimización:** el VIN completo y el serial del vehículo no salen de tu teléfono; las posiciones compartidas en exportaciones se aproximan; la dirección del adaptador y tu correo se ocultan en los textos que se comparten o suben.
 - **Almacén seguro:** la clave del asistente se guarda en el Keystore de Android, fuera de las copias de seguridad.
@@ -71,10 +74,10 @@ No vendemos ni cedemos tus datos. Solo intervienen:
 |---|---|
 | Cuenta y clave | Hasta que borres tu cuenta |
 | Conversaciones, viajes, fallas, bitácora | En tu teléfono, hasta que los borres o borres tu cuenta |
-| Seguimiento en vivo | [PLAZO — COMPLETAR] |
+| Seguimiento en vivo | 7 días; luego el equipo lo borra de Traccar |
 | Páginas web leídas por el asistente | 30 días |
 | Aportes a la base técnica | Hasta que los borres vos (o anonimizados, sección 8) |
-| Registros técnicos del servidor | [PLAZO — COMPLETAR] |
+| Registros técnicos del servidor | 30 días |
 
 ## 8. Tus derechos y cómo ejercerlos
 
@@ -82,10 +85,10 @@ Conforme a la Ley 25.326, tenés derecho a **acceder, rectificar, actualizar y s
 
 **Borrar tu cuenta (dentro de la app):** Ajustes → Cuenta → *Borrar cuenta*. Esto:
 1. Borra tu cuenta y revoca tu clave del asistente.
-2. Borra de tu teléfono tus conversaciones, viajes, historial de fallas y bitácora de servicio.
+2. Borra de tu teléfono tus conversaciones, viajes, historial de fallas, bitácora de servicio, lo aprendido de cada auto, las referencias de sonido del motor y las pruebas 0–100.
 3. Hace que tus aportes a la base técnica compartida **dejen de figurar a tu nombre** (se anonimizan). El contenido técnico se conserva porque pertenece al conocimiento común del laboratorio y no contiene datos personales; si querés que además se elimine, pedilo (punto siguiente).
 
-**Si no podés usar la app** (perdiste el acceso, desinstalaste, o querés que se eliminen también tus aportes o tus datos de seguimiento): escribinos a **[CORREO DE PRIVACIDAD]** desde el correo de tu cuenta. Responderemos en un plazo máximo de **10 días corridos** (arts. 14 y 16 de la Ley 25.326) y completaremos el borrado en servidores en un plazo máximo de [30] días.
+**Si no podés usar la app** (perdiste el acceso, desinstalaste, o querés que se eliminen también tus aportes o tus datos de seguimiento): escribinos a **fiui.org.ar@gmail.com** desde el correo de tu cuenta. Responderemos en un plazo máximo de **10 días corridos** (arts. 14 y 16 de la Ley 25.326) y completaremos el borrado en servidores en un plazo máximo de 30 días.
 
 **Autoridad de control:** la **Agencia de Acceso a la Información Pública (AAIP)**, órgano de control de la Ley 25.326, tiene la atribución de atender denuncias y reclamos de quienes vean afectados sus derechos: <https://www.argentina.gob.ar/aaip>.
 
@@ -103,4 +106,4 @@ Si cambiamos esta política de forma sustancial te lo avisaremos en la aplicaci�
 
 ## 12. Contacto
 
-[RAZÓN SOCIAL] · [DOMICILIO] · [CORREO DE PRIVACIDAD]
+Fundación Iniciativa Urbana Inteligente (FIUI) · CUIT 30-71882909-3 · Av. Uruguay 2651, Piso 1, Posadas, Misiones, CP 3300 · fiui.org.ar@gmail.com
