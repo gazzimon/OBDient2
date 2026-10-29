@@ -19,6 +19,35 @@ export interface ScanTarget {
   readonly label: string;
 }
 
+export type ScanProgressEvent =
+  | { readonly type: 'scan-started'; readonly protocol: string }
+  | { readonly type: 'lookup-warning'; readonly message: string }
+  | { readonly type: 'bus-skipped'; readonly bus: Bus; readonly status: 'unavailable' | 'not-tested' }
+  | { readonly type: 'bus-started'; readonly bus: Bus; readonly totalTargets: number }
+  | {
+      readonly type: 'target-checked';
+      readonly bus: Bus;
+      readonly completed: number;
+      readonly total: number;
+      readonly targetId: string;
+      readonly responded: boolean;
+    }
+  | {
+      readonly type: 'module-found';
+      readonly bus: Bus;
+      readonly module: Pick<ScanTarget, 'id' | 'reqHeader' | 'rxHeader' | 'label'>;
+    }
+  | {
+      readonly type: 'module-identified';
+      readonly bus: Bus;
+      readonly moduleId: string;
+      readonly source: 'F187' | 'F190' | null;
+    }
+  | { readonly type: 'bus-finished'; readonly bus: Bus; readonly modulesFound: number }
+  | { readonly type: 'scan-finished'; readonly busesScanned: readonly Bus[]; readonly modulesFound: number };
+
+export type ScanProgressListener = (event: ScanProgressEvent) => void;
+
 const HINTS_11: Record<number, string> = { 0: 'PCM (motor)', 1: 'TCM (caja)', 2: 'módulo', 3: 'módulo', 4: 'módulo', 5: 'módulo', 6: 'módulo', 7: 'módulo' };
 
 // Common 29-bit targets (ISO/Ford-style); labels are hints, verified by the part number.

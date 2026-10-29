@@ -3,6 +3,7 @@ import type { AssistantContext } from '@/domain/assistant/prompt';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import type { LlmPort, LlmRequest, LlmResult } from '@/domain/ports/llm.port';
 import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
+import { applyEvent, newConversation } from '@/domain/assistant/conversation';
 
 const STOPPED: AssistantContext = { connected: true, protocol: 'CAN 29/500', supportedPids: 4, moving: false, speedKmh: 0, navigating: false, labMode: false };
 const MOVING: AssistantContext = { ...STOPPED, moving: true, speedKmh: 40 };
@@ -85,6 +86,43 @@ describe('runTurn', () => {
     expect(requests[0]!.messages[0]!.role).toBe('system');
     expect(requests[0]!.toolChoice).toBe('auto');
     expect(events.filter((e) => e.type === 'tool_start')).toHaveLength(2);
+  });
+
+  it('forwards tool progress to the UI without adding it to model history', async () => {
+    const { llm, requests } = scripted(ask(call('scan_modules', {}, 'scan-1')), say('Encontré un módulo.'));
+    const events: AgentEvent[] = [];
+    const vehicle: VehicleToolsPort = {
+      supportedPids: () => [],
+      async execute(_call, _signal, onProgress) {
+        onProgress?.({ type: 'module-identified', bus: 'HS', moduleId: '11:7E0', source: 'F187' });
+        return { ok: true, data: { modules: [] }, summary: '1 módulo encontrado' };
+      },
+    };
+
+    await runTurn({
+      history: [],
+      text: 'Escanea los módulos',
+      context: STOPPED,
+      llm,
+      vehicle,
+      confirmation: confirmWith(true).confirmation,
+      onEvent: (event) => events.push(event),
+    });
+
+    expect(events).toContainEqual({
+      type: 'tool_progress',
+      id: 'scan-1',
+      progress: { type: 'module-identified', bus: 'HS', moduleId: '11:7E0', source: 'F187' },
+    });
+    expect(requests[1]!.messages.some((message) => JSON.stringify(message).includes('11:7E0'))).toBe(false);
+
+    const row = applyEvent(
+      applyEvent(newConversation('c1', 0), { type: 'tool_start', id: 'scan-1', call: { name: 'scan_modules', make: null, model: null } }, 1, 'a1'),
+      events.find((event) => event.type === 'tool_progress')!,
+      2,
+      'a1',
+    ).items.find((item) => item.kind === 'tool');
+    expect(row).toMatchObject({ status: 'running', detail: 'Módulo 11:7E0 identificado por F187' });
   });
 
   it('ends after MAX_MODEL_CALLS: the last call cannot use tools, and empty text falls back to the results', async () => {

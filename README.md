@@ -15,7 +15,8 @@ assistant that can read your car. Successor to OBDient.
 - **Trips**: recorded automatically while the OBD adapter is connected. Includes a speed map, GPX
   export and optional live tracking (Traccar).
 - **Diagnostics (lab)**: read-only module scan across HS/MS/SW-CAN. Writes, resets and flashing are
-  blocked.
+  blocked. The chat shows scan progress, modules as they answer, identification source, and buses
+  that were not tested or did not respond during selection. DTC and PID reads remain separate operations.
 
 Supported adapters are ELM327/STN over BLE or classic Bluetooth, including the Starcharm B14, B33-U
 and B35.

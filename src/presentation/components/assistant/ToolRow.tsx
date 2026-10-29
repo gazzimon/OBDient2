@@ -19,6 +19,7 @@ const TOOLS: Record<string, { label: string; icon: IconName }> = {
   run_adapter_bench: { label: 'Probando el adaptador', icon: 'speedometer' },
   clear_dtcs: { label: 'Borrando códigos', icon: 'delete-sweep-outline' },
   read_fault_history: { label: 'Leyendo el historial de fallas', icon: 'history' },
+  scan_modules: { label: 'Buscando módulos del vehículo', icon: 'car-cog' },
   calculate: { label: 'Calculando', icon: 'calculator-variant-outline' },
   search_place: { label: 'Buscando el lugar', icon: 'map-search-outline' },
   set_destination: { label: 'Mostrando el destino en el mapa', icon: 'map-marker-check-outline' },

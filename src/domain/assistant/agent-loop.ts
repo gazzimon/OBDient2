@@ -22,6 +22,7 @@ import { DRIVER, maxTokensFor, userMessage, type AssistantContext, type Persona 
 import { INTERNAL_MARKER, MarkerFilter } from './stream-filter';
 import { summaryMessages } from './summary';
 import { parseToolCall, toolSchemas, type ToolCall, type ToolOutcome } from './tools';
+import type { ScanProgressEvent } from '@/domain/obd/module-scan';
 
 // Going to a shop is web_search → search_place → set_destination → the answer: four
 // calls with no room for one search that finds nothing (benchmark 2026-10-22: out of
@@ -64,6 +65,7 @@ export function isContextOverflow(err: unknown): boolean {
 export type AgentEvent =
   | { readonly type: 'text'; readonly delta: string }
   | { readonly type: 'tool_start'; readonly id: string; readonly call: ToolCall }
+  | { readonly type: 'tool_progress'; readonly id: string; readonly progress: ScanProgressEvent }
   | { readonly type: 'tool_end'; readonly id: string; readonly call: ToolCall; readonly outcome: ToolOutcome }
   // Not run: invalid, unknown, over the limit, refused by policy or by the user.
   | { readonly type: 'tool_refused'; readonly id: string; readonly name: string; readonly outcome: ToolOutcome };
@@ -369,7 +371,9 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
     const key = memoKey(call);
     const cached = key ? memo.get(key, now()) : null;
     emit({ type: 'tool_start', id, call });
-    const outcome = cached ?? (await opts.vehicle.execute(call, signal));
+    const outcome =
+      cached ??
+      (await opts.vehicle.execute(call, signal, (progress) => emit({ type: 'tool_progress', id, progress })));
     if (key && outcome.ok && !cached) memo.set(key, outcome, now());
     if (call.name === 'clear_dtcs' && outcome.ok) clears += 1;
     emit({ type: 'tool_end', id, call, outcome });
@@ -404,7 +408,7 @@ function searchKey(q: string | null): string | null {
 
 // Calls that act or whose answer changes by the second are never reused.
 // read_fault_history changes with every read_dtcs/freeze frame (they record).
-const NOT_REUSED: ReadonlySet<ToolCall['name']> = new Set(['sample_pids', 'read_fault_history', 'set_destination', 'start_navigation', 'route_status', 'stop_navigation', 'where_am_i', 'where_parked', 'fuel_prices', 'log_service', 'read_service_log', 'diagnose']);
+const NOT_REUSED: ReadonlySet<ToolCall['name']> = new Set(['sample_pids', 'scan_modules', 'read_fault_history', 'set_destination', 'start_navigation', 'route_status', 'stop_navigation', 'where_am_i', 'where_parked', 'fuel_prices', 'log_service', 'read_service_log', 'diagnose']);
 
 // Only one-shot reads are reused; a sample measures over time.
 function memoKey(call: ToolCall): string | null {

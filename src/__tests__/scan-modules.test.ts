@@ -54,23 +54,58 @@ const VW_TARGETS: ScanTarget[] = [
 const signal = new AbortController().signal;
 const data = (o: ToolOutcome) => {
   if (!o.ok) throw new Error(`${o.error}: ${o.message}`);
-  return o.data as { modules: { id: string; partNumber: string | null }[]; make: string; skippedOtherIdWidth?: number };
-};
+  return o.data as {
+    buses: { bus: string; status: string; modules: number }[];
+    modules: { id: string; partNumber: string | null; labelStatus?: string; identityStatus?: string; identitySource?: string | null }[];
+    make: string;
+    skippedOtherIdWidth?: number;
+  };
+}
 
 describe('scan_modules with the make’s addresses', () => {
   it('finds the brakes on 77D (STN): filter on the module’s answer, its own flow-control pair', async () => {
     const { session, sent } = vwCar({ elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' });
     const asked: string[] = [];
+    const progress: unknown[] = [];
     const tools = new VehicleToolAdapter(() => session, {
       knownTargets: async (make) => {
         asked.push(make);
         return VW_TARGETS;
       },
     });
-    const out = await tools.execute({ name: 'scan_modules', make: 'Volkswagen', model: 'Gol Trend' }, signal);
+    const out = await tools.execute(
+      { name: 'scan_modules', make: 'Volkswagen', model: 'Gol Trend' },
+      signal,
+      (event) => progress.push(event),
+    );
     const d = data(out);
     expect(asked).toEqual(['volkswagen']);
     expect(d.modules.map((m) => m.id).sort()).toEqual(['11:713', '11:7E0']);
+    expect(d.modules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: '11:713', identityStatus: 'identified', identitySource: 'F187' }),
+        expect.objectContaining({ id: '11:7E0', identityStatus: 'identified', identitySource: 'F190' }),
+      ]),
+    );
+    expect(d.buses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ bus: 'HS', status: 'scanned' }),
+        expect.objectContaining({ bus: 'MS', status: 'unavailable', modules: 0 }),
+        expect.objectContaining({ bus: 'SW', status: 'unavailable', modules: 0 }),
+      ]),
+    );
+    expect(d.modules.find((m) => m.id === '11:713')).toMatchObject({ labelStatus: 'hint' });
+    expect(progress).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'scan-started' }),
+        expect.objectContaining({ type: 'bus-started', bus: 'HS' }),
+        expect.objectContaining({ type: 'module-found', module: expect.objectContaining({ id: '11:713' }) }),
+        expect.objectContaining({ type: 'module-identified', moduleId: '11:713', source: 'F187' }),
+        expect.objectContaining({ type: 'module-identified', moduleId: '11:7E0', source: 'F190' }),
+        expect.objectContaining({ type: 'scan-finished', modulesFound: 2 }),
+      ]),
+    );
+    expect(JSON.stringify(progress)).not.toContain('5Q0614517AB');
     expect(d.skippedOtherIdWidth).toBe(1); // the 29-bit ABS on an 11-bit car
     // Identified by F187 (part number); the engine refuses F187 and gives F190.
     // The part number as text, not the frames; a cut answer says so.
@@ -131,6 +166,25 @@ describe('scan_modules with the make’s addresses', () => {
     expect(knownTargets).not.toHaveBeenCalled();
     expect(data(out).modules.map((m) => m.id)).toEqual(['11:7E0']);
     expect(out.ok && out.knowledge).toBeUndefined();
+  });
+
+  it('reports a known-address lookup failure while continuing the generic scan', async () => {
+    const { session } = vwCar({ elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' });
+    const progress: unknown[] = [];
+    const tools = new VehicleToolAdapter(() => session, {
+      knownTargets: async () => {
+        throw new Error('server unavailable');
+      },
+    });
+    const out = await tools.execute(
+      { name: 'scan_modules', make: 'Volkswagen', model: null },
+      signal,
+      (event) => progress.push(event),
+    );
+    expect(data(out).modules.map((m) => m.id)).toEqual(['11:7E0']);
+    expect(data(out)).toMatchObject({ warning: expect.stringContaining('direcciones conocidas') });
+    expect(out.ok && out.summary).toContain('No se pudieron cargar direcciones conocidas');
+    expect(progress).toContainEqual(expect.objectContaining({ type: 'lookup-warning' }));
   });
 });
 

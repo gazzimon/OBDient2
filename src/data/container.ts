@@ -100,7 +100,7 @@ const chatSearchTools = new ChatSearchTools({
 });
 const assistantTools: VehicleToolsPort = {
   supportedPids: () => vehicleTools.supportedPids(),
-  execute: async (call, signal) => {
+  execute: async (call, signal, onProgress) => {
     switch (call.name) {
       case 'web_search':
       case 'research':
@@ -111,7 +111,7 @@ const assistantTools: VehicleToolsPort = {
       case 'car_price':
         return onlineTools.execute(call, signal);
       case 'scan_modules': {
-        const out = await vehicleTools.execute(call, signal);
+        const out = await vehicleTools.execute(call, signal, onProgress);
         // A scan's findings go to the lab's shared knowledge (best effort).
         if (out.ok && out.knowledge) void onlineTools.reportKnowledge(out.knowledge, signal);
         return out;

@@ -46,7 +46,7 @@ import { matchSymptoms, symptomLabel } from '@/domain/assistant/symptoms';
 import { diagnose, pidsUsed, type Readings } from '@/domain/diagnosis/engine';
 import { ROOT_CAUSES } from '@/domain/diagnosis/root-causes';
 import type { BaselineMetric, Deviation } from '@/domain/vehicle/baseline';
-import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, isFunctional, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, serviceOf, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
+import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, isFunctional, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, serviceOf, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanProgressListener, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -174,7 +174,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     });
   }
 
-  async execute(call: ToolCall, signal: AbortSignal): Promise<ToolOutcome> {
+  async execute(call: ToolCall, signal: AbortSignal, onProgress?: ScanProgressListener): Promise<ToolOutcome> {
     // These two do not need the car.
     if (call.name === 'calculate') return this.calculate(call.expression);
     if (call.name === 'read_fault_history') return this.readFaultHistory();
@@ -185,21 +185,21 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     try {
       if (signal.aborted) throw new Cancelled();
       try {
-        return await this.run(s, call, signal);
+        return await this.run(s, call, signal, onProgress);
       } catch (err) {
         // The adapter rebooted mid-call (brown-out while cranking): once the
         // session is configured again, a read is worth one more try.
         if (!(err instanceof AdapterResetError) || !RETRY_AFTER_RESET.has(call.name)) throw err;
         await s.settled();
         if (signal.aborted) throw new Cancelled();
-        return await this.run(s, call, signal);
+        return await this.run(s, call, signal, onProgress);
       }
     } catch (err) {
       return failure(err);
     }
   }
 
-  private async run(s: ObdSession, call: ToolCall, signal: AbortSignal): Promise<ToolOutcome> {
+  private async run(s: ObdSession, call: ToolCall, signal: AbortSignal, onProgress?: ScanProgressListener): Promise<ToolOutcome> {
     switch (call.name) {
       case 'read_pids':
         return this.readPids(s, call.pids);
@@ -208,7 +208,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'read_dtcs':
         return this.readDtcs(s, call.kind);
       case 'scan_modules':
-        return this.scanModules(s, call.make, call.model, signal);
+        return this.scanModules(s, call.make, call.model, signal, onProgress);
       case 'obd_command':
         return this.obdCommand(s, call.command, call.header);
       case 'did_probe':
@@ -457,17 +457,34 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   // 22 F190. Only one CAN channel is active at a time, so the bus is switched
   // with STP/STPO and HS is restored at the end. Every module found is a real
   // fact about this car — bus and address — saved to the lab knowledge.
-  private async scanModules(s: ObdSession, givenMake: string | null, model: string | null, signal: AbortSignal): Promise<ToolOutcome> {
+  private async scanModules(
+    s: ObdSession,
+    givenMake: string | null,
+    model: string | null,
+    signal: AbortSignal,
+    onProgress?: ScanProgressListener,
+  ): Promise<ToolOutcome> {
     const info = s.sessionInfo!;
     const bit29 = /29BIT/.test(info.protocol);
     const isStn = info.identity.stn != null;
+    onProgress?.({ type: 'scan-started', protocol: info.protocol });
     const vin = await this.ensureVin();
     // The make's own addresses (ABS, airbag, body…): OBD's 7E0–7E7 and the
     // 7DF broadcast only reach engine and gearbox.
     const make = givenMake?.toLowerCase() ?? makeFromVin(vin);
-    const makeTargets = make && this.deps.knownTargets ? await this.deps.knownTargets(make, model, signal).catch(() => []) : [];
+    let targetLookupWarning: string | null = null;
+    let makeTargets: ScanTarget[] = [];
+    if (make && this.deps.knownTargets) {
+      try {
+        makeTargets = await this.deps.knownTargets(make, model, signal);
+      } catch {
+        if (signal.aborted) throw new Cancelled();
+        targetLookupWarning = 'No se pudieron cargar direcciones conocidas de la marca; se probarán solo direcciones genéricas.';
+        onProgress?.({ type: 'lookup-warning', message: targetLookupWarning });
+      }
+    }
 
-    type Found = ScanTarget & { bus: Bus; identify: string | null };
+    type Found = ScanTarget & { bus: Bus; identify: string | null; identitySource: 'F187' | 'F190' | null };
     const result = await s.exclusive(async (port) => {
       await quiet(port, 'ATH1');
       // Which path: the B33-U vendor UDS set (firmware does ISO-TP) if it takes
@@ -478,15 +495,28 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       // Which buses are reachable: HS always; MS/SW only on STN that accept the
       // preset (the B14 has no SW-CAN, so STP 63 returns '?').
       const buses: Bus[] = ['HS'];
+      const busStatus: Record<Bus, 'scanned' | 'unavailable' | 'not-tested'> = {
+        HS: 'scanned',
+        MS: 'not-tested',
+        SW: 'not-tested',
+      };
       if (isStn && !udsAt) {
         for (const bus of ['MS', 'SW'] as Bus[]) {
           const ok = await quiet(port, `STP ${bit29 ? BUS_PRESET[bus].bit29 : BUS_PRESET[bus].bit11}`);
-          if (ok != null && !/\?|ERR/i.test(ok)) buses.push(bus);
+          if (ok != null && !/\?|ERR/i.test(ok)) {
+            buses.push(bus);
+            busStatus[bus] = 'scanned';
+          } else {
+            busStatus[bus] = 'unavailable';
+            onProgress?.({ type: 'bus-skipped', bus, status: 'unavailable' });
+          }
         }
         // Restore HS before scanning (the probes above left us on SW).
         await quiet(port, `STP ${protocolToPreset(info.protocol)}`);
         await quiet(port, 'STPO');
         await quiet(port, 'ATH1');
+      } else {
+        for (const bus of ['MS', 'SW'] as Bus[]) onProgress?.({ type: 'bus-skipped', bus, status: 'not-tested' });
       }
 
       const out: Found[] = [];
@@ -511,6 +541,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       };
       try {
         for (const bus of buses) {
+          if (signal.aborted) throw new Cancelled();
           if (bus !== 'HS') {
             await quiet(port, `STP ${bit29 ? BUS_PRESET[bus].bit29 : BUS_PRESET[bus].bit11}`);
             await quiet(port, 'STPO');
@@ -526,10 +557,14 @@ export class VehicleToolAdapter implements VehicleToolsPort {
           }
           const merged = mergeTargets(generic, makeTargets, bit29);
           skipped = { otherWidth: merged.otherWidth, overLimit: merged.overLimit };
-          for (const t of merged.targets) {
+          onProgress?.({ type: 'bus-started', bus, totalTargets: merged.targets.length });
+          const foundBeforeBus = out.length;
+          for (const [index, t] of merged.targets.entries()) {
+            if (signal.aborted) throw new Cancelled();
             if (seen.has(`${bus}:${t.id}`)) continue;
             let present: boolean;
             let identify: string | null = null;
+            let identitySource: 'F187' | 'F190' | null = null;
             if (path === 'uds-at') {
               const probe = await quiet(port, urhCommand(t.reqHeader, t.rxHeader, SCAN_PROBE), 1500);
               present = probe != null && udsReply(probe, SCAN_PROBE) !== '';
@@ -542,16 +577,30 @@ export class VehicleToolAdapter implements VehicleToolsPort {
               const probe = await quiet(port, SCAN_PROBE, 1200);
               present = probe != null && moduleAnswered(probe);
             }
+            onProgress?.({
+              type: 'target-checked',
+              bus,
+              completed: index + 1,
+              total: merged.targets.length,
+              targetId: t.id,
+              responded: present,
+            });
             if (!present) continue;
+            onProgress?.({ type: 'module-found', bus, module: t });
             for (const req of SCAN_IDENTIFY) {
               const raw = path === 'uds-at' ? await quiet(port, urhCommand(t.reqHeader, t.rxHeader, req), 1500) : await quiet(port, req, 1500);
               identify = identifyReply(raw && path === 'uds-at' ? udsReply(raw, req) : raw, req);
               if (identify && raw && path === 'stn') identify = identifyText(raw, isCan(info.protocol));
-              if (identify) break;
+              if (identify) {
+                identitySource = req.endsWith('F187') ? 'F187' : 'F190';
+                break;
+              }
             }
             seen.add(`${bus}:${t.id}`);
-            out.push({ ...t, bus, identify });
+            out.push({ ...t, bus, identify, identitySource });
+            onProgress?.({ type: 'module-identified', bus, moduleId: t.id, source: identitySource });
           }
+          onProgress?.({ type: 'bus-finished', bus, modulesFound: out.length - foundBeforeBus });
         }
       } finally {
         if (buses.length > 1) {
@@ -566,10 +615,11 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         await quiet(port, `ATSH ${bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11}`).catch(() => undefined);
         await quiet(port, 'ATH0').catch(() => undefined);
       }
-      return { out, path, buses, skipped };
+      onProgress?.({ type: 'scan-finished', busesScanned: buses, modulesFound: out.length });
+      return { out, path, buses, busStatus, skipped };
     });
 
-    const { out: found, path, buses, skipped } = result;
+    const { out: found, path, buses, busStatus, skipped } = result;
     const pairs = this.pairs.get(s) ?? new Map<string, string>();
     for (const m of found) pairs.set(m.reqHeader, m.rxHeader);
     this.pairs.set(s, pairs);
@@ -586,15 +636,31 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         makeAddresses: makeTargets.length,
         ...(skipped.otherWidth ? { skippedOtherIdWidth: skipped.otherWidth } : {}),
         ...(skipped.overLimit ? { skippedOverLimit: skipped.overLimit } : {}),
+        ...(targetLookupWarning ? { warning: targetLookupWarning } : {}),
         // "None answered" is easy to over-read (2026-10-21: "the adapter cannot reach
         // UDS", then the wrong adapter advice): it says what it does not prove.
         ...(found.length === 0 ? { note: noModulesNote(skipped.otherWidth, bit29) } : {}),
-        buses: buses.map((b) => ({ bus: b, label: BUS_PRESET[b].label, modules: byBus(b) })),
-        modules: found.map((m) => ({ id: m.id, bus: m.bus, reqHeader: m.reqHeader, label: m.label, partNumber: m.identify })),
+        buses: (['HS', 'MS', 'SW'] as const).map((bus) => ({
+          bus,
+          label: BUS_PRESET[bus].label,
+          status: busStatus[bus],
+          modules: byBus(bus),
+        })),
+        modules: found.map((m) => ({
+          id: m.id,
+          bus: m.bus,
+          reqHeader: m.reqHeader,
+          rxHeader: m.rxHeader,
+          label: m.label,
+          labelStatus: 'hint',
+          partNumber: m.identify,
+          identityStatus: m.identify ? 'identified' : 'responded_unidentified',
+          identitySource: m.identitySource,
+        })),
       },
       summary: found.length
-        ? `${found.length} módulos (${adapter}): ${buses.filter((b) => byBus(b)).map((b) => `${byBus(b)} en ${b}`).join(', ')}`
-        : `Ningún módulo respondió (${adapter})`,
+        ? `${found.length} módulos (${adapter}): ${buses.filter((b) => byBus(b)).map((b) => `${byBus(b)} en ${b}`).join(', ')}${busAvailabilitySummary(busStatus)}${targetLookupWarning ? ` · ${targetLookupWarning}` : ''}`
+        : `Ningún módulo respondió (${adapter})${busAvailabilitySummary(busStatus)}${targetLookupWarning ? ` · ${targetLookupWarning}` : ''}`,
       // The lab keys facts by make: without it the server refuses the report. It is
       // read by every user, so it carries what the car is (make, model, which
       // modules answer where), never which car: no VIN, and a part number that
@@ -1100,6 +1166,13 @@ function round(v: number): number {
 
 function fmt(v: number | null): string {
   return v == null ? 'sin dato' : String(round(v));
+}
+
+function busAvailabilitySummary(status: Readonly<Record<Bus, 'scanned' | 'unavailable' | 'not-tested'>>): string {
+  const unavailable = (['MS', 'SW'] as const)
+    .filter((bus) => status[bus] !== 'scanned')
+    .map((bus) => `${bus} ${status[bus] === 'unavailable' ? 'sin respuesta/no disponible' : 'no probado'}`);
+  return unavailable.length ? ` · ${unavailable.join(', ')}` : '';
 }
 
 // What "no module answered" does not prove, said to the model with the scan.

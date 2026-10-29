@@ -10,6 +10,7 @@ import type { ApiMessage } from '@/domain/ports/llm.port';
 import type { AgentEvent, RoundStat, TurnResult } from './agent-loop';
 import { MAX_NOTES, type OfflineNote } from './offline';
 import type { MapPin, SourceLink, ToolName } from './tools';
+import type { ScanProgressEvent } from '@/domain/obd/module-scan';
 
 export type ToolStatus = 'running' | 'ok' | 'failed' | 'refused';
 
@@ -114,11 +115,42 @@ export function applyEvent(c: Conversation, e: AgentEvent, now: number, answerId
         e.outcome.ok && e.outcome.places?.length ? e.outcome.places : undefined,
         e.outcome.ok && e.outcome.sources?.length ? e.outcome.sources : undefined,
       );
+    case 'tool_progress':
+      return updateTool(c, e.id, 'running', scanProgressDetail(e.progress));
     case 'tool_refused':
       return {
         ...c,
         items: [...c.items, { kind: 'tool', id: e.id, at: now, name: e.name, status: 'refused', detail: e.outcome.ok ? null : e.outcome.message }],
       };
+  }
+}
+
+function scanProgressDetail(progress: ScanProgressEvent): string {
+  switch (progress.type) {
+    case 'scan-started':
+      return `Preparando escaneo (${progress.protocol})`;
+    case 'lookup-warning':
+      return progress.message;
+    case 'bus-skipped':
+      return progress.status === 'unavailable'
+        ? `Bus ${progress.bus}: no disponible o sin respuesta al probarlo`
+        : `Bus ${progress.bus}: no probado con este adaptador`;
+    case 'bus-started':
+      return `Bus ${progress.bus}: 0/${progress.totalTargets} direcciones revisadas`;
+    case 'target-checked':
+      return `Bus ${progress.bus}: ${progress.completed}/${progress.total} · ${progress.targetId} ${
+        progress.responded ? 'respondió' : 'sin respuesta'
+      }`;
+    case 'module-found':
+      return `${progress.module.label === 'módulo' ? 'Módulo' : `Posible ${progress.module.label}`} respondió en ${progress.module.reqHeader}; identificando`;
+    case 'module-identified':
+      return progress.source
+        ? `Módulo ${progress.moduleId} identificado por ${progress.source}`
+        : `Módulo ${progress.moduleId} respondió; identidad no disponible`;
+    case 'bus-finished':
+      return `Bus ${progress.bus}: escaneo terminado, ${progress.modulesFound} módulos`;
+    case 'scan-finished':
+      return `Escaneo terminado: ${progress.modulesFound} módulos en ${progress.busesScanned.join(', ')}`;
   }
 }
 
