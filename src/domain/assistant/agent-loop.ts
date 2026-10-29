@@ -401,7 +401,7 @@ function searchKey(q: string | null): string | null {
 
 // Calls that act or whose answer changes by the second are never reused.
 // read_fault_history changes with every read_dtcs/freeze frame (they record).
-const NOT_REUSED: ReadonlySet<ToolCall['name']> = new Set(['sample_pids', 'read_fault_history', 'set_destination', 'start_navigation', 'route_status', 'stop_navigation', 'where_am_i', 'fuel_prices', 'log_service', 'read_service_log', 'diagnose']);
+const NOT_REUSED: ReadonlySet<ToolCall['name']> = new Set(['sample_pids', 'read_fault_history', 'set_destination', 'start_navigation', 'route_status', 'stop_navigation', 'where_am_i', 'where_parked', 'fuel_prices', 'log_service', 'read_service_log', 'diagnose']);
 
 // Only one-shot reads are reused; a sample measures over time.
 function memoKey(call: ToolCall): string | null {

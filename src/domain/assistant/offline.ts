@@ -127,6 +127,12 @@ export function intentAnswer(intent: PhraseIntent, outcome: ToolOutcome): string
       if (data.arrived) return 'Llegaste al destino.';
       return `Faltan ${number(data.remainingKm as number)} km, unos ${data.remainingMin as number} minutos: llegás a las ${data.arrival as string}.`;
     }
+    case 'parked': {
+      const car = data.car ? `Tu ${data.car as string}` : 'El auto';
+      const where = (data.where as string | null) ?? 'en el lugar guardado';
+      const address = data.address ? ` (${data.address as string})` : '';
+      return `${car} quedó ${where}${address}, ${data.left as string}. Lo ves en la pestaña Ruta, con la P.`;
+    }
     case 'stop_navigation':
       return data.stopped ? 'Listo, terminé la navegación.' : 'No había una navegación en curso.';
     case 'readiness':

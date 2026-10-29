@@ -28,6 +28,8 @@ import { VehicleBaselines } from '@/domain/vehicle/baseline';
 import { OsrmRouting } from '@/data/routing/osrm-routing';
 import { PhotonGeocoder } from '@/data/routing/photon-geocoder';
 import { TripRecorder } from '@/data/recording/trip-recorder';
+import { createMmkvParkingStorage } from '@/data/parking/mmkv-parking-storage';
+import { ParkingLog } from '@/domain/parking/parking';
 import type { GeocodingPort, RoutingPort } from '@/domain/navigation/route';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -88,6 +90,8 @@ const onlineTools = new OnlineTools(toolsClient);
 // The service log on the phone.
 const serviceLog = new ServiceLog(createMmkvServiceStorage());
 const serviceTools = new ServiceTools({ log: serviceLog, vin: () => vehicleTools.knownVin() });
+// Where each car was left: saved when the adapter link goes.
+const parking = new ParkingLog(createMmkvParkingStorage());
 // What was said in earlier conversations, read from the chat store.
 const chatSearchTools = new ChatSearchTools({
   conversations: () => useChatStore.getState().conversations,
@@ -163,6 +167,7 @@ export const container = {
   vehicleTools,
   faults,
   serviceLog,
+  parking,
   // Built per call so an endpoint changed in Settings applies immediately.
   routing(): RoutingPort {
     return new OsrmRouting(useSettingsStore.getState().routingUrl);

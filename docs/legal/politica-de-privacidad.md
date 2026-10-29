@@ -37,6 +37,7 @@ A personas mayores de 18 años que actúan en carácter profesional (mecánicos 
 | **Viajes y bitácora de servicio** | Los genera la app | Tu historial | Solo en tu teléfono, salvo que los compartas |
 | **Lo habitual de cada auto** (ralentí, tensión, temperatura, consumo, por VIN) | Lo aprende la app mientras el adaptador está conectado | Comparar una lectura con el pasado del mismo auto en el diagnóstico | Solo en tu teléfono |
 | **Sonido del motor** | Micrófono, solo cuando tocás "Grabar" o "Escuchar" | Comparar el motor con una grabación de referencia | Solo una huella numérica del sonido, en tu teléfono; **la grabación no se guarda ni se envía** |
+| **Dónde quedó el auto** (posición, hora, auto) | El GPS del teléfono cuando se corta el Bluetooth con el adaptador | Mostrarte dónde estacionaste y cómo volver | Solo en tu teléfono, uno por auto (los últimos 20). Si tocás "Ir caminando", las coordenadas se abren en la app de mapas del teléfono |
 | **Pruebas 0–100 y peso del auto** | Las hacés vos, con la velocidad del adaptador | Mostrarte tiempos y una potencia estimada | Solo en tu teléfono |
 | **Informes PDF** | Los generás vos | Compartirlos con un taller o con el dueño del auto | En el teléfono hasta que los compartas; el VIN sale sin sus últimos 6 caracteres |
 | **Aportes a la base técnica** (documentos, notas) | Solo si los agregás | Mejorar el asistente para el equipo | Servidor propio; ver sección 8 |
@@ -85,7 +86,7 @@ Conforme a la Ley 25.326, tenés derecho a **acceder, rectificar, actualizar y s
 
 **Borrar tu cuenta (dentro de la app):** Ajustes → Cuenta → *Borrar cuenta*. Esto:
 1. Borra tu cuenta y revoca tu clave del asistente.
-2. Borra de tu teléfono tus conversaciones, viajes, historial de fallas, bitácora de servicio, lo aprendido de cada auto, las referencias de sonido del motor y las pruebas 0–100.
+2. Borra de tu teléfono tus conversaciones, viajes, historial de fallas, bitácora de servicio, lo aprendido de cada auto, las referencias de sonido del motor, las pruebas 0–100 y los lugares donde quedó cada auto.
 3. Hace que tus aportes a la base técnica compartida **dejen de figurar a tu nombre** (se anonimizan). El contenido técnico se conserva porque pertenece al conocimiento común del laboratorio y no contiene datos personales; si querés que además se elimine, pedilo (punto siguiente).
 
 **Si no podés usar la app** (perdiste el acceso, desinstalaste, o querés que se eliminen también tus aportes o tus datos de seguimiento): escribinos a **fiui.org.ar@gmail.com** desde el correo de tu cuenta. Responderemos en un plazo máximo de **10 días corridos** (arts. 14 y 16 de la Ley 25.326) y completaremos el borrado en servidores en un plazo máximo de 30 días.

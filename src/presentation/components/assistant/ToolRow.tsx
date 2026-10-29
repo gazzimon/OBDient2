@@ -26,6 +26,7 @@ const TOOLS: Record<string, { label: string; icon: IconName }> = {
   route_status: { label: 'Revisando la ruta', icon: 'map-marker-distance' },
   stop_navigation: { label: 'Terminando la navegación', icon: 'map-marker-off-outline' },
   where_am_i: { label: 'Viendo dónde estás', icon: 'crosshairs-gps' },
+  where_parked: { label: 'Buscando dónde quedó el auto', icon: 'parking' },
   web_search: { label: 'Buscando en internet', icon: 'web' },
   research: { label: 'Investigando en internet', icon: 'book-search-outline' },
   fuel_prices: { label: 'Buscando precios de combustible', icon: 'gas-station-outline' },

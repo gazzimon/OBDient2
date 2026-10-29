@@ -29,6 +29,7 @@ export const TOOL_NAMES = [
   'route_status',
   'stop_navigation',
   'where_am_i',
+  'where_parked',
   'research',
   'web_search',
   'web_fetch',
@@ -74,6 +75,7 @@ export type ToolCall =
   | { readonly name: 'stop_navigation' }
   // Street and town where the car is (GPS), for "¿dónde estoy?".
   | { readonly name: 'where_am_i' }
+  | { readonly name: 'where_parked' }
   // The web, through obdient-tools (SearXNG): short results (places, prices), never whole pages.
   | { readonly name: 'web_search'; readonly query: string }
   // Search + read + rank in one call: the fragments that answer, with their source and a grade.
@@ -289,6 +291,12 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
     fn('route_status', 'Estado de la navegación: destino, distancia y tiempo que faltan, hora de llegada y próxima maniobra.', NO_ARGS),
     fn('stop_navigation', 'Termina la navegación en curso.', NO_ARGS),
     fn('where_am_i', 'Dónde está ahora el auto según el GPS: calle, altura y ciudad.', NO_ARGS),
+    fn(
+      'where_parked',
+      'Dónde quedó estacionado el auto: la posición del teléfono cuando se cortó el Bluetooth con el adaptador, hace cuánto, ' +
+        'a qué distancia y hacia dónde está desde acá. Lo deja como resultado 1 para set_destination.',
+      NO_ARGS,
+    ),
     fn(
       'research',
       'Investiga una pregunta en internet en un solo paso: busca, lee las mejores páginas y devuelve los fragmentos que la ' +
@@ -714,7 +722,8 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
     case 'start_navigation':
     case 'route_status':
     case 'stop_navigation':
-    case 'where_am_i': {
+    case 'where_am_i':
+    case 'where_parked': {
       const extra = only();
       return extra ? bad(extra) : { ok: true, call: { name } };
     }

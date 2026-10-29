@@ -7,6 +7,7 @@
 // geocoder, GPS and navigation controller.
 
 import { distanceM, type LatLng } from '@/domain/geo/geo';
+import { describeSpot, type ParkingSpot } from '@/domain/parking/parking';
 import type { FuelProduct, MapPin, ToolCall, ToolErrorCode, ToolOutcome } from '@/domain/assistant/tools';
 import { instructionEs } from '@/domain/navigation/guidance';
 import { findMapLink, isShortLink, parseMapLink } from '@/domain/navigation/map-links';
@@ -32,6 +33,8 @@ export interface NavigationToolDeps {
   };
   // Server-side data that needs the position (obdient-tools).
   readonly remote?: RemotePlaces;
+  // Where the car was left: the phone's position when the adapter link went.
+  readonly parked?: () => ParkingSpot | null;
   // Follows a short link (maps.app.goo.gl) to the real one.
   readonly followLink?: (url: string, signal?: AbortSignal) => Promise<string>;
   readonly now?: () => number;
@@ -61,7 +64,7 @@ export type LinkResult =
 
 type NavCall = Extract<
   ToolCall,
-  { name: 'search_place' | 'set_destination' | 'start_navigation' | 'route_status' | 'stop_navigation' | 'where_am_i' | 'fuel_prices' | 'weather' }
+  { name: 'search_place' | 'set_destination' | 'start_navigation' | 'route_status' | 'stop_navigation' | 'where_am_i' | 'where_parked' | 'fuel_prices' | 'weather' }
 >;
 
 export const NAVIGATION_TOOL_NAMES: ReadonlySet<ToolCall['name']> = new Set([
@@ -71,11 +74,14 @@ export const NAVIGATION_TOOL_NAMES: ReadonlySet<ToolCall['name']> = new Set([
   'route_status',
   'stop_navigation',
   'where_am_i',
+  'where_parked',
   'fuel_prices',
   'weather',
 ]);
 
 const LOCALITY_MS = 10 * 60_000;
+// A street for the parking spot, if the geocoder answers soon.
+const REVERSE_MS = 3_000;
 const LOCALITY_KM = 3;
 
 export class NavigationTools {
@@ -102,6 +108,8 @@ export class NavigationTools {
           return this.stopNavigation();
         case 'where_am_i':
           return await this.whereAmI(signal);
+        case 'where_parked':
+          return await this.whereParked(signal);
         case 'fuel_prices':
           return await this.fuel((call as Extract<NavCall, { name: 'fuel_prices' }>).product, signal);
         case 'weather':
@@ -182,6 +190,34 @@ export class NavigationTools {
     const r = await this.deps.remote.weather(at, signal);
     if (!r.ok) return r;
     return { ok: true, data: { place: where, ...(r.data as object) }, summary: `Pronóstico: ${where}` };
+  }
+
+  private async whereParked(signal: AbortSignal): Promise<ToolOutcome> {
+    const spot = this.deps.parked?.() ?? null;
+    if (!spot) return fail('not_supported', 'No hay un lugar guardado: se guarda cuando se corta el Bluetooth con el adaptador.');
+    const now = (this.deps.now ?? Date.now)();
+    const here = await this.deps.position();
+    const view = describeSpot(spot, here, now);
+    // The street needs the network: without it, the distance and the direction are enough.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const w = await Promise.race([
+      this.deps.geocoder().reverse?.(spot, signal).catch(() => null) ?? Promise.resolve(null),
+      new Promise<null>((r) => (timer = setTimeout(() => r(null), REVERSE_MS))),
+    ]).finally(() => clearTimeout(timer));
+    const address = w ? [w.street, w.city].filter(Boolean).join(', ') || null : null;
+    // "Llevame": set_destination 1 goes there.
+    this.results = [withDistance({ name: spot.car ? `Tu ${spot.car}` : 'Tu auto', detail: address ?? 'donde estacionaste', location: { lat: spot.lat, lng: spot.lng } }, here)];
+    const data = {
+      car: spot.car,
+      left: view.ago,
+      leftAt: new Date(spot.at).toTimeString().slice(0, 5),
+      where: view.where,
+      distanceM: view.distanceM != null ? Math.round(view.distanceM) : null,
+      address,
+      accuracyM: Math.round(spot.accuracyM),
+      disconnectedBy: spot.reason === 'user' ? 'user' : 'link_lost',
+    };
+    return { ok: true, data, summary: [view.where ?? 'Lugar guardado', view.ago].join(', ') };
   }
 
   private async whereAmI(signal: AbortSignal): Promise<ToolOutcome> {

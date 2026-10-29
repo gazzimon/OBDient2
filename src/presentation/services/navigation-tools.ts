@@ -27,6 +27,7 @@ export const navigationTools = new NavigationTools({
   openDrive: () => router.push('/drive'),
   state: () => useNavStore.getState(),
   followLink: (url, signal) => followLink(url, signal),
+  parked: () => container.parking.latest(),
   remote: {
     fuel: (here, product, signal) =>
       container.toolsClient.post('fuel', { lat: here.lat, lng: here.lng, ...(product ? { product } : {}) }, signal, 'Los precios de combustible'),

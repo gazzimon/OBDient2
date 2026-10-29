@@ -1,15 +1,18 @@
 // Route planning: pick a destination (search or long-press), preview the
 // route, start AR guidance. The origin is always "where I am now".
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { Camera, GeoJSONSource, Layer, Map, NativeUserLocation, type CameraRef } from '@maplibre/maplibre-react-native';
 import { container } from '@/data/container';
 import type { Place } from '@/domain/navigation/route';
+import type { ParkingSpot } from '@/domain/parking/parking';
+import { ParkedCard } from '@/presentation/components/map/ParkedCard';
+import { parkingRecorder } from '@/presentation/services/parking-recorder';
 import { PinsLayer, pinsBounds } from '@/presentation/components/map/PinsLayer';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { formatDistance, formatDuration } from '@/presentation/format';
@@ -21,6 +24,8 @@ import { useNavStore } from '@/store/navStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
 const SEARCH_DEBOUNCE_MS = 400;
+// The parked card's "hace … min" moves on by itself.
+const PARKED_TICK_MS = 30_000;
 
 export default function RouteScreen() {
   useSensorsWhileFocused();
@@ -35,6 +40,32 @@ export default function RouteScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Place[]>([]);
   const [searching, setSearching] = useState(false);
+
+  // "Dónde estacioné": the last spot saved when the adapter link went.
+  const [parked, setParked] = useState<ParkingSpot | null>(null);
+  const [parkedNow, setParkedNow] = useState<number | null>(null);
+  const reloadParked = useCallback(() => setParked(container.parking.latest()), []);
+  useFocusEffect(reloadParked);
+  useEffect(() => parkingRecorder.onSaved(reloadParked), [reloadParked]);
+  useEffect(() => {
+    if (parkedNow == null) return;
+    const timer = setInterval(() => setParkedNow(Date.now()), PARKED_TICK_MS);
+    return () => clearInterval(timer);
+  }, [parkedNow]);
+  const showParked = () => {
+    if (!parked) return;
+    setParkedNow(Date.now());
+    centered.current = true;
+    const me = useEgoStore.getState().ego?.position;
+    if (me) {
+      cameraRef.current?.fitBounds(
+        [Math.min(me.lng, parked.lng), Math.min(me.lat, parked.lat), Math.max(me.lng, parked.lng), Math.max(me.lat, parked.lat)],
+        { padding: { top: 160, bottom: 300, left: 60, right: 60 }, duration: 600 },
+      );
+    } else {
+      cameraRef.current?.flyTo({ center: [parked.lng, parked.lat], zoom: 17, duration: 600 });
+    }
+  };
 
   // Debounced search, biased to the current position.
   useEffect(() => {
@@ -185,6 +216,24 @@ export default function RouteScreen() {
           </GeoJSONSource>
         )}
         {!destination && candidates.length > 0 && <PinsLayer id="candidates" pins={candidates} />}
+        {parked && !destination && (
+          <GeoJSONSource
+            id="parked"
+            data={{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [parked.lng, parked.lat] } }}
+          >
+            <Layer
+              id="parked-dot"
+              type="circle"
+              paint={{ 'circle-radius': 11, 'circle-color': COLORS.amber, 'circle-stroke-color': COLORS.bg, 'circle-stroke-width': 3 }}
+            />
+            <Layer
+              id="parked-label"
+              type="symbol"
+              layout={{ 'text-field': 'P', 'text-size': 13, 'text-allow-overlap': true }}
+              paint={{ 'text-color': COLORS.bg }}
+            />
+          </GeoJSONSource>
+        )}
       </Map>
 
       {/* Search */}
@@ -210,6 +259,16 @@ export default function RouteScreen() {
           >
             <MaterialCommunityIcons name="map-marker-path" size={22} color={COLORS.mint} />
           </Pressable>
+          {/* Dónde estacioné: only once a spot was saved. */}
+          {parked && (
+            <Pressable
+              onPress={showParked}
+              accessibilityLabel="Dónde estacioné"
+              className="w-12 h-12 rounded-2xl bg-brand-surface border border-brand-border items-center justify-center active:opacity-60"
+            >
+              <MaterialCommunityIcons name="parking" size={22} color={COLORS.amber} />
+            </Pressable>
+          )}
         </View>
         {visible.length > 0 && (
           <FlatList
@@ -279,8 +338,23 @@ export default function RouteScreen() {
         </View>
       )}
 
+      {/* Where the car was left. */}
+      {parked && parkedNow != null && !destination && candidates.length === 0 && (
+        <ParkedCard
+          spot={parked}
+          here={ego?.position ?? null}
+          now={parkedNow}
+          onClose={() => setParkedNow(null)}
+          onFound={() => {
+            container.parking.remove(parked.at);
+            setParkedNow(null);
+            reloadParked();
+          }}
+        />
+      )}
+
       {/* Free driving: the driving view without a destination. */}
-      {!destination && candidates.length === 0 && (
+      {!destination && candidates.length === 0 && parkedNow == null && (
         <Pressable
           onPress={() => router.push('/drive')}
           className="absolute bottom-6 self-center flex-row items-center gap-2 bg-brand-surface border border-brand-teal rounded-full px-5 py-3 active:opacity-60"

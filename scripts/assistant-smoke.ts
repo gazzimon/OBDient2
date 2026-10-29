@@ -71,6 +71,7 @@ function simulated(): VehicleToolsPort {
       case 'route_status':
       case 'stop_navigation':
       case 'where_am_i':
+      case 'where_parked':
       case 'fuel_prices':
       case 'weather':
       case 'dollar_rate':

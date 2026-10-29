@@ -19,7 +19,8 @@ export type PhraseIntent =
   | 'live_data'
   | 'diagnose'
   | 'route_status'
-  | 'stop_navigation';
+  | 'stop_navigation'
+  | 'parked';
 
 const PHRASES: readonly { readonly intent: PhraseIntent; readonly pattern: RegExp }[] = [
   {
@@ -50,6 +51,11 @@ const PHRASES: readonly { readonly intent: PhraseIntent; readonly pattern: RegEx
     intent: 'route_status',
     pattern: /\bcuanto (?:me |nos )?(?:falta|queda)\b|\ba que hora (?:llego|llegamos)\b|\bhora de llegada\b/,
   },
+  // "¿Dónde estacioné?", "¿dónde dejé el auto?": the parking spot, not a place to go.
+  {
+    intent: 'parked',
+    pattern: /\bdonde (?:lo )?(?:estacione|estacionamos|estacionaste)\b|\bdonde (?:lo )?(?:deje|dejamos|quedo|esta)(?: estacionado)? (?:el|mi) (?:auto|coche|carro|vehiculo)\b/,
+  },
   {
     intent: 'stop_navigation',
     pattern: /\b(?:termina|terminar|cancela|cancelar|para|parar|frena|frenar|detene|detener|corta|cortar)\b.{0,12}\b(?:navegacion|ruta|guia)\b/,
@@ -69,6 +75,7 @@ export const INTENT_CALL: Readonly<Record<PhraseIntent, ToolCall>> = {
   diagnose: { name: 'diagnose', symptoms: null },
   route_status: { name: 'route_status' },
   stop_navigation: { name: 'stop_navigation' },
+  parked: { name: 'where_parked' },
 };
 
 export function normalise(text: string): string {

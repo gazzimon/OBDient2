@@ -23,6 +23,7 @@ import { MagicRelayer } from '@/data/auth/magic-identity';
 import { myTrips } from '@/presentation/services/my-trips';
 import { baselineRecorder } from '@/presentation/services/baseline-recorder';
 import { connectionKeeper } from '@/presentation/services/connection-keeper';
+import { parkingRecorder } from '@/presentation/services/parking-recorder';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -39,6 +40,8 @@ export default function RootLayout() {
     // The remembered adapter reconnects quietly, and again when it comes back;
     // navigation never waits for it.
     connectionKeeper.start();
+    // "Dónde estacioné": the position when the adapter link goes.
+    parkingRecorder.start();
     // Who was signed in, from SecureStore; no network.
     void restoreAccount();
     // "Llevame a…" from the assistant drives the navigation.

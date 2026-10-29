@@ -230,6 +230,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'route_status':
       case 'stop_navigation':
       case 'where_am_i':
+      case 'where_parked':
       case 'fuel_prices':
       case 'weather':
         return fail('not_supported', 'La navegación no la maneja el adaptador.'); // NavigationTools
