@@ -7,6 +7,7 @@
 import { container } from '@/data/container';
 import { navigationTools } from '@/presentation/services/navigation-tools';
 import type { AssistantContext } from '@/domain/assistant/prompt';
+import { carBrief } from '@/domain/vehicle/car-brief';
 import { useEgoStore } from '@/store/egoStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
@@ -31,5 +32,19 @@ export function assistantContext(): AssistantContext {
     navigating: useNavStore.getState().status === 'navigating',
     labMode: useSettingsStore.getState().labMode,
     place: navigationTools.lastLocality(),
+    car: connected ? carFile(obd.vin !== undefined ? obd.vin : (container.vehicleTools.knownVin() ?? undefined)) : null,
   };
+}
+
+// The plugged-in car's file, from what the phone keeps by VIN. Not until the
+// VIN was read (a few seconds after connecting).
+function carFile(vin: string | null | undefined): string | null {
+  if (vin === undefined) return null;
+  return carBrief({
+    vin,
+    faults: vin ? container.faults.list(vin) : [],
+    services: vin ? container.serviceLog.list().filter((e) => e.vin === vin) : [],
+    baselineSessions: container.baselines.get(vin)?.sessions ?? 0,
+    now: Date.now(),
+  });
 }

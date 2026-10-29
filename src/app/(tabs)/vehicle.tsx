@@ -1,26 +1,22 @@
 // OBD adapter: scan, connect, and the live telemetry the AR uses.
 
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { container } from '@/data/container';
 import { formatBench } from '@/data/obd/adapter-bench';
 import { formatCapture } from '@/data/obd/diagnostic-capture';
 import { formatM7Bench } from '@/data/obd/m7-bench';
 import { redactText } from '@/domain/privacy/redact';
-import { looksLikeObd } from '@/data/obd/obd-manager';
 import type { RequestStyle } from '@/data/obd/telemetry-poller';
-import type { ScannedDevice } from '@/data/adapters/ble-transport';
-import { ConnectionStatus } from '@/presentation/components/feedback/ConnectionStatus';
 import { PillButton } from '@/presentation/components/layout/PillButton';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { COLORS } from '@/presentation/theme';
 import { useOBDStore } from '@/store/obdStore';
-import { ensurePermission } from '@/presentation/services/permissions';
-
-const SCAN_MS = 10_000;
+import { AdapterList, NotFoundHelp } from '@/presentation/components/obd/AdapterList';
+import { useAdapterScan } from '@/presentation/hooks/useAdapterScan';
+import { connectionKeeper } from '@/presentation/services/connection-keeper';
 
 const STYLE_LABEL: Record<RequestStyle, string> = {
   stpx: 'STPX (STN, rápido)',
@@ -37,35 +33,8 @@ export default function VehicleScreen() {
   const [capturing, setCapturing] = useState(false);
   const [measuring, setMeasuring] = useState(false);
   const [m7, setM7] = useState<string | null>(null);
-  const [devices, setDevices] = useState<ScannedDevice[]>([]);
-  const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const stopScan = useRef<(() => void) | null>(null);
+  const { devices, scanning, nothingFound, scanError, scan, connect } = useAdapterScan();
   const router = useRouter();
-
-  const scan = async () => {
-    if (!(await ensurePermission('bluetooth'))) return;
-    setDevices([]);
-    setScanError(null);
-    setScanning(true);
-    try {
-      stopScan.current = await container.obd.scan((d) =>
-        setDevices((prev) => (prev.some((p) => p.id === d.id) ? prev : [...prev, d])),
-      );
-      setTimeout(() => endScan(), SCAN_MS);
-    } catch (err) {
-      setScanError(err instanceof Error ? err.message : 'No se pudo buscar');
-      setScanning(false);
-    }
-  };
-
-  const endScan = () => {
-    stopScan.current?.();
-    stopScan.current = null;
-    setScanning(false);
-  };
-
-  useEffect(() => endScan, []);
 
   const runBench = async () => {
     setBenching(true);
@@ -103,31 +72,15 @@ export default function VehicleScreen() {
     }
   };
 
-  const connect = async (d: ScannedDevice) => {
-    endScan();
-    if (!(await ensurePermission('bluetooth'))) return;
-    void container.obd.connect(d.id, d.name).catch(() => undefined);
-  };
-
-  // Adapters first, then anything with a name, unnamed last.
-  const sorted = [...devices].sort(
-    (a, b) => Number(looksLikeObd(b.name)) - Number(looksLikeObd(a.name)) || Number(b.name != null) - Number(a.name != null),
-  );
-
   return (
     <SafeAreaView className="flex-1 bg-brand-bg" edges={['top']}>
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <ConnectionStatus state={connectionState} deviceName={deviceName} />
-        {connectionState === 'connected' && (
-          <Text className="text-brand-muted font-mono text-xs">velocidad {speedRateHz.toFixed(1)} Hz</Text>
-        )}
-      </View>
-
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 24 }}>
         {connectionState === 'connected' && session ? (
           <>
             <SectionHeader title="Adaptador" />
             <Text className="text-brand-muted font-mono text-[10px] mb-2">Los relojes en vivo están en la pestaña Tablero.</Text>
+            <Info label="Adaptador" value={deviceName ?? '—'} />
+            <Info label="Velocidad" value={`${speedRateHz.toFixed(1)} Hz`} />
             <Info label="Chip" value={session.identity.stn ?? `${session.identity.elm || 'ELM327'} (sin comandos STN)`} />
             <Info label="Protocolo" value={session.protocol} />
             <Info label="PIDs de motor" value={session.supportedPids.length ? session.supportedPids.join(', ') : 'sin descubrir'} />
@@ -226,7 +179,7 @@ export default function VehicleScreen() {
             </View>
 
             <View className="mt-6">
-              <PillButton label="Desconectar" variant="destructive" onPress={() => void container.obd.disconnect()} />
+              <PillButton label="Desconectar" variant="destructive" onPress={() => void connectionKeeper.userDisconnect()} />
             </View>
           </>
         ) : (
@@ -246,26 +199,8 @@ export default function VehicleScreen() {
             )}
             {(error ?? scanError) && <Text className="text-brand-red font-mono text-xs mt-3">{error ?? scanError}</Text>}
 
-            <View className="mt-4 gap-2">
-              {sorted.map((d) => (
-                <Pressable
-                  key={d.id}
-                  onPress={() => void connect(d)}
-                  className="flex-row items-center bg-brand-surface rounded-2xl px-4 py-3 active:opacity-60"
-                >
-                  <MaterialCommunityIcons
-                    name={looksLikeObd(d.name) ? 'car-connected' : 'bluetooth'}
-                    size={18}
-                    color={looksLikeObd(d.name) ? COLORS.mint : COLORS.muted}
-                  />
-                  <View className="ml-3 flex-1">
-                    <Text className="text-brand-text font-mono text-sm">{d.name ?? 'Sin nombre'}</Text>
-                    <Text className="text-brand-muted font-mono text-[10px]">{d.id}</Text>
-                  </View>
-                  {d.rssi != null && <Text className="text-brand-muted font-mono text-[10px]">{d.rssi} dBm</Text>}
-                </Pressable>
-              ))}
-            </View>
+            {nothingFound && <NotFoundHelp />}
+            <AdapterList devices={devices} onPick={(d) => void connect(d)} />
           </>
         )}
         <View className="mt-6 gap-2">

@@ -84,13 +84,37 @@ export class ObdManager {
     }
   }
 
-  // Reconnects to the last adapter without asking. Silent on failure: the
-  // app works without OBD, so a missing dongle is not an error to show.
-  async reconnectLast(): Promise<void> {
+  // Granted already, without asking: a reconnection in the background never
+  // puts Android's dialog in front of the user.
+  async hasPermissions(): Promise<boolean> {
+    if (Platform.OS !== 'android') return true;
+    if (Platform.Version >= 31) {
+      const scan = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN);
+      const connect = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT);
+      return scan && connect;
+    }
+    return PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+  }
+
+  // Reconnects to the last adapter without asking: true when connected.
+  // Silent on failure: the app works without OBD, so a missing dongle is not
+  // an error to show (presentation/services/connection-keeper tries again).
+  async reconnectLast(): Promise<boolean> {
     const { lastDeviceId, lastDeviceName } = useSettingsStore.getState();
-    if (!lastDeviceId || useOBDStore.getState().connectionState !== 'disconnected') return;
-    if (!(await this.requestPermissions())) return;
-    await this.connect(lastDeviceId, lastDeviceName).catch(() => useOBDStore.getState().setDisconnected(null));
+    if (!lastDeviceId) return false;
+    if (useOBDStore.getState().connectionState !== 'disconnected') return useOBDStore.getState().connectionState === 'connected';
+    if (!(await this.hasPermissions())) return false;
+    try {
+      await this.connect(lastDeviceId, lastDeviceName);
+      return true;
+    } catch {
+      useOBDStore.getState().setDisconnected(null);
+      return false;
+    }
+  }
+
+  onBluetoothOn(listener: () => void): () => void {
+    return this.platform.onPoweredOn?.(listener) ?? (() => undefined);
   }
 
   // The live session, for the assistant's tools (null when disconnected).

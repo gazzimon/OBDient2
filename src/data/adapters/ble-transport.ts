@@ -30,6 +30,8 @@ export interface BlePlatform {
   connect(deviceId: string): Promise<BleSession>;
   // Starts scanning; returns a function that stops it.
   scan(onDevice: (device: ScannedDevice) => void): Promise<() => void>;
+  // Calls `listener` each time the phone's Bluetooth turns on; returns a stop function.
+  onPoweredOn?(listener: () => void): () => void;
 }
 
 // ATT overhead per write: 3 bytes (opcode + handle).

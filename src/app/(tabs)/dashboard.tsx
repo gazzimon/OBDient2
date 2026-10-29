@@ -13,7 +13,6 @@ import { TempGauge } from '@/presentation/components/gauges/TempGauge';
 import { VoltageGauge } from '@/presentation/components/gauges/VoltageGauge';
 import { MetricCard } from '@/presentation/components/dashboard/MetricCard';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
-import { ConnectionStatus } from '@/presentation/components/feedback/ConnectionStatus';
 import { AlertBanner } from '@/presentation/components/feedback/AlertBanner';
 import type { ObdParameterSnapshot } from '@/domain/entities/obd-parameter';
 import { useOBDStore } from '@/store/obdStore';
@@ -36,9 +35,7 @@ function findActiveAlert(params: ObdParameterSnapshot) {
 export default function DashboardScreen() {
   const router = useRouter();
   const connectionState = useOBDStore((s) => s.connectionState);
-  const deviceName = useOBDStore((s) => s.deviceName);
   const liveParams = useOBDStore((s) => s.parameters);
-  const speedRateHz = useOBDStore((s) => s.speedRateHz);
   const isConnected = connectionState === 'connected';
   const mockParams = useMockParameters();
   const [dismissedAlertKey, setDismissedAlertKey] = useState<string | null>(null);
@@ -52,19 +49,17 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-brand-bg" edges={['top']}>
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <ConnectionStatus state={connectionState} deviceName={deviceName} />
-        {isConnected ? (
-          <Text className="text-brand-muted font-mono text-xs">{speedRateHz.toFixed(1)} Hz</Text>
-        ) : (
+      {/* The adapter is in the top bar; here only that the numbers are not the car's. */}
+      {!isConnected && (
+        <View className="flex-row items-center justify-end px-4 pt-3">
           <Pressable
             onPress={() => router.push('/vehicle')}
             className="px-2 py-0.5 rounded-md border border-brand-muted active:opacity-60"
           >
             <Text className="text-brand-muted font-mono text-xs">DEMO · conectar</Text>
           </Pressable>
-        )}
-      </View>
+        </View>
+      )}
 
       <ViewSwitch camera={camera} />
 

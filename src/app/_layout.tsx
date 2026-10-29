@@ -14,16 +14,15 @@ import {
 } from '@expo-google-fonts/ibm-plex-mono';
 import { ClearDtcsModal } from '@/presentation/components/assistant/ClearDtcsModal';
 import { ProbeScanModal } from '@/presentation/components/assistant/ProbeScanModal';
-import { AccountGate } from '@/presentation/components/feedback/AccountGate';
-import { DisclaimerGate } from '@/presentation/components/feedback/Disclaimer';
+import { Onboarding } from '@/presentation/components/onboarding/Onboarding';
 import { PermissionSheet } from '@/presentation/components/permissions/PermissionSheet';
-import { PermissionsIntro } from '@/presentation/components/permissions/PermissionsIntro';
 import { restoreAccount } from '@/presentation/hooks/useAccount';
 import { NAVIGATION_TOOL_NAMES, navigationTools } from '@/presentation/services/navigation-tools';
 import { container } from '@/data/container';
 import { MagicRelayer } from '@/data/auth/magic-identity';
 import { myTrips } from '@/presentation/services/my-trips';
 import { baselineRecorder } from '@/presentation/services/baseline-recorder';
+import { connectionKeeper } from '@/presentation/services/connection-keeper';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -37,8 +36,9 @@ export default function RootLayout() {
     void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     // The window behind everything: dark, or a white strip shows while the keyboard moves.
     void SystemUI.setBackgroundColorAsync('#0D0D0D');
-    // The remembered adapter reconnects quietly; navigation never waits for it.
-    void container.obd.reconnectLast();
+    // The remembered adapter reconnects quietly, and again when it comes back;
+    // navigation never waits for it.
+    connectionKeeper.start();
     // Who was signed in, from SecureStore; no network.
     void restoreAccount();
     // "Llevame a…" from the assistant drives the navigation.
@@ -65,9 +65,8 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: '#0D0D0D' },
         }}
       />
-      <DisclaimerGate />
-      <PermissionsIntro />
-      <AccountGate />
+      {/* First run: welcome and safety, account, adapter, ready. */}
+      <Onboarding />
       <ClearDtcsModal />
       <ProbeScanModal />
       {/* The explanation before a permission, whoever asks for it. */}

@@ -1,7 +1,7 @@
 // Binds BlePlatform to react-native-ble-plx. Kept thin and untested on purpose:
 // everything with logic lives in BleTransport.
 
-import { BleManager, type Device } from 'react-native-ble-plx';
+import { BleManager, State, type Device } from 'react-native-ble-plx';
 import { Platform } from 'react-native';
 import type { GattService } from './gatt-discovery';
 import type { BlePlatform, BleSession, ScannedDevice } from './ble-transport';
@@ -68,6 +68,13 @@ export function createBlePlxPlatform(manager: BleManager = new BleManager()): Bl
       return () => {
         void manager.stopDeviceScan();
       };
+    },
+
+    onPoweredOn(listener) {
+      const sub = manager.onStateChange((state) => {
+        if (state === State.PoweredOn) listener();
+      }, false);
+      return () => sub.remove();
     },
   };
 }

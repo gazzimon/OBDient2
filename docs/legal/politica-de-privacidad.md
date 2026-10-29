@@ -29,7 +29,7 @@ A personas mayores de 18 años que actúan en carácter profesional (mecánicos 
 | **Correo electrónico** | Lo ingresás al crear la cuenta | Identificarte, habilitar el asistente, enviarte el código de acceso | Servidor propio (Argentina) y proveedor de acceso (sección 6) |
 | **Clave de acceso al asistente** | La genera el servidor | Autorizar tus consultas | Cifrada en el almacén seguro del teléfono (Android Keystore); en el servidor solo se guarda un hash |
 | **Conversaciones con el asistente** (texto) | Lo que escribís o dictás y las respuestas | Responderte | En tu teléfono; el texto de cada consulta se envía a nuestro servidor para ser procesado |
-| **Datos del vehículo** (velocidad, RPM, temperaturas, códigos de falla, VIN, módulos) | El adaptador OBD-II | Mostrártelos y contextualizar al asistente | En tu teléfono. Hacia el servidor solo sale el VIN **con los últimos 6 caracteres ocultos** |
+| **Datos del vehículo** (velocidad, RPM, temperaturas, códigos de falla, VIN, módulos) | El adaptador OBD-II | Mostrártelos y contextualizar al asistente | En tu teléfono. Hacia el servidor solo sale el VIN **con los últimos 6 caracteres ocultos**. Con el adaptador conectado y tu cuenta activa, al preguntarle al asistente la app le manda una ficha corta del auto: marca y año (deducidos del VIN), códigos que tuvo, último borrado y service registrado |
 | **Fotos** (tablero, etc.) | Solo si elegís enviar una | Que el asistente las interprete | Se envían al servidor con tu consulta |
 | **Voz** | Micrófono, solo cuando lo activás | Convertir tu voz en texto | Ver sección 6 |
 | **Ubicación precisa** | GPS, solo con la app en uso | Calcular rutas y guiarte | Las coordenadas de origen/destino se envían a nuestro servidor de rutas |

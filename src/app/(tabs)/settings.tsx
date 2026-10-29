@@ -167,6 +167,10 @@ export default function SettingsScreen() {
 
         <AccountSection />
 
+        <View className="mb-6">
+          <PillButton label="Ver de nuevo la introducción" variant="secondary" onPress={() => s.setOnboardingDone(false)} />
+        </View>
+
         <SectionHeader title="Acerca de" />
         <Text className="text-brand-muted font-mono text-[10px] leading-4">
           OBDient2 · mapas © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap · rutas OSRM · búsqueda Photon ·

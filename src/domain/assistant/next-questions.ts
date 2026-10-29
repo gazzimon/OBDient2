@@ -6,6 +6,7 @@
 // the answer is on screen, so it never delays it. If it fails, no buttons.
 
 import type { ApiMessage, LlmRequest } from '@/domain/ports/llm.port';
+import { CAR_BLOCKS } from '@/domain/vehicle/car-brief';
 
 export const NEXT_QUESTIONS = 3;
 const MAX_TOKENS = 90;
@@ -74,7 +75,7 @@ function textOf(content: ApiMessage['content']): string {
 }
 
 function clip(text: string): string {
-  const t = text.replace(/\n*\[estado:[^\]]*\]\s*$/, '').replace(/\s+/g, ' ').trim();
+  const t = text.replace(/\n*\[estado:[^\]]*\]\s*$/, '').replace(CAR_BLOCKS, '').replace(/\s+/g, ' ').trim();
   return t.length > MESSAGE_CHARS ? `${t.slice(0, MESSAGE_CHARS - 1)}…` : t;
 }
 

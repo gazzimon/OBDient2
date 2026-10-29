@@ -83,6 +83,8 @@ interface SettingsState {
   disclaimerAccepted: boolean;
   // "Not now" on the first-run sign-in: the app works without an account.
   accountPromptDismissed: boolean;
+  // The first-run steps (welcome, account, adapter, ready) were gone through.
+  onboardingDone: boolean;
   // Shows pose/heading/rates over the AR view — a field-testing aid.
   debugOverlay: boolean;
   // Driving map: tilted 3D following the course, or flat 2D north up.
@@ -105,6 +107,7 @@ interface SettingsState {
   setPrivacySalt: (salt: string) => void;
   setDisclaimerAccepted: (on: boolean) => void;
   setAccountPromptDismissed: (on: boolean) => void;
+  setOnboardingDone: (on: boolean) => void;
   setDebugOverlay: (on: boolean) => void;
   setDriveMap3d: (on: boolean) => void;
   setDashboardCamera: (on: boolean) => void;
@@ -128,6 +131,7 @@ export const useSettingsStore = create<SettingsState>()(
       privacySalt: '',
       disclaimerAccepted: false,
       accountPromptDismissed: false,
+      onboardingDone: false,
       debugOverlay: false,
       driveMap3d: true,
       dashboardCamera: false,
@@ -146,6 +150,7 @@ export const useSettingsStore = create<SettingsState>()(
       setPrivacySalt: (salt) => set({ privacySalt: salt }),
       setDisclaimerAccepted: (on) => set({ disclaimerAccepted: on }),
       setAccountPromptDismissed: (on) => set({ accountPromptDismissed: on }),
+      setOnboardingDone: (on) => set({ onboardingDone: on }),
       setDebugOverlay: (on) => set({ debugOverlay: on }),
       setDriveMap3d: (on) => set({ driveMap3d: on }),
       setDashboardCamera: (on) => set({ dashboardCamera: on }),
@@ -171,6 +176,7 @@ export const useSettingsStore = create<SettingsState>()(
         privacySalt: s.privacySalt,
         disclaimerAccepted: s.disclaimerAccepted,
         accountPromptDismissed: s.accountPromptDismissed,
+        onboardingDone: s.onboardingDone,
         debugOverlay: s.debugOverlay,
         driveMap3d: s.driveMap3d,
         dashboardCamera: s.dashboardCamera,
@@ -184,6 +190,8 @@ export const useSettingsStore = create<SettingsState>()(
           ...current,
           ...p,
           calibration: { ...DEFAULT_CALIBRATION, ...p.calibration },
+          // Installs from before the onboarding already saw the safety notice.
+          onboardingDone: p.onboardingDone ?? p.disclaimerAccepted === true,
           routingUrl: upgrade(p.routingUrl) ?? current.routingUrl,
           geocoderUrl: upgrade(p.geocoderUrl) ?? current.geocoderUrl,
         };

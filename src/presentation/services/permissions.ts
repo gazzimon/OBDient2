@@ -139,15 +139,6 @@ export async function requestFromPanel(kind: PermissionKind): Promise<void> {
   setStatus(kind, status === 'granted' ? status : await ask(kind));
 }
 
-// First start: the three essentials, one after another.
-export async function askEssentials(kinds: readonly PermissionKind[]): Promise<void> {
-  for (const kind of kinds) {
-    const status = await check(kind);
-    setStatus(kind, status === 'granted' || status === 'blocked' ? status : await ask(kind));
-  }
-  finishIntro();
-}
-
 export function finishIntro(): void {
   mmkv.set('introSeen', true);
   usePermissionStore.setState({ introSeen: true });

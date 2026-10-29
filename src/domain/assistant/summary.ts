@@ -7,6 +7,7 @@
 // a short acknowledgement: the system prompt stays the same and cacheable.
 
 import type { ApiMessage, LlmRequest } from '@/domain/ports/llm.port';
+import { CAR_BLOCKS } from '@/domain/vehicle/car-brief';
 
 export const SUMMARY_MAX_TOKENS = 450;
 // Per message, in the text the model summarises.
@@ -71,8 +72,8 @@ function render(m: ApiMessage): string[] {
   }
 }
 
-// The state block the app appends to each user message is noise here.
+// The blocks the app appends to user messages (state, car file) are noise here.
 function clip(text: string): string {
-  const t = text.replace(/\n*\[estado:[^\]]*\]\s*$/, '').replace(/\s+/g, ' ').trim();
+  const t = text.replace(/\n*\[estado:[^\]]*\]\s*$/, '').replace(CAR_BLOCKS, '').replace(/\s+/g, ' ').trim();
   return t.length > MESSAGE_CHARS ? `${t.slice(0, MESSAGE_CHARS - 1)}…` : t;
 }

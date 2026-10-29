@@ -139,7 +139,7 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
   const summary = summaryMessages(opts.summary);
   const summaryTokens = summary.reduce((sum, m) => sum + estimateTokens(m), 0);
 
-  const prompt = userMessage(opts.text, opts.context);
+  const prompt = userMessage(opts.text, opts.context, opts.history);
   const added: ApiMessage[] = [
     {
       role: 'user',
