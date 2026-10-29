@@ -66,6 +66,7 @@ const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
   moving: () => (useOBDStore.getState().parameters.SPEED?.value ?? 0) > MOVING_KMH,
   // The make's addresses from the lab knowledge (onlineTools is set below).
   knownTargets: (make, model, signal) => onlineTools.scanTargets(make, model, signal),
+  didCandidates: (make, signal) => onlineTools.didCandidates(make, signal),
   baseline: (vin) => baselineSource?.(vin) ?? { deviations: [], comparable: [] },
 });
 
@@ -114,6 +115,13 @@ const assistantTools: VehicleToolsPort = {
         const out = await vehicleTools.execute(call, signal, onProgress);
         // A scan's findings go to the lab's shared knowledge (best effort).
         if (out.ok && out.knowledge) void onlineTools.reportKnowledge(out.knowledge, signal);
+        return out;
+      }
+      case 'did_probe': {
+        const out = await vehicleTools.execute(call, signal, onProgress);
+        // What each module answered goes to the lab, also after a stop: a signal of
+        // its own, since the user's cancel would drop the report with the run.
+        if (out.ok && out.knowledge) void onlineTools.reportKnowledge(out.knowledge, new AbortController().signal);
         return out;
       }
       case 'log_service':

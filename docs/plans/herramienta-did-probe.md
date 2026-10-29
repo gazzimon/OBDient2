@@ -131,3 +131,35 @@ listas de DIDs de terceros: las listas se suman a mano a `list` después de revi
    muestra, pasados por `redactText` (si el valor contiene un VIN, se descarta la muestra). Sin la muestra
    no se puede averiguar qué es un DID (un odómetro se reconoce porque sube con los km); con ella, la
    base del laboratorio sirve de verdad.
+
+## Implementado: evidencia de descubrimiento
+
+- La conexión consulta los bitmaps Mode 01 con `ATH1` cuando el adaptador lo permite, atribuye cada bloque
+  al ECU que respondió y restaura `ATH0` en `finally`. `read_vehicle_info` expone los números anunciados,
+  los rangos de bitmap recibidos por ECU y los PIDs que todavía no tienen decoder en la app.
+- `pidDiscovery.status` diferencia `known` (cadena de rangos contestada), `partial` (algún ECU/rango
+  esperado no contestó) y `unknown` (no hubo bitmap válido). En `unknown` la telemetría
+  conserva el sondeo amplio; en `partial` solo sondea a ciegas los PIDs por encima del primer rango que
+  algún ECU anunció y no contestó (`firstUnansweredRange`), y por debajo se atiene a los bitmaps leídos.
+  Solo los números positivos se presentan como soportados, sin los marcadores de rango (0x20, 0x40, …). Un bitmap válido con ceros es evidencia de ausencia dentro de ese rango, no de todo el coche.
+- El sondeo Mode 22 emite progreso por DID hacia la UI: dirección consultada, contador, DID y clasificación
+  (`supported`, `unsupported`, etc.). No incluye muestras, respuesta cruda, VIN ni serie.
+- El catálogo inicial solo etiqueta los DIDs de identificación UDS conocidos. Un DID respondido no implica
+  que conozcamos su escala/unidad: los decoders de fabricante siguen pendientes de una fuente verificable,
+  licencia y validación en vehículo.
+
+## Implementado: candidatos a validar y evidencia por nivel
+
+- **Niveles de evidencia** (`did-catalog.ts`): `standard` (asignación de ISO 14229-1), `candidate` (un DID que
+  vale la pena preguntar, sin significado ni decoder), `decoded` (decoder de una fuente con licencia, sin
+  probar) y `validated` (el decoder coincidió con el auto). Cada resultado de `did_probe` lleva el suyo.
+- **Los candidatos viven en el laboratorio, no en la app.** `server/tools/scripts/did-inventory-extract.py`
+  convierte un inventario en Markdown en una semilla de `data/ext/` (fuera de git); la fuente y sus
+  condiciones se pasan al correrlo y viajan solo dentro de la semilla. `seed-knowledge.mjs` la carga como
+  `didCandidates`; un reporte de la app nunca puede agregar candidatos.
+- **`did_probe` mode `candidates`**: lee los candidatos de la marca (sale del VIN), los más prometedores
+  primero, con las reglas de `scan` (control con `link_ok` antes, confirmación en pantalla, cursor en
+  `from`). Sin conexión con el laboratorio no hay candidatos: la app lo dice y sigue funcionando.
+- **Lo que contesta cada módulo vuelve al laboratorio** (`didObservations`: DID, direcciones y resultado,
+  nunca un valor), contado por resultado. Así un candidato sin módulo se va atando al que lo contestó, auto
+  tras auto: `knowledge_lookup` da `didsAnswered` y, con `candidates: true`, cada candidato con su `answeredBy`.

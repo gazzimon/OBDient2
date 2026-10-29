@@ -5,6 +5,7 @@ import { VehicleToolAdapter } from '@/data/obd/vehicle-tool-adapter';
 import { evaluatePolicy } from '@/domain/assistant/policy';
 import { parseToolCall, type ToolOutcome } from '@/domain/assistant/tools';
 import { isProbeCommand } from '@/domain/obd/did-probe';
+import type { DidCandidate } from '@/domain/obd/did-catalog';
 
 // A GM on 29-bit CAN with the ABS at 18DA28F1 (it answers on 18DAF128), seen
 // through an STN. The engine answers the codes by function (03) on 18DAF110.
@@ -14,6 +15,12 @@ interface CarOptions {
   codesAfter?: string;
   dropOn?: string;
   stn?: boolean;
+  waitOn?: string;
+  waitMs?: number;
+  // The car answers 09 02 (an Argentine Ford VIN): the make for the lab.
+  vin?: boolean;
+  // What the lab has for the make; null = the lab cannot be asked.
+  candidates?: DidCandidate[] | null;
 }
 
 function absCar(opts: CarOptions = {}) {
@@ -25,6 +32,7 @@ function absCar(opts: CarOptions = {}) {
   const vinFrames = '18DAF128 10 14 62 F1 90 38 41 47\n18DAF128 21 45 41 37 36 43 30 52\n18DAF128 22 52 30 30 30 30 39 39';
   const send = async (command: string): Promise<string> => {
     sent.push(command);
+    if (command === opts.waitOn) await new Promise((resolve) => setTimeout(resolve, opts.waitMs ?? 30));
     if (dropOn && command === dropOn) {
       dropOn = null;
       throw new ConnectionLostError('lost');
@@ -38,6 +46,7 @@ function absCar(opts: CarOptions = {}) {
       codeReads++;
       return codeReads === 1 || !opts.codesAfter ? '18DAF110 02 43 00' : opts.codesAfter;
     }
+    if (command === '0902' && opts.vin) return '18DAF110 10 14 49 02 01 38 41 46\n18DAF110 21 44 52 31 32 50 36 39\n18DAF110 22 4A 31 32 33 34 35 36';
     const seen = header === '18DA28F1' && (filter === '18DAF128' || filter === null);
     if (!seen) throw new NoDataError(command);
     switch (command) {
@@ -67,11 +76,16 @@ function absCar(opts: CarOptions = {}) {
     supportedPidNumbers: [],
   } as unknown as SessionInfo;
   const session = { sessionInfo, send, exclusive: async <T>(work: (p: CommandPort, i: SessionInfo) => Promise<T>) => work(port, sessionInfo), settled: async () => undefined } as unknown as ObdSession;
-  return { tools: new VehicleToolAdapter(() => session), sent };
+  const asked: string[] = [];
+  const didCandidates = async (make: string) => {
+    asked.push(make);
+    return opts.candidates === undefined ? [] : opts.candidates;
+  };
+  return { tools: new VehicleToolAdapter(() => session, { didCandidates }), sent, asked };
 }
 
 const signal = new AbortController().signal;
-const probe = (header: string, mode: 'control' | 'list' | 'scan' = 'control', dids: string[] = [], range: { from?: string; to?: string } = {}, find: number | null = null) => ({
+const probe = (header: string, mode: 'control' | 'list' | 'scan' | 'candidates' = 'control', dids: string[] = [], range: { from?: string; to?: string } = {}, find: number | null = null) => ({
   name: 'did_probe' as const,
   header,
   mode,
@@ -81,7 +95,8 @@ const probe = (header: string, mode: 'control' | 'list' | 'scan' = 'control', di
   find,
 });
 type Data = {
-  find?: { value: number; matches: { did: string; encoding: string }[]; note: string }; range?: { from: string; to: string }; read?: number; counts?: Record<string, number>; verdict: string; explanation: string; testerPresent: boolean; results: { did: string; outcome: string; nrc?: string; length?: number; sample?: string }[]; stopped?: string; cursor?: string | null; newCodes?: string[]; batteryVolts: number | null };
+  candidates?: { total: number; read: number; source: string[] }; note?: string; catalogs?: never;
+  find?: { value: number; matches: { did: string; encoding: string }[]; note: string }; range?: { from: string; to: string }; read?: number; counts?: Record<string, number>; verdict: string; explanation: string; testerPresent: boolean; results: { did: string; outcome: string; nrc?: string; length?: number; sample?: string; catalog?: { name: string | null; evidence: string } }[]; stopped?: string; cursor?: string | null; newCodes?: string[]; batteryVolts: number | null };
 const data = (o: ToolOutcome): Data => {
   if (!o.ok) throw new Error(`${o.error}: ${o.message}`);
   return o.data as Data;
@@ -94,9 +109,19 @@ describe('did_probe: control', () => {
     const d = data(await tools.execute(probe('18DA28F1'), signal));
     expect(d.verdict).toBe('link_ok');
     expect(d.testerPresent).toBe(true);
-    expect(result(d, 'F190')).toEqual({ did: 'F190', outcome: 'supported', length: 17 });
-    expect(result(d, 'F187')).toEqual({ did: 'F187', outcome: 'supported', length: 3 });
-    expect(result(d, 'F189')).toEqual({ did: 'F189', outcome: 'unsupported', nrc: '31' });
+    expect(result(d, 'F190')).toMatchObject({
+      did: 'F190',
+      outcome: 'supported',
+      length: 17,
+      catalog: { name: 'Vehicle identification number', privacy: 'vehicle_identifier' },
+    });
+    expect(result(d, 'F187')).toMatchObject({
+      did: 'F187',
+      outcome: 'supported',
+      length: 3,
+      catalog: { name: 'Spare part number', privacy: 'public' },
+    });
+    expect(result(d, 'F189')).toMatchObject({ did: 'F189', outcome: 'unsupported', nrc: '31' });
     expect(result(d, 'F18C').outcome).toBe('locked');
     expect(result(d, 'F186').outcome).toBe('needs_conditions');
     expect(d.batteryVolts).toBe(13.8);
@@ -109,6 +134,58 @@ describe('did_probe: control', () => {
     expect(text).not.toContain('8AGEA76C0RR');
     expect(text).not.toContain('000099');
     expect(text).not.toContain('38 41 47');
+  });
+
+  it('emits per-DID progress without samples or identification values', async () => {
+    const { tools } = absCar();
+    const progress: unknown[] = [];
+    const out = await tools.execute(probe('18DA28F1'), signal, (event) => progress.push(event));
+    expect(progress).toHaveLength(5);
+    expect(progress[0]).toMatchObject({
+      type: 'did-probe-progress',
+      reqHeader: '18DA28F1',
+      completed: 1,
+      total: 5,
+      did: 'F190',
+      outcome: 'supported',
+    });
+    expect(JSON.stringify(progress)).not.toContain('8AGEA76C0RR');
+    expect(JSON.stringify(progress)).not.toContain('sample');
+    expect(JSON.stringify(out)).not.toContain('8AGEA76C0RR');
+  });
+
+  it('a cancel mid-probe keeps what was read, gives the cursor and restores the adapter', async () => {
+    const { tools, sent } = absCar({ waitOn: '22F190', waitMs: 30 });
+    const controller = new AbortController();
+    const pending = tools.execute(probe('18DA28F1'), controller.signal);
+    setTimeout(() => controller.abort(), 5);
+    const d = data(await pending);
+    // F190 was in flight when the stop came: it is kept, the rest is not asked.
+    expect(d.results).toHaveLength(1);
+    expect(result(d, 'F190')).toMatchObject({ outcome: 'supported' });
+    expect(d.stopped).toContain('el usuario lo detuvo');
+    expect(d.cursor).toBe('F187');
+    expect(sent).not.toContain('22F187');
+    // No before/after look while the user waits for the stop.
+    expect(sent.filter((c) => c === '03')).toHaveLength(1);
+    expect(sent.at(-1)).toBe('ATH0');
+    expect(sent).toContain('ATSH 18DB33F1');
+  });
+
+  it('a cancel before any DID was read is just a cancel', async () => {
+    const { tools, sent } = absCar();
+    const controller = new AbortController();
+    controller.abort();
+    await expect(tools.execute(probe('18DA28F1'), controller.signal)).resolves.toMatchObject({ ok: false, error: 'cancelled' });
+    expect(sent.some((c) => c.startsWith('22'))).toBe(false);
+  });
+
+  it('a link lost while cancelling is told as a lost link, not as a cancel', async () => {
+    const { tools } = absCar({ waitOn: '22F190', waitMs: 30, dropOn: '22F190' });
+    const controller = new AbortController();
+    const pending = tools.execute(probe('18DA28F1'), controller.signal);
+    setTimeout(() => controller.abort(), 5);
+    await expect(pending).resolves.toMatchObject({ ok: false, error: 'not_connected' });
   });
 
   it('sends nothing but reads and adapter settings, and leaves the adapter as telemetry needs it', async () => {
@@ -301,5 +378,65 @@ describe('did_probe: the tool call and its policy', () => {
     expect(evaluatePolicy(call, { ...ctx, labMode: false })).toMatchObject({ kind: 'deny', error: 'not_supported' });
     expect(evaluatePolicy(call, { ...ctx, moving: true })).toMatchObject({ kind: 'deny', error: 'not_allowed_while_moving' });
     expect(evaluatePolicy(call, { ...ctx, navigating: true })).toMatchObject({ kind: 'deny', error: 'not_allowed_while_moving' });
+  });
+});
+
+describe('did_probe: candidates (the lab\u2019s, to validate)', () => {
+  const cand = (did: string, sample: DidCandidate['sample']): DidCandidate => ({ did, sample, source: 'inv' });
+  const CANDS = [cand('1172', 'negative'), cand('F187', 'positive'), cand('0123', 'positive'), cand('F10A', 'weak')];
+
+  it('only after a control with link_ok on that module, like a scan', async () => {
+    const { tools, asked } = absCar({ vin: true, candidates: CANDS });
+    expect(await tools.execute(probe('18DA28F1', 'candidates'), signal)).toMatchObject({ ok: false, error: 'not_supported' });
+    expect(asked).toEqual([]);
+  });
+
+  it('asks the most promising first, marks every answer as a candidate and reports who answered', async () => {
+    const { tools, sent, asked } = absCar({ vin: true, candidates: CANDS });
+    await tools.execute(probe('18DA28F1'), signal);
+    const out = await tools.execute(probe('18DA28F1', 'candidates'), signal);
+    const d = data(out);
+    expect(asked).toEqual(['ford']);
+    // F187 is a standard DID (control reads it): not asked again as a candidate.
+    expect(sent.filter((c) => /^22(0123|F10A|1172|F187)$/.test(c)).slice(-3)).toEqual(['220123', '22F10A', '221172']);
+    expect(d.candidates).toEqual({ total: 3, read: 3, source: ['inv'] });
+    expect(d.note).toContain('a validar');
+    // A sweep lists what answered; the rest only in the counts.
+    expect(d.results).toEqual([expect.objectContaining({ did: '0123', outcome: 'supported', catalog: { name: null, privacy: 'unknown', evidence: 'candidate' } })]);
+    expect(out.ok && out.knowledge).toEqual({
+      make: 'ford',
+      protocol: 'ISO_15765_4_CAN_29BIT_500K',
+      didObservations: [{ did: '0123', outcome: 'supported', reqHeader: '18DA28F1', rxHeader: '18DAF128' }],
+    });
+    expect(JSON.stringify(out.ok && out.knowledge)).not.toContain('E2 40');
+  });
+
+  it('goes on from the cursor, and tells a lab it cannot reach from one with nothing', async () => {
+    const { tools, sent } = absCar({ vin: true, candidates: CANDS });
+    await tools.execute(probe('18DA28F1'), signal);
+    const from = { ...probe('18DA28F1', 'candidates'), from: 'F10A' };
+    expect(data(await tools.execute(from, signal)).candidates).toMatchObject({ total: 3, read: 2 });
+    expect(sent).not.toContain('220123');
+
+    const offline = absCar({ vin: true, candidates: null });
+    await offline.tools.execute(probe('18DA28F1'), signal);
+    expect(await offline.tools.execute(probe('18DA28F1', 'candidates'), signal)).toMatchObject({ ok: false, message: expect.stringContaining('sin conexión') });
+    const none = absCar({ vin: true, candidates: [] });
+    await none.tools.execute(probe('18DA28F1'), signal);
+    expect(await none.tools.execute(probe('18DA28F1', 'candidates'), signal)).toMatchObject({ ok: false, message: expect.stringContaining('no tiene DIDs candidatos') });
+  });
+
+  it('without the make (no VIN) there is nothing to ask the lab', async () => {
+    const { tools, asked } = absCar({ candidates: CANDS });
+    await tools.execute(probe('18DA28F1'), signal);
+    expect(await tools.execute(probe('18DA28F1', 'candidates'), signal)).toMatchObject({ ok: false, message: expect.stringContaining('marca') });
+    expect(asked).toEqual([]);
+  });
+
+  it('is parsed, needs the user\u2019s confirmation, and takes no "to"', () => {
+    expect(parseToolCall('did_probe', '{"header":"18DA28F1","mode":"candidates","from":"f10a"}', [])).toMatchObject({ ok: true, call: { mode: 'candidates', from: 'F10A' } });
+    expect(parseToolCall('did_probe', '{"header":"18DA28F1","mode":"candidates","to":"F1FF"}', [])).toMatchObject({ ok: false });
+    const ctx = { moving: false, navigating: false, labMode: true, clearsThisConversation: 0 };
+    expect(evaluatePolicy(probe('18DA28F1', 'candidates'), ctx)).toEqual({ kind: 'confirm' });
   });
 });

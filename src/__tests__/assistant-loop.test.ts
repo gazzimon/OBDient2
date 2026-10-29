@@ -125,6 +125,29 @@ describe('runTurn', () => {
     expect(row).toMatchObject({ status: 'running', detail: 'Módulo 11:7E0 identificado por F187' });
   });
 
+  it('shows tool progress at most every PROGRESS_EVERY_MS', async () => {
+    const { llm } = scripted(ask(call('did_probe', { header: '18DA28F1', mode: 'control' }, 'p-1')), say('Listo.'));
+    const events: AgentEvent[] = [];
+    let t = 0;
+    const step = (did: string, completed: number) => ({ type: 'did-probe-progress' as const, reqHeader: '18DA28F1', completed, total: 4, did, outcome: 'supported' as const });
+    const vehicle: VehicleToolsPort = {
+      supportedPids: () => [],
+      async execute(_call, _signal, onProgress) {
+        onProgress?.(step('F190', 1)); // shown: the first one
+        t = 100;
+        onProgress?.(step('F187', 2)); // dropped: 100 ms later
+        t = 300;
+        onProgress?.(step('F189', 3)); // shown: 300 ms after the first
+        t = 400;
+        onProgress?.(step('F18C', 4)); // dropped
+        return { ok: true, data: null, summary: 'ok' };
+      },
+    };
+    await runTurn({ history: [], text: 'probá', context: { ...STOPPED, labMode: true }, llm, vehicle, confirmation: confirmWith(true).confirmation, now: () => t, onEvent: (e) => events.push(e) });
+    const shown = events.flatMap((e) => (e.type === 'tool_progress' && e.progress.type === 'did-probe-progress' ? [e.progress.did] : []));
+    expect(shown).toEqual(['F190', 'F189']);
+  });
+
   it('ends after MAX_MODEL_CALLS: the last call cannot use tools, and empty text falls back to the results', async () => {
     const loop = () => ask(call('read_pids', { pids: ['RPM'] }));
     // Every call but the last asks for a tool; the last one has no tools and answers nothing.

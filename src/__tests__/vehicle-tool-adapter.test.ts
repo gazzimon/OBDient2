@@ -29,6 +29,8 @@ function fakeSession(answers: Record<string, Answer>, info: Partial<SessionInfo>
     identity: { elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' },
     supportedPids: ['RPM', 'COOLANT_TEMP'],
     supportedPidNumbers: [0x05, 0x0c, 0x0d, 0x31],
+    supportedPidNumbersByEcu: [{ ecu: '18DAF110', numbers: [0x05, 0x0c, 0x0d, 0x31], ranges: [0x00, 0x20] }],
+    pidDiscoveryStatus: 'known',
     ...info,
   };
   const session = {
@@ -158,7 +160,41 @@ describe('VehicleToolAdapter', () => {
       vin: '8AGEA76C0RR000099',
       vinWellFormed: true,
       supportedPids: ['RPM', 'SPEED', 'COOLANT_TEMP', 'DIST_SINCE_CLEAR'],
+      pidDiscovery: {
+        status: 'known',
+        supportedNumbers: [0x05, 0x0c, 0x0d, 0x31],
+        byEcu: [{ ecu: '18DAF110', numbers: [0x05, 0x0c, 0x0d, 0x31], ranges: [0x00, 0x20] }],
+        supportedButUndecoded: [],
+      },
     });
+  });
+
+  it('vehicle info: the range markers (0x20, 0x40) are not undecoded data', async () => {
+    const { session } = fakeSession(B35, {
+      supportedPidNumbers: [0x0c, 0x20, 0x40, 0x5c],
+      supportedPidNumbersByEcu: [{ ecu: '18DAF110', numbers: [0x0c, 0x20, 0x40, 0x5c], ranges: [0x00, 0x20, 0x40] }],
+    });
+    const data = ok(await new VehicleToolAdapter(() => session).execute({ name: 'read_vehicle_info' }, signal)) as {
+      pidDiscovery: { supportedButUndecoded: number[] };
+    };
+    expect(data.pidDiscovery.supportedButUndecoded).not.toContain(0x20);
+    expect(data.pidDiscovery.supportedButUndecoded).not.toContain(0x40);
+  });
+
+  it('partial discovery: PIDs past the unanswered range can be asked, reported as unconfirmed', async () => {
+    // 0x00 answered (RPM, SPEED, the 0x20 marker); 0120 never came back.
+    const { session } = fakeSession(B35, {
+      pidDiscoveryStatus: 'partial',
+      supportedPidNumbers: [0x0c, 0x0d, 0x20],
+      supportedPidNumbersByEcu: [{ ecu: '18DAF110', numbers: [0x0c, 0x0d, 0x20], ranges: [0x00] }],
+    });
+    const tools = new VehicleToolAdapter(() => session);
+    const all = tools.supportedPids();
+    expect(all).toEqual(expect.arrayContaining(['RPM', 'SPEED', 'DIST_SINCE_CLEAR']));
+    expect(all).not.toContain('COOLANT_TEMP'); // 0x05: inside the answered range, not announced
+    const data = ok(await tools.execute({ name: 'read_vehicle_info' }, signal)) as { supportedPids: string[]; unconfirmedPids?: string[] };
+    expect(data.supportedPids).toEqual(['RPM', 'SPEED']);
+    expect(data.unconfirmedPids).toContain('DIST_SINCE_CLEAR'); // 0x31
   });
 
   it('live values share the link; one silent PID does not sink the others', async () => {

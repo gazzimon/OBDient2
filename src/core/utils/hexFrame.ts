@@ -29,7 +29,7 @@ export function tokenizeHexBytes(raw: string): string[] {
 //
 // When the same PID is answered by multiple ECUs (functional broadcast), the
 // FIRST matching frame wins — mode-01 live data doesn't have a defined merge
-// rule the way the "PIDs supported" bitmask does (parseSupportedPidsMask ORs
+// rule the way the "PIDs supported" bitmask does (parseSupportedPidsByEcu ORs
 // masks because "supported" is monotonic; a live value has no such property).
 //
 // Returns an empty array if the header never appears — callers already treat

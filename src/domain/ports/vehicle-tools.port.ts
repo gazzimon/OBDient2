@@ -3,13 +3,17 @@
 
 import type { PidId } from '@/core/constants/pids';
 import type { ToolCall, ToolOutcome } from '@/domain/assistant/tools';
-import type { ScanProgressListener } from '@/domain/obd/module-scan';
+import type { ScanProgressEvent } from '@/domain/obd/module-scan';
+import type { DidProbeProgressEvent } from '@/domain/obd/did-probe';
+
+export type VehicleToolProgressEvent = ScanProgressEvent | DidProbeProgressEvent;
+export type VehicleToolProgressListener = (event: VehicleToolProgressEvent) => void;
 
 export interface VehicleToolsPort {
   // What this car answers; drives the PID enum in the tool schemas.
   supportedPids(): readonly PidId[];
   // Never called with clear_dtcs before the user confirmed it (agent loop).
-  execute(call: ToolCall, signal: AbortSignal, onProgress?: ScanProgressListener): Promise<ToolOutcome>;
+  execute(call: ToolCall, signal: AbortSignal, onProgress?: VehicleToolProgressListener): Promise<ToolOutcome>;
 }
 
 // The on-screen confirmation for destructive calls (the clear-codes modal).

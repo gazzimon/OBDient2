@@ -6,7 +6,9 @@
 //   data/opendbc-seed.json  per-platform addresses from commaai/opendbc
 //                           (regenerate with scripts/opendbc-extract.py)
 //   data/ext/*.json         per-group tables (Alliance, PSA, VAG) from
-//                           scripts/ext-extract.py — not versioned
+//                           scripts/ext-extract.py, and DID candidates to
+//                           validate from scripts/did-inventory-extract.py —
+//                           not versioned
 //
 //   node scripts/seed-knowledge.mjs [path-to-knowledge.json]
 
@@ -31,7 +33,7 @@ let n = 0;
 for (const [name, note] of seeds) {
   const seed = JSON.parse(readFileSync(join(here, '../data', name), 'utf8'));
   for (const v of seed.vehicles) {
-    kb.report({ make: v.make, model: v.model, protocol: v.protocol, modules: v.modules, note: v.note ? `${note}: ${v.note}` : note });
+    kb.report({ make: v.make, model: v.model, protocol: v.protocol, modules: v.modules, didCandidates: v.didCandidates, note: v.note ? `${note}: ${v.note}` : note }, { seed: true });
     n += 1;
   }
 }

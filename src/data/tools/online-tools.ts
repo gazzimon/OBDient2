@@ -3,7 +3,10 @@
 
 import type { SourceLink, ToolCall, ToolOutcome } from '@/domain/assistant/tools';
 import type { ScanTarget } from '@/domain/obd/module-scan';
+import type { CandidateSample, DidCandidate } from '@/domain/obd/did-catalog';
 import type { ToolsClient } from './tools-client';
+
+const CANDIDATE_SAMPLES: ReadonlySet<string> = new Set<CandidateSample>(['positive', 'mixed', 'weak', 'ambiguous', 'negative']);
 
 interface WebResult {
   readonly title: string;
@@ -93,6 +96,20 @@ export class OnlineTools {
       if (!out.has(m.id)) out.set(m.id, { id: m.id, reqHeader: m.reqHeader, rxHeader: m.rxHeader, label: m.label ?? 'módulo' });
     }
     return [...out.values()];
+  }
+
+  // The DIDs the lab has to validate for a make (did_probe "candidates"). Null when
+  // the lab cannot be asked (offline): different from "it has none".
+  async didCandidates(make: string, signal: AbortSignal): Promise<DidCandidate[] | null> {
+    type Cand = { did?: unknown; sample?: unknown; src?: unknown };
+    const r = await this.client.post<{ didCandidates?: Cand[] }>('knowledge', { action: 'lookup', make, candidates: true }, signal, 'La base del laboratorio');
+    if (!r.ok) return null;
+    const out: DidCandidate[] = [];
+    for (const c of r.data.didCandidates ?? []) {
+      if (typeof c.did !== 'string' || !/^[0-9A-Fa-f]{4}$/.test(c.did) || typeof c.sample !== 'string' || !CANDIDATE_SAMPLES.has(c.sample)) continue;
+      out.push({ did: c.did.toUpperCase(), sample: c.sample as CandidateSample, source: typeof c.src === 'string' ? c.src.slice(0, 80) : 'laboratorio' });
+    }
+    return out;
   }
 
   async execute(call: Extract<ToolCall, { name: 'web_search' | 'research' | 'web_fetch' | 'knowledge_lookup' | 'docs_search' | 'dollar_rate' | 'car_price' }>, signal: AbortSignal): Promise<ToolOutcome> {

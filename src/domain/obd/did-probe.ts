@@ -9,6 +9,7 @@
 import type { EcuMessage } from '@/core/utils/obdFrames';
 import { vinFromBytes } from '@/domain/privacy/redact';
 import { classifyCommand } from './uds-safety';
+import { didCatalogEntry, type DidCatalogEntry, type DidEvidence } from './did-catalog';
 
 // ── What may be sent ────────────────────────────────────────────────────────
 // Narrower than classifyCommand, which also lets 19, 23, 24 and 2A through: a
@@ -90,9 +91,42 @@ export type DidOutcome =
   | 'mismatch' // it answered, but for another DID
   | 'silent'; // nobody answered
 
+// What each outcome means, in the words the chat shows.
+export const DID_OUTCOME_TEXT: Readonly<Record<DidOutcome, string>> = {
+  supported: 'responde',
+  unsupported: 'no existe',
+  locked: 'bloqueado (pide acceso de seguridad)',
+  needs_conditions: 'no disponible ahora',
+  service_refused: 'servicio rechazado',
+  bad_request: 'pedido inválido',
+  other_refusal: 'rechazado',
+  pending: 'sigue procesando',
+  incomplete: 'respuesta incompleta',
+  mismatch: 'respondió otro DID',
+  silent: 'sin respuesta',
+};
+
+// Progress intentionally contains no DID value or raw response bytes.
+export interface DidProbeProgressEvent {
+  readonly type: 'did-probe-progress';
+  readonly reqHeader: string;
+  readonly completed: number;
+  readonly total: number;
+  readonly did: string;
+  readonly outcome: DidOutcome;
+}
+
 export interface ProbeResult {
   readonly did: string;
   readonly outcome: DidOutcome;
+  // What the DID is and how far that is known (did-catalog.ts): only what the
+  // model needs, the rest of the entry (source, license, description) stays there.
+  // A candidate has no name: it answered, its meaning is still unknown.
+  readonly catalog?: {
+    readonly name: string | null;
+    readonly privacy: DidCatalogEntry['privacy'] | 'unknown';
+    readonly evidence: DidEvidence;
+  };
   readonly nrc?: string;
   // Data bytes of a supported DID.
   readonly length?: number;
@@ -141,24 +175,30 @@ export function didData(did: string, messages: readonly EcuMessage[], rx: string
 }
 
 export function classifyReply(did: string, messages: readonly EcuMessage[], rx: string | null = null): ProbeResult {
+  const entry = didCatalogEntry(did);
+  const catalog = entry ? { name: entry.name, privacy: entry.privacy, evidence: entry.evidence } : undefined;
+  const result = (value: Omit<ProbeResult, 'catalog'>): ProbeResult => ({
+    ...value,
+    ...(catalog ? { catalog } : {}),
+  });
   const mine = mineOf(messages, rx);
-  if (mine.length === 0) return { did, outcome: 'silent' };
+  if (mine.length === 0) return result({ did, outcome: 'silent' });
 
   const positive = positiveOf(did, mine);
   if (positive) {
-    if (!positive.complete) return { did, outcome: 'incomplete' };
+    if (!positive.complete) return result({ did, outcome: 'incomplete' });
     const data = positive.bytes.slice(3);
     const sample = sampleOf(did, data);
-    return { did, outcome: 'supported', length: data.length, ...(sample ? { sample } : {}) };
+    return result({ did, outcome: 'supported', length: data.length, ...(sample ? { sample } : {}) });
   }
   const refusal = mine.find((m) => m.bytes[0] === 0x7f && m.bytes[1] === 0x22 && m.bytes[2] !== undefined);
   if (refusal) {
     const nrc = hex2(refusal.bytes[2]!);
-    return { did, outcome: NRC_OUTCOME[nrc] ?? 'other_refusal', nrc };
+    return result({ did, outcome: NRC_OUTCOME[nrc] ?? 'other_refusal', nrc });
   }
-  if (mine.some((m) => m.bytes[0] === 0x62)) return { did, outcome: 'mismatch' };
+  if (mine.some((m) => m.bytes[0] === 0x62)) return result({ did, outcome: 'mismatch' });
   // Something arrived that is neither: a cut multi-frame answer shows up here.
-  return { did, outcome: mine.some((m) => !m.complete) ? 'incomplete' : 'silent' };
+  return result({ did, outcome: mine.some((m) => !m.complete) ? 'incomplete' : 'silent' });
 }
 
 // ── Does the link work? ─────────────────────────────────────────────────────
@@ -199,12 +239,13 @@ export const MAX_SILENT_IN_A_ROW = 10;
 export const MAX_CALL_MS = 60_000;
 export const MS_PER_DID = 60; // rough, for the time shown in the confirmation
 
-export type StopReason = 'silent_streak' | 'time' | 'low_voltage';
+export type StopReason = 'silent_streak' | 'time' | 'low_voltage' | 'cancelled';
 
 export const STOP_TEXT: Readonly<Record<StopReason, string>> = {
   silent_streak: `se cortó: ${MAX_SILENT_IN_A_ROW} pedidos seguidos sin respuesta (el módulo puede estar saturado)`,
   time: 'se cortó por tiempo; seguí con el cursor',
   low_voltage: 'se cortó: la tensión de la batería bajó de 11,5 V',
+  cancelled: 'el usuario lo detuvo; lo leído hasta ahí vale, seguí con el cursor',
 };
 
 export function startCheck(volts: number | null): string | null {
@@ -234,6 +275,11 @@ export class ProbeGuard {
 export function confirmationText(module: string, count: number): string {
   const seconds = Math.max(1, Math.round((count * MS_PER_DID) / 1000));
   return `Voy a leer ${count} DIDs del módulo ${module}, ~${seconds} s. Solo lectura: no escribe ni cambia nada. Con el auto detenido.`;
+}
+
+// The lab's candidates: how many comes with the lab's answer, after the user agrees.
+export function candidatesConfirmationText(module: string): string {
+  return `Voy a leer en el módulo ${module} los DIDs candidatos que el laboratorio tiene para esta marca (unos cientos como mucho; se corta solo si el módulo deja de contestar). Solo lectura: no escribe ni cambia nada. Con el auto detenido.`;
 }
 
 export const nextCursor = (dids: readonly string[], done: number): string | null => (done < dids.length ? dids[done]! : null);

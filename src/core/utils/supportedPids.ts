@@ -6,13 +6,13 @@
 //
 // Dedicated parser (not obdParser.parsePidResponse) because the bitmask needs
 // three things the live-PID parsers don't (PLAN-003 §1):
-//   1. multi-ECU OR — headers are off, so several ECUs answer on one line and a
-//      PID counts as supported if ANY of them reports it;
+//   1. multi-ECU — with headers on each ECU's bitmap is kept apart; with them
+//      off (a clone that refuses ATH1) a PID counts if ANY ECU reports it;
 //   2. no-space fallback — some clones return the bytes concatenated;
 //   3. range chaining — the base+0x20 bit means "the next range exists".
 
-import { PID_DEFINITIONS, DASHBOARD_PIDS, type PidId } from '@/core/constants/pids';
-import { tokenizeHexBytes } from '@/core/utils/hexFrame';
+import { PID_DEFINITIONS, type PidId } from '@/core/constants/pids';
+import { answersTo, readMessages } from './obdFrames';
 
 export interface SupportedPidsMask {
   // Absolute mode-01 PID numbers reported supported (e.g. 0x0C for RPM).
@@ -21,30 +21,75 @@ export interface SupportedPidsMask {
   readonly hasNextRange: boolean;
 }
 
-// Parses one "PIDs supported" response for a given base PID (0x00/0x20/0x40).
-// ORs the masks of every `41 <base> ...` frame present (multi-ECU).
-export function parseSupportedPidsMask(raw: string, basePid: number): SupportedPidsMask {
-  const bytes = tokenizeHexBytes(raw);
-  const baseHex = basePid.toString(16).padStart(2, '0').toUpperCase();
+export interface EcuSupportedPidsMask extends SupportedPidsMask {
+  readonly ecu: string | null;
+  readonly basePid: number;
+}
 
-  let mask = 0;
-  for (let i = 0; i + 5 < bytes.length + 1; i++) {
-    if (bytes[i] === '41' && bytes[i + 1] === baseHex) {
-      const frame = bytes.slice(i + 2, i + 6);
-      if (frame.length === 4 && frame.every((b) => /^[0-9A-F]{2}$/.test(b))) {
-        const frameMask = frame.reduce((acc, b) => ((acc << 8) | parseInt(b, 16)) >>> 0, 0);
-        mask = (mask | frameMask) >>> 0;
-      }
-    }
-  }
+export interface EcuSupportedPids {
+  readonly ecu: string | null;
+  readonly numbers: readonly number[];
+  readonly ranges: readonly number[];
+}
 
+export type PidDiscoveryStatus = 'known' | 'partial' | 'unknown';
+
+function decodeMask(bytes: readonly number[], basePid: number): SupportedPidsMask | null {
+  if (bytes.length < 6 || bytes[0] !== 0x41 || bytes[1] !== basePid) return null;
+  const mask = bytes.slice(2, 6).reduce((acc, byte) => ((acc << 8) | byte) >>> 0, 0);
   const supported = new Set<number>();
   for (let i = 0; i < 32; i++) {
-    // Bit 31 (MSB) = base+0x01, bit 0 (LSB) = base+0x20.
     if ((mask & (0x80000000 >>> i)) !== 0) supported.add(basePid + i + 1);
   }
-
   return { supported, hasNextRange: supported.has(basePid + 0x20) };
+}
+
+// Retains the ECU that announced each bitmap. A valid zero mask means known-
+// unsupported; no response is unknown, not evidence that every PID is absent.
+export function parseSupportedPidsByEcu(
+  raw: string,
+  basePid: number,
+  format: { readonly headers: boolean; readonly can: boolean },
+): EcuSupportedPidsMask[] {
+  const grouped = new Map<string, { ecu: string | null; basePid: number; supported: Set<number>; hasNextRange: boolean }>();
+  const messages = readMessages(raw, format);
+  for (const message of answersTo(messages, 0x01).positive) {
+    const lastStart = format.headers ? 0 : message.bytes.length - 6;
+    for (let i = 0; i <= lastStart; i++) {
+      const mask = decodeMask(message.bytes.slice(i, i + 6), basePid);
+      if (!mask) continue;
+      const key = message.ecu ?? '<unknown>';
+      let entry = grouped.get(key);
+      if (!entry) {
+        entry = { ecu: message.ecu, basePid, supported: new Set(), hasNextRange: false };
+        grouped.set(key, entry);
+      }
+      for (const pid of mask.supported) entry.supported.add(pid);
+      entry.hasNextRange ||= mask.hasNextRange;
+    }
+  }
+  return [...grouped.values()];
+}
+
+export function mergeSupportedPidRanges(
+  ranges: readonly EcuSupportedPidsMask[],
+): EcuSupportedPids[] {
+  const byEcu = new Map<string, { ecu: string | null; numbers: Set<number>; ranges: Set<number> }>();
+  for (const range of ranges) {
+    const key = range.ecu ?? '<unknown>';
+    let entry = byEcu.get(key);
+    if (!entry) {
+      entry = { ecu: range.ecu, numbers: new Set(), ranges: new Set() };
+      byEcu.set(key, entry);
+    }
+    for (const number of range.supported) entry.numbers.add(number);
+    entry.ranges.add(range.basePid);
+  }
+  return [...byEcu.values()].map(({ ecu, numbers, ranges }) => ({
+    ecu,
+    numbers: [...numbers].sort((a, b) => a - b),
+    ranges: [...ranges].sort((a, b) => a - b),
+  }));
 }
 
 // The mode-01 PID number a PidId maps to, derived from its command ('010C' →
@@ -57,14 +102,34 @@ export function pidNumberFor(pidId: PidId): number | null {
   return hex != null ? parseInt(hex, 16) : null;
 }
 
+// Where support stops being known: the lowest range some ECU announced (its
+// base+0x20 bit) and then never answered. PIDs above it are unknown, not
+// absent; below it every ECU's bitmap was read. null = nothing missing.
+export function firstUnansweredRange(byEcu: readonly EcuSupportedPids[]): number | null {
+  let first: number | null = null;
+  for (const { numbers, ranges } of byEcu) {
+    for (const base of ranges) {
+      const next = base + 0x20;
+      if (numbers.includes(next) && !ranges.includes(next) && (first == null || next < first)) first = next;
+    }
+  }
+  return first;
+}
+
+// The "PIDs supported" PIDs themselves (0x20, 0x40, …): range markers, not data.
+export function isRangePid(pidNumber: number): boolean {
+  return pidNumber % 0x20 === 0;
+}
+
 // Narrows a PID list to what the vehicle actually supports. AT-command PIDs are
 // always kept. An EMPTY supported set means discovery failed or wasn't trusted →
 // return the list unchanged so we poll everything (current behavior, PLAN-003 §2.3).
 export function filterSupportedPids(
   all: readonly PidId[],
   supportedNumbers: ReadonlySet<number>,
+  discoveryKnown = false,
 ): PidId[] {
-  if (supportedNumbers.size === 0) return [...all];
+  if (supportedNumbers.size === 0 && !discoveryKnown) return [...all];
   return all.filter((pid) => {
     const num = pidNumberFor(pid);
     return num === null || supportedNumbers.has(num);

@@ -37,6 +37,8 @@ function vwCar(identity: SessionInfo['identity']) {
     identity,
     supportedPids: [],
     supportedPidNumbers: [],
+    supportedPidNumbersByEcu: [],
+    pidDiscoveryStatus: 'unknown',
   };
   const session = {
     sessionInfo,
@@ -241,7 +243,14 @@ function gmCar() {
     if (command === '22 F1 87' && seen) return '18DAF111 03 7F 22 31';
     throw new NoDataError(command);
   };
-  const sessionInfo: SessionInfo = { protocol: 'ISO_15765_4_CAN_29BIT_500K', identity: { elm: 'ELM327 v2.2', stn: null } as unknown as SessionInfo['identity'], supportedPids: [], supportedPidNumbers: [] };
+  const sessionInfo: SessionInfo = {
+    protocol: 'ISO_15765_4_CAN_29BIT_500K',
+    identity: { elm: 'ELM327 v2.2', stn: null } as unknown as SessionInfo['identity'],
+    supportedPids: [],
+    supportedPidNumbers: [],
+    supportedPidNumbersByEcu: [],
+    pidDiscoveryStatus: 'unknown',
+  };
   const port: CommandPort = { send };
   const session = { sessionInfo, send, exclusive: async <T>(work: (p: CommandPort, i: SessionInfo) => Promise<T>) => work(port, sessionInfo), settled: async () => undefined } as unknown as ObdSession;
   return { tools: new VehicleToolAdapter(() => session), sent };

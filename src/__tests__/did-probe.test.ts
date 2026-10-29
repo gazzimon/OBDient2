@@ -101,7 +101,12 @@ describe('how an answer is read', () => {
   it('an identification DID keeps its length and never its value', () => {
     const vin = [...'8AGEA76C0RR117525'].map((c) => c.charCodeAt(0));
     const r = classifyReply('F190', [msg([0x62, 0xf1, 0x90, ...vin])]);
-    expect(r).toEqual({ did: 'F190', outcome: 'supported', length: 17 });
+    expect(r).toMatchObject({
+      did: 'F190',
+      outcome: 'supported',
+      length: 17,
+      catalog: { name: 'Vehicle identification number', privacy: 'vehicle_identifier' },
+    });
     expect(JSON.stringify(r)).not.toContain('117525');
   });
 

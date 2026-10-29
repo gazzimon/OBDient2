@@ -22,6 +22,7 @@ import {
   type ProbeResult,
   type StopReason,
   type Verdict,
+  type DidProbeProgressEvent,
 } from '@/domain/obd/did-probe';
 import { FUNCTIONAL_11, FUNCTIONAL_29, needsFlowPair } from '@/domain/obd/module-scan';
 import { findValue, type ValueMatch } from '@/domain/obd/value-search';
@@ -90,6 +91,10 @@ async function readCodes(port: CommandPort, link: ProbeLink): Promise<string[] |
   }
 }
 
+// The user stopped the probe before any DID was read (once the sweep is on, a
+// stop returns what was read instead); the adapter is put back before this leaves.
+export class DidProbeCancelled extends Error {}
+
 export async function runDidProbe(
   port: CommandPort,
   target: ProbeTarget,
@@ -97,19 +102,27 @@ export async function runDidProbe(
   link: ProbeLink,
   find: number | null = null,
   now: () => number = () => Date.now(),
+  onProgress?: (event: DidProbeProgressEvent) => void,
+  signal?: AbortSignal,
 ): Promise<ProbeRun> {
+  const checkCancelled = () => {
+    if (signal?.aborted) throw new DidProbeCancelled();
+  };
   const functional = link.bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11;
   let elmFlow = false;
   // Set once the module's header is on: only then is there something to put back.
   let touched = false;
   await quiet(port, 'ATH1');
   try {
+    checkCancelled();
     const volts = await readVolts(port, link.stn);
+    checkCancelled();
     const refused = startCheck(volts);
     if (refused) return { blocked: refused };
 
     // Codes by function first, while the header is still the functional one.
     const codesBefore = await readCodes(port, link);
+    checkCancelled();
 
     touched = true;
     await send(port, `ATSH ${target.reqHeader}`, 2000);
@@ -131,6 +144,7 @@ export async function runDidProbe(
     };
 
     // "Are you there": a 7E or any 7F counts, since a refusal is an answer too.
+    checkCancelled();
     const alive = (await read('3E00', ALIVE_TIMEOUT_MS)).some((m) => (m.ecu == null || m.ecu.toUpperCase() === target.rxHeader.toUpperCase()) && (m.bytes[0] === 0x7e || m.bytes[0] === 0x7f));
 
     const guard = new ProbeGuard(now);
@@ -139,15 +153,28 @@ export async function runDidProbe(
     let stopped: StopReason | null = null;
     let lastVolts = volts;
     for (const did of dids) {
+      // A stop like the others: what was read stays, with the cursor to go on.
+      if (signal?.aborted) {
+        stopped = 'cancelled';
+        break;
+      }
       let messages = await read(didRequest(did), DID_TIMEOUT_MS);
       let result = classifyReply(did, messages, target.rxHeader);
-      if (result.outcome === 'pending') {
+      if (result.outcome === 'pending' && !signal?.aborted) {
         // Still working: one more look.
         await new Promise((r) => setTimeout(r, PENDING_RETRY_MS));
         messages = await read(didRequest(did), DID_TIMEOUT_MS);
         result = classifyReply(did, messages, target.rxHeader);
       }
       results.push(result);
+      onProgress?.({
+        type: 'did-probe-progress',
+        reqHeader: target.reqHeader,
+        completed: results.length,
+        total: dids.length,
+        did,
+        outcome: result.outcome,
+      });
       // The whole value, not the sample the model sees; never an identification DID.
       if (find != null && result.outcome === 'supported' && !isIdentificationDid(did)) {
         const data = didData(did, messages, target.rxHeader);
@@ -158,17 +185,18 @@ export async function runDidProbe(
       if (stopped) break;
     }
 
-    // Back to how the telemetry needs the adapter, then the codes again.
+    // Back to how the telemetry needs the adapter, then the codes again —
+    // unless the user is waiting for the stop (no before/after look then).
     await restore(port, link, elmFlow, functional);
     touched = false;
-    const codesAfter = await readCodes(port, link);
+    const codesAfter = signal?.aborted ? null : await readCodes(port, link);
     return {
       blocked: null,
       results,
       alive,
       verdict: moduleVerdict(results, alive),
       stopped,
-      cursor: stopped === 'time' || stopped === 'low_voltage' || stopped === 'silent_streak' ? nextCursor(dids, results.length) : null,
+      cursor: stopped ? nextCursor(dids, results.length) : null,
       volts: lastVolts,
       codesBefore,
       codesAfter,

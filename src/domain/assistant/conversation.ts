@@ -10,7 +10,8 @@ import type { ApiMessage } from '@/domain/ports/llm.port';
 import type { AgentEvent, RoundStat, TurnResult } from './agent-loop';
 import { MAX_NOTES, type OfflineNote } from './offline';
 import type { MapPin, SourceLink, ToolName } from './tools';
-import type { ScanProgressEvent } from '@/domain/obd/module-scan';
+import type { VehicleToolProgressEvent } from '@/domain/ports/vehicle-tools.port';
+import { DID_OUTCOME_TEXT } from '@/domain/obd/did-probe';
 
 export type ToolStatus = 'running' | 'ok' | 'failed' | 'refused';
 
@@ -116,7 +117,7 @@ export function applyEvent(c: Conversation, e: AgentEvent, now: number, answerId
         e.outcome.ok && e.outcome.sources?.length ? e.outcome.sources : undefined,
       );
     case 'tool_progress':
-      return updateTool(c, e.id, 'running', scanProgressDetail(e.progress));
+      return updateTool(c, e.id, 'running', toolProgressDetail(e.progress));
     case 'tool_refused':
       return {
         ...c,
@@ -125,8 +126,10 @@ export function applyEvent(c: Conversation, e: AgentEvent, now: number, answerId
   }
 }
 
-function scanProgressDetail(progress: ScanProgressEvent): string {
+function toolProgressDetail(progress: VehicleToolProgressEvent): string {
   switch (progress.type) {
+    case 'did-probe-progress':
+      return `Módulo ${progress.reqHeader}: DID ${progress.completed}/${progress.total} · ${progress.did} ${DID_OUTCOME_TEXT[progress.outcome]}`;
     case 'scan-started':
       return `Preparando escaneo (${progress.protocol})`;
     case 'lookup-warning':

@@ -3,7 +3,18 @@
 // testable with a fake transport; this file only wires the pieces — and puts
 // them back together when the adapter reboots on its own (LV RESET).
 
-import { MAX_QUERYABLE_PID_NUMBER, SUPPORTED_PID_QUERIES, filterSupportedPids, parseSupportedPidsMask } from '@/core/utils/supportedPids';
+import {
+  MAX_QUERYABLE_PID_NUMBER,
+  SUPPORTED_PID_QUERIES,
+  filterSupportedPids,
+  firstUnansweredRange,
+  mergeSupportedPidRanges,
+  parseSupportedPidsByEcu,
+  pidNumberFor,
+  type EcuSupportedPids,
+  type EcuSupportedPidsMask,
+  type PidDiscoveryStatus,
+} from '@/core/utils/supportedPids';
 import { CommandTimeoutError, NoDataError } from '@/core/errors/obd.errors';
 import { isCan } from '@/data/adapters/elm-protocol';
 import { ProtocolManager, type CommandPort } from '@/data/adapters/protocol-manager';
@@ -14,7 +25,7 @@ import type { PidId } from '@/core/constants/pids';
 import { runAdapterBench, type BenchReport } from './adapter-bench';
 import { runM7Bench, type M7Report } from './m7-bench';
 import { runDiagnosticCapture, type CaptureReport } from './diagnostic-capture';
-import { applyFastSettings, identifyAdapter, type AdapterIdentity } from './stn';
+import { applyFastSettings, identifyAdapter, quiet, type AdapterIdentity } from './stn';
 import { SECONDARY_PIDS, TelemetryPoller, stylesFor, type RequestStyle, type TelemetryListener } from './telemetry-poller';
 
 export interface SessionInfo {
@@ -24,6 +35,11 @@ export interface SessionInfo {
   readonly supportedPids: readonly PidId[];
   // Every mode-01 PID number the car announced (0100, 0120, …).
   readonly supportedPidNumbers: readonly number[];
+  // The bitmap union loses ECU attribution; retain each ECU's own declaration.
+  readonly supportedPidNumbersByEcu: readonly EcuSupportedPids[];
+  // Empty numbers with `known` means valid bitmaps said no supported PIDs;
+  // `unknown` means the discovery request did not produce a usable bitmap.
+  readonly pidDiscoveryStatus: PidDiscoveryStatus;
 }
 
 const LOW_POWER_GRACE_MS = 150;
@@ -241,35 +257,85 @@ async function configure(port: CommandPort): Promise<SessionInfo> {
   const { protocol } = await new ProtocolManager(port).initialize();
   const identity = await identifyAdapter(port);
   await applyFastSettings(port, identity);
-  const supportedPidNumbers = await discoverPidNumbers(port);
-  const supportedPids = supportedPidNumbers.length ? filterSupportedPids(SECONDARY_PIDS, new Set(supportedPidNumbers)) : [];
-  return { protocol, identity, supportedPids, supportedPidNumbers };
+  const discovered = await discoverPidNumbers(port, isCan(protocol));
+  const supportedPidNumbers = [...new Set(discovered.byEcu.flatMap((ecu) => ecu.numbers))].sort((a, b) => a - b);
+  const supportedPids =
+    discovered.status !== 'unknown'
+      ? filterSupportedPids(SECONDARY_PIDS, new Set(supportedPidNumbers), true)
+      : [];
+  return {
+    protocol,
+    identity,
+    supportedPids,
+    supportedPidNumbers,
+    supportedPidNumbersByEcu: discovered.byEcu,
+    pidDiscoveryStatus: discovered.status,
+  };
 }
 
 function requestStyles(info: SessionInfo): RequestStyle[] {
   return stylesFor(info.identity.stn != null, isCan(info.protocol));
 }
 
+// What the car announced, plus what discovery could not settle: everything when
+// no bitmap came back, only the ranges past an unanswered one when partial.
 function secondaryPids(info: SessionInfo): PidId[] {
   const supported = new Set(info.supportedPids);
-  // VOLTAGE is an adapter command, always available.
-  return SECONDARY_PIDS.filter((p) => p === 'VOLTAGE' || supported.size === 0 || supported.has(p));
+  const unknownFrom = info.pidDiscoveryStatus === 'unknown' ? 0 : firstUnansweredRange(info.supportedPidNumbersByEcu);
+  return SECONDARY_PIDS.filter((p) => {
+    const n = pidNumberFor(p);
+    // VOLTAGE is an adapter command, always available.
+    if (n == null || supported.has(p)) return true;
+    return unknownFrom != null && n > unknownFrom;
+  });
 }
 
-// Reads the supported-PID bitmasks (0100, 0120, …). An empty result means
-// "unknown" and the poller then tries everything.
-async function discoverPidNumbers(port: CommandPort): Promise<number[]> {
-  const numbers = new Set<number>();
-  for (const { command, basePid } of SUPPORTED_PID_QUERIES) {
-    if (basePid > MAX_QUERYABLE_PID_NUMBER) break;
-    try {
-      const mask = parseSupportedPidsMask(await port.send(command), basePid);
-      for (const n of mask.supported) numbers.add(n);
-      if (!mask.hasNextRange) break;
-    } catch (err) {
-      if (err instanceof NoDataError || err instanceof CommandTimeoutError) break;
-      throw err;
+interface PidDiscovery {
+  readonly status: PidDiscoveryStatus;
+  readonly byEcu: readonly EcuSupportedPids[];
+}
+
+// Reads each standard bitmap with response headers on so support is attributed
+// to the ECU that announced it. Missing answers remain unknown, not unsupported.
+async function discoverPidNumbers(port: CommandPort, can: boolean): Promise<PidDiscovery> {
+  const ranges: EcuSupportedPidsMask[] = [];
+  let headers = false;
+  let complete = true;
+  let expectedEcus: Set<string> | null = null;
+  try {
+    headers = (await quiet(port, 'ATH1')) != null;
+    for (const { command, basePid } of SUPPORTED_PID_QUERIES) {
+      if (basePid > MAX_QUERYABLE_PID_NUMBER) break;
+      try {
+        const masks = parseSupportedPidsByEcu(await port.send(command), basePid, { headers, can });
+        if (masks.length === 0) {
+          if (ranges.length > 0) complete = false;
+          break;
+        }
+        if (expectedEcus) {
+          const answered = new Set(masks.map((mask) => mask.ecu ?? '<unknown>'));
+          if ([...expectedEcus].some((ecu) => !answered.has(ecu))) complete = false;
+        }
+        ranges.push(...masks);
+        expectedEcus = new Set(masks.filter((mask) => mask.hasNextRange).map((mask) => mask.ecu ?? '<unknown>'));
+        if (expectedEcus.size === 0) break;
+      } catch (err) {
+        if (err instanceof NoDataError || err instanceof CommandTimeoutError) {
+          if (ranges.length > 0) complete = false;
+          break;
+        }
+        throw err;
+      }
     }
+    // A next-range bit past the last query (0xE0) is not a missing answer:
+    // there is nothing left to ask.
+  } finally {
+    // Always, and never over the first error: an ATH1 that took effect but
+    // timed out would leave the telemetry parsing headers it does not expect.
+    await quiet(port, 'ATH0').catch(() => undefined);
   }
-  return [...numbers].sort((a, b) => a - b);
+  return {
+    status: ranges.length === 0 ? 'unknown' : complete ? 'known' : 'partial',
+    byEcu: mergeSupportedPidRanges(ranges),
+  };
 }

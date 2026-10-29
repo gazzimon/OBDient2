@@ -27,26 +27,27 @@ import {
 } from '@/core/utils/obdDiagnostics';
 import { answersTo, readMessages, type EcuMessage } from '@/core/utils/obdFrames';
 import { parsePidBytes, parsePidResponse } from '@/core/utils/obdParser';
-import { pidNumberFor } from '@/core/utils/supportedPids';
+import { firstUnansweredRange, isRangePid, pidNumberFor } from '@/core/utils/supportedPids';
 import { calculate, CalcError } from '@/core/utils/calculator';
 import { fuelFromMaf } from '@/core/utils/fuel';
 import { isCan } from '@/data/adapters/elm-protocol';
 import type { DtcKind, ToolCall, ToolErrorCode, ToolOutcome } from '@/domain/assistant/tools';
 import type { FaultEvent, FaultEventInput } from '@/domain/faults/fault-history';
-import type { VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
-import type { ObdSession } from './obd-session';
+import type { VehicleToolProgressListener, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
+import type { ObdSession, SessionInfo } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
-import { CONTROL_DIDS, DEFAULT_RANGE, listPlan, newCodes, rangePlan, STOP_TEXT, summarize, verdictText } from '@/domain/obd/did-probe';
+import { CONTROL_DIDS, DEFAULT_RANGE, listPlan, MAX_DIDS_PER_CALL, newCodes, rangePlan, STOP_TEXT, summarize, verdictText, type ProbeResult } from '@/domain/obd/did-probe';
+import { candidatePlan, type DidCandidate } from '@/domain/obd/did-catalog';
 import type { ValueMatch } from '@/domain/obd/value-search';
-import { runDidProbe } from './did-probe-runner';
+import { DidProbeCancelled, runDidProbe } from './did-probe-runner';
 import { makeFromVin } from '@/domain/obd/vin-make';
 import { redactText } from '@/domain/privacy/redact';
 import { matchSymptoms, symptomLabel } from '@/domain/assistant/symptoms';
 import { diagnose, pidsUsed, type Readings } from '@/domain/diagnosis/engine';
 import { ROOT_CAUSES } from '@/domain/diagnosis/root-causes';
 import type { BaselineMetric, Deviation } from '@/domain/vehicle/baseline';
-import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, isFunctional, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, serviceOf, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanProgressListener, type ScanTarget } from '@/domain/obd/module-scan';
+import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, isFunctional, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, serviceOf, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -85,6 +86,9 @@ export interface VehicleToolDeps {
   readonly moving?: () => boolean;
   // scan_modules: the addresses the lab knows for a make (obdient-tools).
   readonly knownTargets?: (make: string, model: string | null, signal: AbortSignal) => Promise<ScanTarget[]>;
+  // did_probe "candidates": the DIDs the lab has to validate for a make (obdient-tools);
+  // null when the lab cannot be asked.
+  readonly didCandidates?: (make: string, signal: AbortSignal) => Promise<DidCandidate[] | null>;
   // diagnose: what is unusual for this car now, from its baseline (VehicleBaselines).
   readonly baseline?: (vin: string | null) => { readonly deviations: readonly Deviation[]; readonly comparable: readonly BaselineMetric[] };
   readonly sleep?: (ms: number) => Promise<void>;
@@ -163,18 +167,17 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     return s ? (this.vins.get(s) ?? null) : null;
   }
 
+  // The confirmed ones plus those discovery could not settle, the same set the
+  // telemetry polls: the model may ask for what the dashboard is reading.
   supportedPids(): readonly PidId[] {
     const info = this.session()?.sessionInfo;
     if (!info) return [];
     if (info.supportedPidNumbers.length === 0) return info.supportedPids;
-    const numbers = new Set(info.supportedPidNumbers);
-    return (Object.keys(PID_DEFINITIONS) as PidId[]).filter((p) => {
-      const n = pidNumberFor(p);
-      return n != null && numbers.has(n);
-    });
+    const { confirmed, unconfirmed } = pidSupport(info);
+    return [...confirmed, ...unconfirmed];
   }
 
-  async execute(call: ToolCall, signal: AbortSignal, onProgress?: ScanProgressListener): Promise<ToolOutcome> {
+  async execute(call: ToolCall, signal: AbortSignal, onProgress?: VehicleToolProgressListener): Promise<ToolOutcome> {
     // These two do not need the car.
     if (call.name === 'calculate') return this.calculate(call.expression);
     if (call.name === 'read_fault_history') return this.readFaultHistory();
@@ -199,7 +202,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     }
   }
 
-  private async run(s: ObdSession, call: ToolCall, signal: AbortSignal, onProgress?: ScanProgressListener): Promise<ToolOutcome> {
+  private async run(s: ObdSession, call: ToolCall, signal: AbortSignal, onProgress?: VehicleToolProgressListener): Promise<ToolOutcome> {
     switch (call.name) {
       case 'read_pids':
         return this.readPids(s, call.pids);
@@ -212,7 +215,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       case 'obd_command':
         return this.obdCommand(s, call.command, call.header);
       case 'did_probe':
-        return this.didProbe(s, call);
+        return this.didProbe(s, call, signal, onProgress);
       case 'read_freeze_frame':
         return this.readFreezeFrame(s);
       case 'read_readiness':
@@ -462,7 +465,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     givenMake: string | null,
     model: string | null,
     signal: AbortSignal,
-    onProgress?: ScanProgressListener,
+    onProgress?: VehicleToolProgressListener,
   ): Promise<ToolOutcome> {
     const info = s.sessionInfo!;
     const bit29 = /29BIT/.test(info.protocol);
@@ -758,7 +761,12 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   // domain/obd/did-probe.ts. Never sends the module's VIN or serial to the model.
   // A sweep (`scan`) is only taken for a module whose link a `control` probe
   // proved in this session: the first field test cannot be a blind sweep.
-  private async didProbe(s: ObdSession, call: Extract<ToolCall, { name: 'did_probe' }>): Promise<ToolOutcome> {
+  private async didProbe(
+    s: ObdSession,
+    call: Extract<ToolCall, { name: 'did_probe' }>,
+    signal: AbortSignal,
+    onProgress?: VehicleToolProgressListener,
+  ): Promise<ToolOutcome> {
     const { header, mode } = call;
     const info = s.sessionInfo!;
     const bit29 = /29BIT/.test(info.protocol);
@@ -769,19 +777,49 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       return fail('invalid_arguments', `No se conoce la dirección con la que responde ${checked.reqHeader} (la pareja la define cada marca). Corré scan_modules: encuentra los módulos y sus direcciones de respuesta.`);
     }
     const verified = this.probed.get(s) ?? new Set<string>();
-    const plan =
-      mode === 'control'
-        ? { ok: true as const, dids: CONTROL_DIDS }
-        : mode === 'list'
-          ? listPlan(call.dids)
-          : rangePlan(call.from ?? DEFAULT_RANGE.from, call.to ?? DEFAULT_RANGE.to);
-    if (!plan.ok) return fail('invalid_arguments', plan.message);
-    if (mode === 'scan' && !verified.has(checked.reqHeader)) {
+    const sweep = mode === 'scan' || mode === 'candidates';
+    if (sweep && !verified.has(checked.reqHeader)) {
       return fail('not_supported', `Antes de barrer ${checked.reqHeader}, probá ese módulo con did_probe en modo "control": el barrido solo se hace sobre un módulo cuyo enlace ya se comprobó.`);
     }
+    // The make keys the lab's candidates and the observations sent back. Only the
+    // candidates need it read (0902); the rest use the VIN the session already has.
+    let make = makeFromVin(this.knownVin());
+    let candidates: ReadonlyMap<string, DidCandidate> | null = null;
+    // Candidates left from `from` on, past what one call reads.
+    let pending: readonly string[] = [];
+    let plan: { ok: true; dids: readonly string[] } | { ok: false; message: string };
+    if (mode === 'candidates') {
+      make = makeFromVin(await this.ensureVin());
+      if (!make) return fail('not_supported', 'Sin la marca (sale del VIN) no se sabe qué candidatos pedirle al laboratorio.');
+      const known = this.deps.didCandidates ? await this.deps.didCandidates(make, signal).catch(() => null) : null;
+      if (signal.aborted) throw new Cancelled();
+      if (known == null) return fail('not_supported', 'No se pudo consultar el laboratorio (sin conexión): los candidatos están ahí, no en la app.');
+      const cp = candidatePlan(known, call.from);
+      if ('error' in cp) return fail('not_supported', cp.error);
+      candidates = cp.byDid;
+      pending = cp.dids;
+      plan = { ok: true, dids: cp.dids.slice(0, MAX_DIDS_PER_CALL) };
+    } else {
+      plan =
+        mode === 'control'
+          ? { ok: true as const, dids: CONTROL_DIDS }
+          : mode === 'list'
+            ? listPlan(call.dids)
+            : rangePlan(call.from ?? DEFAULT_RANGE.from, call.to ?? DEFAULT_RANGE.to);
+    }
+    if (!plan.ok) return fail('invalid_arguments', plan.message);
 
     const run = await s.exclusive((port) =>
-      runDidProbe(port, { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader! }, plan.dids, { bit29, stn: info.identity.stn != null, can: isCan(info.protocol) }, call.find),
+      runDidProbe(
+        port,
+        { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader! },
+        plan.dids,
+        { bit29, stn: info.identity.stn != null, can: isCan(info.protocol) },
+        call.find,
+        undefined,
+        onProgress,
+        signal,
+      ),
     );
     if (run.blocked !== null) return fail('not_supported', run.blocked);
     if (mode === 'control' && run.verdict === 'link_ok') {
@@ -798,23 +836,40 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     // A sweep reads hundreds: the model gets the DIDs that answered something other
     // than "not there" or silence, and the counts of the rest (its window is small).
     const quiet = new Set(['unsupported', 'silent']);
-    const listed = mode === 'scan' ? run.results.filter((r) => !quiet.has(r.outcome)) : run.results;
+    // A candidate says what it is (nothing yet): the model must not guess a meaning.
+    const results = candidates ? run.results.map((r) => ({ ...r, catalog: { name: null, privacy: 'unknown' as const, evidence: 'candidate' as const } })) : run.results;
+    const listed = sweep ? results.filter((r) => !quiet.has(r.outcome)) : results;
+    // A run cut by the per-call limit, not by a stop, goes on from the next candidate.
+    const cursor = run.cursor ?? (pending[run.results.length] ?? null);
     return {
       ok: true,
       data: {
         module: { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader },
         mode,
         ...(mode === 'scan' ? { range: { from: plan.dids[0], to: plan.dids[plan.dids.length - 1] }, read: run.results.length, counts } : {}),
+        ...(candidates
+          ? {
+              candidates: { total: candidates.size, read: run.results.length, source: [...new Set([...candidates.values()].map((c) => c.source))] },
+              counts,
+              note: 'Candidatos a validar: un 62 prueba que el módulo contesta ese DID, no qué mide. Sin decoder no conviertas los bytes en una magnitud; para identificar uno, find con un valor del tablero.',
+            }
+          : {}),
         verdict: run.verdict,
         explanation: verdictText(run.verdict, bit29),
         testerPresent: run.alive,
         results: listed,
-        ...(run.stopped ? { stopped: STOP_TEXT[run.stopped], cursor: run.cursor } : {}),
+        ...(run.stopped ? { stopped: STOP_TEXT[run.stopped], cursor } : cursor ? { cursor } : {}),
         batteryVolts: run.volts,
         ...(codes.length ? { newCodes: codes } : {}),
         ...(call.find != null ? { find: findReport(call.find, run.matches, counts.incomplete) } : {}),
       },
       summary: `${run.verdict} · ${parts.join(' · ')}${run.stopped ? ` · ${STOP_TEXT[run.stopped]}` : ''}${codes.length ? ` · códigos nuevos: ${codes.join(', ')}` : ''}${call.find != null ? ` · ${findSummary(call.find, run.matches)}` : ''}`,
+      // What each module answered, back to the lab (ADR-0011: what the car is, never
+      // which one): no value, no sample — the DID, who answered it and how. This is
+      // what ties the lab's unattributed candidates to a module, car after car.
+      ...(make && observations(results).length
+        ? { knowledge: { make, protocol: info.protocol, didObservations: observations(results).map((o) => ({ ...o, reqHeader: checked.reqHeader, rxHeader: checked.rxHeader })) } }
+        : {}),
     };
   }
 
@@ -988,7 +1043,14 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         throw err;
       }
     });
-    const pids = this.supportedPids();
+    const info = s.sessionInfo!;
+    const { confirmed, unconfirmed } = info.supportedPidNumbers.length ? pidSupport(info) : { confirmed: info.supportedPids, unconfirmed: [] };
+    const pids = confirmed;
+    const discoveryLabel = {
+      known: 'completo',
+      partial: 'parcial',
+      unknown: 'desconocido',
+    }[info.pidDiscoveryStatus];
     return {
       ok: true,
       data: {
@@ -998,8 +1060,16 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         // elsewhere a mismatch is normal and says nothing about the read.
         ...(vin && /^[1-5]/.test(vin.vin) ? { vinCheckDigitOk: vin.checkDigitOk } : {}),
         supportedPids: pids,
+        // Past a range some ECU announced and did not answer: maybe there, unconfirmed.
+        ...(unconfirmed.length ? { unconfirmedPids: unconfirmed } : {}),
+        pidDiscovery: {
+          status: info.pidDiscoveryStatus,
+          supportedNumbers: info.supportedPidNumbers,
+          byEcu: info.supportedPidNumbersByEcu,
+          supportedButUndecoded: info.supportedPidNumbers.filter((number) => !isRangePid(number) && !DECODED_PID_NUMBERS.has(number)),
+        },
       },
-      summary: `VIN ${vin?.vin ?? 'no disponible'}, ${pids.length} PIDs soportados`,
+      summary: `VIN ${vin?.vin ?? 'no disponible'}, ${pids.length} PIDs soportados · descubrimiento ${discoveryLabel}`,
     };
   }
 
@@ -1136,13 +1206,42 @@ function pidFromMessages(messages: readonly EcuMessage[], pid: PidId): number | 
   return m ? parsePidBytes(pid, m.bytes.slice(2).map(hex)) : null;
 }
 
+// The answers worth keeping: silence says nothing about the DID (the module may
+// just be busy), a refusal does (the code says which).
+function observations(results: readonly ProbeResult[]): { did: string; outcome: string; nrc?: string }[] {
+  return results.filter((r) => r.outcome !== 'silent').map((r) => ({ did: r.did, outcome: r.outcome, ...(r.nrc ? { nrc: r.nrc } : {}) }));
+}
+
+// The mode-01 numbers the app has a decoder for (pids.ts), fixed at load.
+const DECODED_PID_NUMBERS: ReadonlySet<number> = new Set(
+  (Object.keys(PID_DEFINITIONS) as PidId[]).map(pidNumberFor).filter((n): n is number => n !== null),
+);
+
+// What the car announced (confirmed) and what lies past the first range some ECU
+// announced and did not answer (unconfirmed): neither proven nor ruled out.
+function pidSupport(info: SessionInfo): { confirmed: PidId[]; unconfirmed: PidId[] } {
+  const numbers = new Set(info.supportedPidNumbers);
+  const unknownFrom = firstUnansweredRange(info.supportedPidNumbersByEcu);
+  const confirmed: PidId[] = [];
+  const unconfirmed: PidId[] = [];
+  for (const p of Object.keys(PID_DEFINITIONS) as PidId[]) {
+    const n = pidNumberFor(p);
+    if (n == null) continue;
+    if (numbers.has(n)) confirmed.push(p);
+    else if (unknownFrom != null && n > unknownFrom) unconfirmed.push(p);
+  }
+  return { confirmed, unconfirmed };
+}
+
 function isLinkFailure(err: unknown): boolean {
   return err instanceof ConnectionLostError || err instanceof AdapterResetError || err instanceof Cancelled;
 }
 
 function failure(err: unknown): ToolOutcome {
   if (err instanceof Rejected) return fail('rejected_by_car', `El auto rechazó el pedido: ${err.reason}.`);
-  if (err instanceof Cancelled) return fail('cancelled', 'Cancelado.');
+  // Only a stop the tool itself made: a lost link or a failed clear is told as
+  // such even when the user also cancelled.
+  if (err instanceof Cancelled || err instanceof DidProbeCancelled) return fail('cancelled', 'Cancelado.');
   if (err instanceof ConnectionLostError) return fail('not_connected', 'Se perdió la conexión con el adaptador.');
   if (err instanceof AdapterResetError) return fail('adapter_reset', 'El adaptador se reinició (tensión baja); reintentar en unos segundos.');
   if (err instanceof CommandTimeoutError) return fail('timeout', 'El auto no respondió a tiempo.');

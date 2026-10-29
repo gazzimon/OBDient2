@@ -6,8 +6,9 @@ class SimAdapter implements ByteTransport {
   connected = false;
   // stn: false → a plain ELM327 (STI → '?'). asleep: the first command only
   // wakes the chip and gets no answer, like an ELM327 after ATLP.
-  constructor(private readonly opts: { stn?: boolean; asleep?: boolean } = {}) {}
+  constructor(private readonly opts: { stn?: boolean; asleep?: boolean; emptyBitmap?: boolean; noBitmap?: boolean; fullChain?: boolean; refusesHeaders?: boolean } = {}) {}
   sent: string[] = [];
+  private headers = false;
   private inFlight = new Set<ReturnType<typeof setTimeout>>();
   private data = new Listeners<[string]>();
   private drops = new Listeners<[]>();
@@ -24,11 +25,26 @@ class SimAdapter implements ByteTransport {
   async write(d: string) {
     const cmd = d.trim();
     this.sent.push(cmd);
+    if (cmd === 'ATH1' && !this.opts.refusesHeaders) this.headers = true;
+    if (cmd === 'ATH0') this.headers = false;
     if (this.opts.asleep) {
       this.opts.asleep = false;
       return;
     }
-    const answer = cmd === 'STI' && this.opts.stn === false ? '?' : reply(cmd);
+    const answer =
+      cmd === 'STI' && this.opts.stn === false
+        ? '?'
+        : cmd === 'ATH1' && this.opts.refusesHeaders
+          ? '?'
+        : this.opts.fullChain && this.headers && /^01[02468AC]0$/.test(cmd)
+          ? `7E8 06 41 ${cmd.slice(2)} 80 00 00 01` // one PID per range, and "next range exists"
+        : cmd === '0100' && this.headers
+          ? this.opts.noBitmap
+            ? 'NO DATA'
+            : this.opts.emptyBitmap
+              ? '7E8 06 41 00 00 00 00 00'
+              : '7E8 06 41 00 18 18 00 13'
+          : reply(cmd);
     const timer = setTimeout(() => {
       this.inFlight.delete(timer);
       this.data.emit(`${answer}\r\r>`);
@@ -74,6 +90,10 @@ describe('ObdSession', () => {
     expect(info.identity.stn).toBe('ARM2120 v5.10.3');
     expect(info.protocol).toBe('ISO_15765_4_CAN_11BIT_500K');
     expect(sim.sent).toEqual(expect.arrayContaining(['ATS0', 'ATAT2']));
+    expect(info.pidDiscoveryStatus).toBe('partial');
+    expect(info.supportedPidNumbersByEcu).toEqual([
+      { ecu: '7E8', numbers: [0x04, 0x05, 0x0c, 0x0d, 0x1c, 0x1f, 0x20], ranges: [0x00] },
+    ]);
 
     const speeds: number[] = [];
     try {
@@ -105,6 +125,50 @@ describe('ObdSession', () => {
       expect(sim.count('ATWS')).toBe(2);
       expect(sim.count('ATS0')).toBe(2);
       expect(speeds.length).toBeGreaterThan(before);
+    } finally {
+      await session.close();
+    }
+  });
+
+  it('keeps a valid zero bitmap distinct from a missing bitmap', async () => {
+    const empty = new ObdSession(new SimAdapter({ emptyBitmap: true }));
+    const unknown = new ObdSession(new SimAdapter({ noBitmap: true }));
+    try {
+      const knownInfo = await empty.open('known');
+      expect(knownInfo.pidDiscoveryStatus).toBe('known');
+      expect(knownInfo.supportedPids).toEqual(['VOLTAGE']);
+      expect(knownInfo.supportedPidNumbersByEcu).toEqual([
+        { ecu: '7E8', numbers: [], ranges: [0x00] },
+      ]);
+
+      const unknownInfo = await unknown.open('unknown');
+      expect(unknownInfo.pidDiscoveryStatus).toBe('unknown');
+      expect(unknownInfo.supportedPidNumbersByEcu).toEqual([]);
+    } finally {
+      await empty.close();
+      await unknown.close();
+    }
+  });
+
+  it('a chain answered up to 01C0 is complete, even with the next-range bit still set', async () => {
+    const session = new ObdSession(new SimAdapter({ fullChain: true }));
+    try {
+      const info = await session.open('chain');
+      expect(info.pidDiscoveryStatus).toBe('known');
+      expect(info.supportedPidNumbersByEcu[0]!.ranges).toEqual([0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xc0]);
+    } finally {
+      await session.close();
+    }
+  });
+
+  it('puts headers off after discovery even when ATH1 did not say OK', async () => {
+    const sim = new SimAdapter({ refusesHeaders: true });
+    const session = new ObdSession(sim);
+    try {
+      await session.open('no-headers');
+      const ath1 = sim.sent.lastIndexOf('ATH1');
+      expect(ath1).toBeGreaterThan(-1);
+      expect(sim.sent.slice(ath1)).toContain('ATH0');
     } finally {
       await session.close();
     }
@@ -160,4 +224,3 @@ describe('ObdSession', () => {
     await session.close();
   });
 });
-

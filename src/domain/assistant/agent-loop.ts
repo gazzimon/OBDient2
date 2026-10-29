@@ -14,7 +14,11 @@
 // on screen. Reads repeated within MEMO_MS reuse the last result.
 
 import type { ApiMessage, ApiToolCall, AssembledToolCall, LlmPort } from '@/domain/ports/llm.port';
-import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-tools.port';
+import type {
+  ConfirmationPort,
+  VehicleToolProgressEvent,
+  VehicleToolsPort,
+} from '@/domain/ports/vehicle-tools.port';
 import { estimateChars, estimateTokens, textTokens, trimHistory } from './history';
 import { redactText } from '@/domain/privacy/redact';
 import { evaluatePolicy, TOOL_LEVEL } from './policy';
@@ -22,7 +26,6 @@ import { DRIVER, maxTokensFor, userMessage, type AssistantContext, type Persona 
 import { INTERNAL_MARKER, MarkerFilter } from './stream-filter';
 import { summaryMessages } from './summary';
 import { parseToolCall, toolSchemas, type ToolCall, type ToolOutcome } from './tools';
-import type { ScanProgressEvent } from '@/domain/obd/module-scan';
 
 // Going to a shop is web_search → search_place → set_destination → the answer: four
 // calls with no room for one search that finds nothing (benchmark 2026-10-22: out of
@@ -30,6 +33,8 @@ import type { ScanProgressEvent } from '@/domain/obd/module-scan';
 export const MAX_MODEL_CALLS = 5;
 export const MAX_TOOLS_PER_ROUND = 6;
 export const MEMO_MS = 10_000;
+// Tool progress shown at most this often (a DID sweep reads hundreds).
+export const PROGRESS_EVERY_MS = 250;
 // The model's window (vLLM --max-model-len, ADR-0006). 32 768 since 2026-10-26: the
 // Z440 measured 61 895 tokens of KV cache with --max-num-seqs 4 and utilization 0.95
 // (it was 34 695 at 8 and 0.92, which is why 16k was the limit).
@@ -65,7 +70,7 @@ export function isContextOverflow(err: unknown): boolean {
 export type AgentEvent =
   | { readonly type: 'text'; readonly delta: string }
   | { readonly type: 'tool_start'; readonly id: string; readonly call: ToolCall }
-  | { readonly type: 'tool_progress'; readonly id: string; readonly progress: ScanProgressEvent }
+  | { readonly type: 'tool_progress'; readonly id: string; readonly progress: VehicleToolProgressEvent }
   | { readonly type: 'tool_end'; readonly id: string; readonly call: ToolCall; readonly outcome: ToolOutcome }
   // Not run: invalid, unknown, over the limit, refused by policy or by the user.
   | { readonly type: 'tool_refused'; readonly id: string; readonly name: string; readonly outcome: ToolOutcome };
@@ -371,9 +376,16 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
     const key = memoKey(call);
     const cached = key ? memo.get(key, now()) : null;
     emit({ type: 'tool_start', id, call });
-    const outcome =
-      cached ??
-      (await opts.vehicle.execute(call, signal, (progress) => emit({ type: 'tool_progress', id, progress })));
+    // Each progress line rebuilds and saves the conversation: a few per second
+    // is enough to see it move, and tool_end puts the last word anyway.
+    let lastProgress = -Infinity;
+    const onProgress = (progress: VehicleToolProgressEvent) => {
+      const t = now();
+      if (t - lastProgress < PROGRESS_EVERY_MS) return;
+      lastProgress = t;
+      emit({ type: 'tool_progress', id, progress });
+    };
+    const outcome = cached ?? (await opts.vehicle.execute(call, signal, onProgress));
     if (key && outcome.ok && !cached) memo.set(key, outcome, now());
     if (call.name === 'clear_dtcs' && outcome.ok) clears += 1;
     emit({ type: 'tool_end', id, call, outcome });

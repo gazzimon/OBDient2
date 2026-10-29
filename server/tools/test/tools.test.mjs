@@ -253,3 +253,48 @@ test('knowledge: platform names match by prefix; the rest of the make is condens
   assert.deepEqual(r.close.map((c) => c.key), ['ford/escape-mk4']);
   assert.deepEqual(r.sameMake.map((m) => [m.id, m.seenIn]), [['11:760', 2], ['11:730', 1]]);
 });
+
+test('knowledge: DID candidates come only from a seed; cars tie them to the module that answered', async () => {
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { knowledgeStore } = await import('../src/knowledge.mjs');
+  const file = join(mkdtempSync(join(tmpdir(), 'kb-')), 'knowledge.json');
+  const k = knowledgeStore(file);
+  const didCandidates = [
+    { did: '1172', sample: 'positive', src: 'inv' },
+    { did: 'f10a', sample: 'weak', src: 'inv' },
+    { did: 'nope', sample: 'positive', src: 'inv' },
+    { did: '1100', sample: 'made-up', src: 'inv' },
+  ];
+  // An app report cannot plant candidates; the seed can, and bad entries are dropped.
+  k.report({ make: 'Ford', model: 'Ranger', didCandidates });
+  assert.equal(k.lookup({ make: 'Ford', candidates: true }).didCandidates.length, 0);
+  k.report({ make: 'Ford', model: 'generico', didCandidates }, { seed: true });
+  // Without the flag, the model gets a count, not the list.
+  const plain = k.lookup({ make: 'Ford', model: 'Focus' });
+  assert.equal(plain.didCandidateCount, 2);
+  assert.equal('didCandidates' in plain, false);
+
+  // did_probe reports: what answered, never a value; bad rows are dropped.
+  const obs = (outcome, extra = {}) => ({ did: '1172', reqHeader: '7E0', rxHeader: '7E8', outcome, ...extra });
+  k.report({ make: 'Ford', didObservations: [obs('supported', { sample: '01 02', value: 9 }), { did: '1172', reqHeader: '7E0', rxHeader: '7E8', outcome: 'hacked' }] });
+  k.report({ make: 'Ford', didObservations: [obs('supported'), { ...obs('unsupported'), did: 'F10A', nrc: '31' }] });
+
+  const full = k.lookup({ make: 'Ford', model: 'Focus', candidates: true });
+  assert.deepEqual(full.didCandidates, [
+    { did: '1172', sample: 'positive', src: 'inv', toValidate: true, answeredBy: ['7E0'] },
+    { did: 'F10A', sample: 'weak', src: 'inv', toValidate: true },
+  ]);
+  const stored = k.lookup({ make: 'Ford' });
+  assert.deepEqual(stored.didsAnswered, [{ did: '1172', modules: ['7E0'], toValidate: true }]);
+  // The raw lists stay out of what the model reads.
+  assert.equal('didObservations' in stored.exact, false);
+  // On disk: one entry per module and DID, outcomes counted, no value kept.
+  const { readFileSync } = await import('node:fs');
+  const ford = JSON.parse(readFileSync(file, 'utf8')).vehicles.ford;
+  assert.deepEqual(ford.didObservations, [
+    { did: '1172', reqHeader: '7E0', rxHeader: '7E8', outcomes: { supported: 2 } },
+    { did: 'F10A', reqHeader: '7E0', rxHeader: '7E8', outcomes: { unsupported: 1 }, lastNrc: '31' },
+  ]);
+});

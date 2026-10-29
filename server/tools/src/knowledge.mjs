@@ -3,8 +3,17 @@
 // reuses it and the next car of the same make starts knowing where to look.
 // Common to all users (lab), a JSON file on the K16.
 //
-//   report  { make, model, year?, protocol?, modules:[{id,reqHeader,rxHeader,label,partNumber?}], dids?, pids?, note? }
-//   lookup  { make?, model?, year? }  → merged facts for that vehicle
+//   report  { make, model, year?, protocol?, modules:[{id,reqHeader,rxHeader,label,partNumber?}], dids?, pids?, note?,
+//             didObservations?:[{did,reqHeader,rxHeader,outcome,nrc?}] }
+//   lookup  { make?, model?, year?, candidates? }  → merged facts for that vehicle
+//
+// DIDs to validate: `didCandidates` ({did, sample, src}) come only from a seed
+// (scripts/seed-knowledge.mjs, data/ext: not versioned), never from a report —
+// they are an inventory to try, not a fact about any car. `didObservations` are
+// the facts: which module answered which DID and how (did_probe, no value),
+// counted per outcome. A lookup with `candidates: true` gives the make's
+// candidates with the modules that answered each one so far; without it, only
+// how many there are (the model's window is small).
 //
 // Keyed by make/model/year ("ford/focus/2015"); a bare make merges everything
 // of that make.
@@ -21,6 +30,42 @@ const MAX_MODULES = 300; // a group table (data/ext) has up to ~210
 const MAX_IDS = 400;
 const MAX_CLOSE = 3;
 const MAX_SAME_MAKE = 24;
+const MAX_CANDIDATES = 600;
+const MAX_ANSWERED = 40;
+const SAMPLES = new Set(['positive', 'mixed', 'weak', 'ambiguous', 'negative']);
+const OUTCOMES = new Set(['supported', 'unsupported', 'locked', 'needs_conditions', 'service_refused', 'bad_request', 'other_refusal', 'pending', 'incomplete', 'mismatch']);
+const HEX_DID = /^[0-9A-F]{4}$/;
+const HEX_ID = /^([0-9A-F]{3}|[0-9A-F]{8})$/;
+const up = (v) => (typeof v === 'string' ? v.trim().toUpperCase() : '');
+
+// What a seed may say about a DID to try: anything else is dropped.
+function cleanCandidates(list) {
+  return (Array.isArray(list) ? list : [])
+    .map((c) => ({ did: up(c?.did), sample: c?.sample, src: typeof c?.src === 'string' ? c.src.slice(0, 80) : 'semilla' }))
+    .filter((c) => HEX_DID.test(c.did) && SAMPLES.has(c.sample));
+}
+
+// What a car showed, as reported: a DID, who answered and how — never a value.
+function cleanObservations(list) {
+  return (Array.isArray(list) ? list : [])
+    .map((o) => ({ did: up(o?.did), reqHeader: up(o?.reqHeader), rxHeader: up(o?.rxHeader), outcome: o?.outcome, nrc: up(o?.nrc) }))
+    .filter((o) => HEX_DID.test(o.did) && HEX_ID.test(o.reqHeader) && HEX_ID.test(o.rxHeader) && OUTCOMES.has(o.outcome))
+    .map(({ nrc, ...o }) => (/^[0-9A-F]{2}$/.test(nrc) ? { ...o, nrc } : o));
+}
+
+// Adds a report's observations to the stored ones: one entry per module and DID,
+// with how many times each outcome was seen.
+function mergeObservations(prev, added) {
+  const byKey = new Map((prev ?? []).map((o) => [`${o.reqHeader}:${o.did}`, { ...o, outcomes: { ...o.outcomes } }]));
+  for (const o of added) {
+    const key = `${o.reqHeader}:${o.did}`;
+    const cur = byKey.get(key) ?? { did: o.did, reqHeader: o.reqHeader, rxHeader: o.rxHeader, outcomes: {} };
+    cur.outcomes[o.outcome] = (cur.outcomes[o.outcome] ?? 0) + 1;
+    if (o.nrc) cur.lastNrc = o.nrc;
+    byKey.set(key, cur);
+  }
+  return [...byKey.values()].slice(0, MAX_IDS);
+}
 const slug = (s) => String(s ?? '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export function vehicleKey({ make, model, year }) {
@@ -85,7 +130,8 @@ export function knowledgeStore(file) {
     },
 
     // Merge a discovery into the facts for its vehicle (and never lose old ones).
-    report(rec) {
+    // `seed`: the caller is the seed script, the only one that may add candidates.
+    report(rec, { seed = false } = {}) {
       const key = vehicleKey(rec);
       if (!key) throw new Error('bad_vehicle');
       const db = read();
@@ -98,6 +144,8 @@ export function knowledgeStore(file) {
         modules: uniqBy([...(prev.modules ?? []), ...(rec.modules ?? []).map((m) => (m?.partNumber != null ? { ...m, partNumber: maskVins(m.partNumber) } : m))], (m) => m.id, MAX_MODULES),
         dids: [...new Set([...(prev.dids ?? []), ...(rec.dids ?? [])])].slice(0, MAX_IDS),
         pids: [...new Set([...(prev.pids ?? []), ...(rec.pids ?? [])])].slice(0, MAX_IDS),
+        didCandidates: uniqBy([...(prev.didCandidates ?? []), ...(seed ? cleanCandidates(rec.didCandidates) : [])], (c) => `${c.did}:${c.src}`, MAX_CANDIDATES),
+        didObservations: mergeObservations(prev.didObservations, cleanObservations(rec.didObservations)),
         notes: [...(prev.notes ?? []), ...(rec.note ? [{ at: new Date().toISOString(), note: maskVins(String(rec.note).slice(0, 300)) }] : [])].slice(-20),
         updated: new Date().toISOString(),
       };
@@ -132,7 +180,30 @@ export function knowledgeStore(file) {
         }
       }
       const sameMake = [...byId.values()].sort((a, b) => b.seenIn - a.seenIn).slice(0, MAX_SAME_MAKE);
-      return { exact: exact ? { key, ...exact } : null, close, sameMake };
+
+      // DIDs: the make's candidates (from every record of it) and what cars answered.
+      const records = [...(exact ? [exact] : []), ...ofMake.map(([, v]) => v)];
+      const observed = records.flatMap((v) => v.didObservations ?? []);
+      const answeredBy = new Map();
+      for (const o of observed) {
+        if (!o.outcomes?.supported) continue;
+        answeredBy.set(o.did, [...new Set([...(answeredBy.get(o.did) ?? []), o.reqHeader])]);
+      }
+      const candidates = uniqBy(records.flatMap((v) => v.didCandidates ?? []), (c) => `${c.did}:${c.src}`, MAX_CANDIDATES);
+      const dids = q.candidates
+        ? { didCandidates: candidates.map((c) => ({ ...c, toValidate: true, ...(answeredBy.has(c.did) ? { answeredBy: answeredBy.get(c.did) } : {}) })) }
+        : {
+            ...(candidates.length ? { didCandidateCount: candidates.length } : {}),
+            ...(answeredBy.size
+              ? { didsAnswered: [...answeredBy.entries()].slice(0, MAX_ANSWERED).map(([did, modules]) => ({ did, modules, ...(candidates.some((c) => c.did === did) ? { toValidate: true } : {}) })) }
+              : {}),
+          };
+      // The raw lists stay in the file: the model gets the condensed view above.
+      const lean = (v) => {
+        const { didCandidates: _c, didObservations: _o, ...rest } = v;
+        return rest;
+      };
+      return { exact: exact ? { key, ...lean(exact) } : null, close, sameMake, ...dids };
     },
   };
 }
