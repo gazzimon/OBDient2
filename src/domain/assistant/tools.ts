@@ -10,6 +10,7 @@
 //   an error the model can read, and counted.
 
 import { PID_DEFINITIONS, type PidId } from '@/core/constants/pids';
+import { FIND_MAX } from '@/domain/obd/value-search';
 
 export const TOOL_NAMES = [
   'read_pids',
@@ -89,7 +90,7 @@ export type ToolCall =
   | { readonly name: 'obd_command'; readonly command: string; readonly header: string | null }
   // Lab: does a module's link work, and which DIDs does it answer? One DID per request, 22 only.
   // `scan` reads a range of DIDs (default F100–F1FF), after the user confirmed it.
-  | { readonly name: 'did_probe'; readonly header: string; readonly mode: 'control' | 'list' | 'scan'; readonly dids: readonly string[]; readonly from: string | null; readonly to: string | null }
+  | { readonly name: 'did_probe'; readonly header: string; readonly mode: 'control' | 'list' | 'scan'; readonly dids: readonly string[]; readonly from: string | null; readonly to: string | null; readonly find: number | null }
   // The lab's shared facts about what a car supports.
   | { readonly name: 'knowledge_lookup'; readonly make: string | null; readonly model: string | null; readonly year: number | null }
   // The lab's text base: pages already read and manuals, by words and by meaning.
@@ -387,6 +388,15 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
           dids: { type: 'array', maxItems: 32, items: { type: 'string', minLength: 4, maxLength: 6 }, description: 'Solo con mode "list": DIDs de 4 dígitos hexadecimales, p. ej. ["F190", "F187"].' },
           from: { type: 'string', minLength: 4, maxLength: 6, description: 'Solo con mode "scan": primer DID del rango (por defecto F100).' },
           to: { type: 'string', minLength: 4, maxLength: 6, description: 'Solo con mode "scan": último DID del rango (por defecto F1FF).' },
+          find: {
+            type: 'integer',
+            minimum: 1,
+            maximum: FIND_MAX,
+            description:
+              'Solo con mode "list" o "scan": un número que el auto muestra (p. ej. los km del tablero, que te dice el usuario). ' +
+              'Devuelve los DIDs cuyo valor lo contiene y cómo está escrito (entero, BCD o texto; km o décimas). Son candidatos: ' +
+              'se confirman leyendo esos DIDs otra vez después de manejar unos km.',
+          },
         },
         required: ['header'],
         additionalProperties: false,
@@ -626,7 +636,7 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       return { ok: true, call: { name, command: cmd.trim(), header: typeof h === 'string' ? h.trim().toUpperCase() : null } };
     }
     case 'did_probe': {
-      const extra = only('header', 'mode', 'dids', 'from', 'to');
+      const extra = only('header', 'mode', 'dids', 'from', 'to', 'find');
       if (extra) return bad(extra);
       const h = a.header;
       if (typeof h !== 'string' || !/^[0-9A-Fa-f]{3,8}$/.test(h.trim())) return bad('"header" es la dirección de pedido del módulo, en hexadecimal.');
@@ -638,7 +648,10 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
       const did = (v: unknown) => (typeof v === 'string' && /^[0-9A-Fa-f]{4}$/.test(v.trim()) ? v.trim().toUpperCase() : null);
       if ((a.from !== undefined && !did(a.from)) || (a.to !== undefined && !did(a.to))) return bad('"from" y "to" son DIDs de 4 dígitos hexadecimales.');
       if (mode !== 'scan' && (a.from !== undefined || a.to !== undefined)) return bad('"from" y "to" son solo para mode "scan".');
-      return { ok: true, call: { name, header: h.trim().toUpperCase(), mode, dids: d as string[], from: did(a.from), to: did(a.to) } };
+      const find = a.find ?? null;
+      if (find !== null && (typeof find !== 'number' || !Number.isInteger(find) || find < 1 || find > FIND_MAX)) return bad(`"find" es un número entero entre 1 y ${FIND_MAX}.`);
+      if (find !== null && mode === 'control') return bad('"find" es para mode "list" o "scan".');
+      return { ok: true, call: { name, header: h.trim().toUpperCase(), mode, dids: d as string[], from: did(a.from), to: did(a.to), find } };
     }
     case 'knowledge_lookup': {
       const extra = only('make', 'model', 'year');

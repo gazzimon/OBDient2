@@ -11,7 +11,9 @@ import type { CommandPort } from '@/data/adapters/protocol-manager';
 import { AdapterResetError, ConnectionLostError } from '@/core/errors/obd.errors';
 import {
   classifyReply,
+  didData,
   didRequest,
+  isIdentificationDid,
   isProbeCommand,
   moduleVerdict,
   nextCursor,
@@ -22,6 +24,7 @@ import {
   type Verdict,
 } from '@/domain/obd/did-probe';
 import { FUNCTIONAL_11, FUNCTIONAL_29, needsFlowPair } from '@/domain/obd/module-scan';
+import { findValue, type ValueMatch } from '@/domain/obd/value-search';
 import { quiet } from './stn';
 
 export interface ProbeTarget {
@@ -48,6 +51,8 @@ export type ProbeRun =
       readonly volts: number | null;
       readonly codesBefore: readonly string[] | null;
       readonly codesAfter: readonly string[] | null;
+      // With `find`: the DIDs whose whole value holds that number.
+      readonly matches: readonly ValueMatch[];
     };
 
 const DID_TIMEOUT_MS = 1500;
@@ -90,6 +95,7 @@ export async function runDidProbe(
   target: ProbeTarget,
   dids: readonly string[],
   link: ProbeLink,
+  find: number | null = null,
   now: () => number = () => Date.now(),
 ): Promise<ProbeRun> {
   const functional = link.bit29 ? FUNCTIONAL_29 : FUNCTIONAL_11;
@@ -129,16 +135,24 @@ export async function runDidProbe(
 
     const guard = new ProbeGuard(now);
     const results: ProbeResult[] = [];
+    const matches: ValueMatch[] = [];
     let stopped: StopReason | null = null;
     let lastVolts = volts;
     for (const did of dids) {
-      let result = classifyReply(did, await read(didRequest(did), DID_TIMEOUT_MS), target.rxHeader);
+      let messages = await read(didRequest(did), DID_TIMEOUT_MS);
+      let result = classifyReply(did, messages, target.rxHeader);
       if (result.outcome === 'pending') {
         // Still working: one more look.
         await new Promise((r) => setTimeout(r, PENDING_RETRY_MS));
-        result = classifyReply(did, await read(didRequest(did), DID_TIMEOUT_MS), target.rxHeader);
+        messages = await read(didRequest(did), DID_TIMEOUT_MS);
+        result = classifyReply(did, messages, target.rxHeader);
       }
       results.push(result);
+      // The whole value, not the sample the model sees; never an identification DID.
+      if (find != null && result.outcome === 'supported' && !isIdentificationDid(did)) {
+        const data = didData(did, messages, target.rxHeader);
+        if (data) matches.push(...findValue(did, data, find));
+      }
       if (results.length % VOLTS_EVERY === 0) lastVolts = (await readVolts(port, link.stn)) ?? lastVolts;
       stopped = guard.record(result, lastVolts);
       if (stopped) break;
@@ -158,6 +172,7 @@ export async function runDidProbe(
       volts: lastVolts,
       codesBefore,
       codesAfter,
+      matches,
     };
   } finally {
     if (touched) await restore(port, link, elmFlow, functional).catch(() => undefined);

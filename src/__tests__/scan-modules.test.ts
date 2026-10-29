@@ -25,8 +25,9 @@ function vwCar(identity: SessionInfo['identity']) {
     const rx = modules[header];
     const seen = rx && (filter === rx || (filter === null && /^7E[89A-F]$/.test(rx)));
     if (command === '3E00' && seen) return `${rx} 02 7E 00`;
-    // Brakes: their part number (F187). Engine: no F187 (7F 22 31), but the VIN.
-    if (command === '22F187' && seen) return header === '713' ? `${rx} 10 0E 62 F1 87 35 51 30` : `${rx} 03 7F 22 31`;
+    // Brakes: their part number (F187), three frames. Engine: no F187 (7F 22 31), but the VIN.
+    if (command === '22F187' && seen) return header === '713' ? `${rx} 10 0E 62 F1 87 35 51 30\n${rx} 21 36 31 34 35 31 37 41\n${rx} 22 42 AA AA AA AA AA AA` : `${rx} 03 7F 22 31`;
+    if (command === '22 F1 87' && seen && header === '713') return `${rx} 10 0E 62 F1 87 35 51 30\n${rx} 21 36 31 34 35 31 37 41\n${rx} 22 42 AA AA AA AA AA AA`;
     if (command === '22F190' && seen && header === '7E0') return `${rx} 10 14 62 F1 90 39 42 57`;
     throw new NoDataError(command);
   };
@@ -72,9 +73,10 @@ describe('scan_modules with the make’s addresses', () => {
     expect(d.modules.map((m) => m.id).sort()).toEqual(['11:713', '11:7E0']);
     expect(d.skippedOtherIdWidth).toBe(1); // the 29-bit ABS on an 11-bit car
     // Identified by F187 (part number); the engine refuses F187 and gives F190.
+    // The part number as text, not the frames; a cut answer says so.
     const part = Object.fromEntries(d.modules.map((m) => [m.id, m.partNumber]));
-    expect(part['11:713']).toContain('62 F1 87');
-    expect(part['11:7E0']).toContain('62 F1 90');
+    expect(part['11:713']).toBe('5Q0614517AB');
+    expect(part['11:7E0']).toBe('62 F1 90 39 42 57 (incompleta)');
     expect(sent).toContain('ATCRA 77D');
     expect(sent).toContain('STCFCPA 713, 77D');
     // A custom pair turns the default flow control off: cleared before each
@@ -88,7 +90,28 @@ describe('scan_modules with the make’s addresses', () => {
     const shared = (out.ok && out.knowledge) as { vin?: unknown; modules: { id: string; partNumber: string | null }[] };
     expect(shared.vin).toBeUndefined();
     expect(shared.modules.find((m) => m.id === '11:7E0')!.partNumber).toContain('62 F1 90');
-    expect(shared.modules.find((m) => m.id === '11:713')!.partNumber).toContain('62 F1 87');
+    expect(shared.modules.find((m) => m.id === '11:713')!.partNumber).toBe('5Q0614517AB');
+  });
+
+  it('after the scan, obd_command and did_probe know the brakes answer on 77D', async () => {
+    const { session, sent } = vwCar({ elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' });
+    const tools = new VehicleToolAdapter(() => session, { knownTargets: async () => VW_TARGETS });
+
+    // Before: no filter, so the answer is lost, and the model is told why.
+    const before = await tools.execute({ name: 'obd_command', command: '22 F1 87', header: '713' }, signal);
+    expect(before).toMatchObject({ ok: false, error: 'timeout', message: expect.stringContaining('scan_modules') });
+    const probeBefore = await tools.execute({ name: 'did_probe', header: '713', mode: 'control', dids: [], from: null, to: null, find: null }, signal);
+    expect(probeBefore).toMatchObject({ ok: false, error: 'invalid_arguments', message: expect.stringContaining('scan_modules') });
+
+    data(await tools.execute({ name: 'scan_modules', make: 'volkswagen', model: null }, signal));
+    sent.length = 0;
+    const after = await tools.execute({ name: 'obd_command', command: '22 F1 87', header: '713' }, signal);
+    expect(after).toMatchObject({ ok: true, data: { messages: [{ ecu: '77D', complete: true, text: '5Q0614517AB' }] } });
+    expect(after.ok && (after.data as { note?: string }).note).toBeUndefined();
+    expect(sent).toContain('ATCRA 77D');
+    expect(sent).toContain('STCFCPA 713, 77D');
+    const probeAfter = await tools.execute({ name: 'did_probe', header: '713', mode: 'control', dids: [], from: null, to: null, find: null }, signal);
+    expect(probeAfter).toMatchObject({ ok: true, data: { module: { reqHeader: '713', rxHeader: '77D' } } });
   });
 
   it('plain ELM: flow control by ATFCSH, back to automatic at the end', async () => {
@@ -232,12 +255,24 @@ describe('requestHeader / refusalIn / noAnswer', () => {
     expect(requestHeader('7e0', false)).toEqual({ ok: true, reqHeader: '7E0', rxHeader: '7E8' });
     expect(requestHeader('713', false)).toEqual({ ok: true, reqHeader: '713', rxHeader: null }); // maker-specific: no known reply ID
     expect(requestHeader('18DB33F1', true)).toEqual({ ok: true, reqHeader: '18DB33F1', rxHeader: null });
+    // The pair a scan found on this car (the 2026-10-28 Audi dashboard: 714 → 77E).
+    expect(requestHeader('714', false, new Map([['714', '77E']]))).toEqual({ ok: true, reqHeader: '714', rxHeader: '77E' });
   });
 
   it('reads a refusal and its reason; "response pending" is not one', () => {
     expect(refusalIn('18DAF111 03 7F 22 33')).toEqual({ service: '22', code: '33', reason: 'necesita acceso de seguridad' });
     expect(refusalIn('7E8 03 7F 22 78')).toBeNull();
     expect(refusalIn('7E8 06 62 F1 87 01 02 03')).toBeNull();
+    expect(refusalIn('7E8037F1911', '19')).toMatchObject({ service: '19', code: '11' });
+    expect(refusalIn('7F 22 31')).toMatchObject({ service: '22', code: '31' });
+  });
+
+  it('a 7F inside a positive answer is data, not a refusal (2026-10-28 Audi, 19 02 FF)', () => {
+    // 59 02 <status mask 7F> then DTC records.
+    expect(refusalIn('7E8 07 59 02 7F 00 00 00', '19')).toBeNull();
+    expect(refusalIn('7E8 10 1B 59 02 7F 01 23 45\n7E8 21 08 02 34 56 08 AA AA', '19')).toBeNull();
+    // A refusal of another service is not the answer to this one.
+    expect(refusalIn('7E8 03 7F 22 31', '19')).toBeNull();
   });
 
   it('knows silence from an answer', () => {

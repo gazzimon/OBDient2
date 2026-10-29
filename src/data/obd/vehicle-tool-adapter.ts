@@ -38,6 +38,7 @@ import type { ObdSession } from './obd-session';
 import { quiet } from './stn';
 import { classifyCommand } from '@/domain/obd/uds-safety';
 import { CONTROL_DIDS, DEFAULT_RANGE, listPlan, newCodes, rangePlan, STOP_TEXT, summarize, verdictText } from '@/domain/obd/did-probe';
+import type { ValueMatch } from '@/domain/obd/value-search';
 import { runDidProbe } from './did-probe-runner';
 import { makeFromVin } from '@/domain/obd/vin-make';
 import { redactText } from '@/domain/privacy/redact';
@@ -45,7 +46,7 @@ import { matchSymptoms, symptomLabel } from '@/domain/assistant/symptoms';
 import { diagnose, pidsUsed, type Readings } from '@/domain/diagnosis/engine';
 import { ROOT_CAUSES } from '@/domain/diagnosis/root-causes';
 import type { BaselineMetric, Deviation } from '@/domain/vehicle/baseline';
-import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
+import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, isFunctional, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, serviceOf, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
 // codes the base leaves out go to the model with their class only.
@@ -129,6 +130,10 @@ export class VehicleToolAdapter implements VehicleToolsPort {
   private readonly vins = new WeakMap<ObdSession, string | null>();
   // Request headers whose link a did_probe `control` proved, per session.
   private readonly probed = new WeakMap<ObdSession, Set<string>>();
+  // Request → response ID of each module scan_modules found, per session: the
+  // maker's pairing (714 → 77E), which obd_command and did_probe need to filter
+  // the answer and send its FlowControl.
+  private readonly pairs = new WeakMap<ObdSession, Map<string, string>>();
 
   constructor(
     private readonly session: () => ObdSession | null,
@@ -541,6 +546,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
             for (const req of SCAN_IDENTIFY) {
               const raw = path === 'uds-at' ? await quiet(port, urhCommand(t.reqHeader, t.rxHeader, req), 1500) : await quiet(port, req, 1500);
               identify = identifyReply(raw && path === 'uds-at' ? udsReply(raw, req) : raw, req);
+              if (identify && raw && path === 'stn') identify = identifyText(raw, isCan(info.protocol));
               if (identify) break;
             }
             seen.add(`${bus}:${t.id}`);
@@ -564,6 +570,9 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     });
 
     const { out: found, path, buses, skipped } = result;
+    const pairs = this.pairs.get(s) ?? new Map<string, string>();
+    for (const m of found) pairs.set(m.reqHeader, m.rxHeader);
+    this.pairs.set(s, pairs);
     const byBus = (b: Bus) => found.filter((m) => m.bus === b).length;
     const adapter = info.identity.stn ?? info.identity.elm ?? 'adaptador';
     return {
@@ -615,7 +624,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     if (header) {
       if (!classifyCommand(`ATSH${header}`).ok) return fail('invalid_arguments', 'Encabezado inválido.');
       // A response ID given as the request (18DAF111 for 18DA11F1) is refused with the right one.
-      const checked = requestHeader(header, bit29);
+      const checked = requestHeader(header, bit29, this.pairs.get(s));
       if (!checked.ok) return fail('invalid_arguments', checked.message);
       target = checked;
     }
@@ -660,17 +669,22 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     // layer masks; as raw frames its serial went by unmasked.
     const messages = frameMessages(String(raw), isCan(info.protocol));
     // The raw frames only when nothing could be assembled from them.
-    const data = { command, header: target?.reqHeader ?? null, ...(messages.length ? { messages } : { raw: flat }) };
+    // A module whose response ID is unknown gets no filter and no FlowControl:
+    // an answer longer than one frame stops after the first.
+    const unpaired = target && !target.rxHeader && !isFunctional(target.reqHeader) ? target.reqHeader : null;
+    const note = unpaired ? `No se conoce la dirección con la que responde ${unpaired}: sin ella, una respuesta de más de una trama llega cortada. scan_modules la encuentra.` : null;
+    const data = { command, header: target?.reqHeader ?? null, ...(messages.length ? { messages } : { raw: flat }), ...(note ? { note } : {}) };
     // No answer is not an answer: the model must not read it as "the module has no such data".
     if (noAnswer(flat)) {
-      return fail('timeout', `Sin respuesta${target ? ` de ${target.reqHeader}` : ''} a "${command}" (${flat.slice(0, 40)}). No prueba que el dato no exista: puede ser otra dirección, otro bus o algo que este adaptador no alcanza.`);
+      return fail('timeout', `Sin respuesta${target ? ` de ${target.reqHeader}` : ''} a "${command}" (${flat.slice(0, 40)}). No prueba que el dato no exista: puede ser otra dirección, otro bus o algo que este adaptador no alcanza.${note ? ` ${note}` : ''}`);
     }
-    const refused = refusalIn(flat);
+    const refused = refusalIn(flat, serviceOf(command));
     if (refused) {
       return { ok: true, data: { ...data, refused }, summary: `El módulo rechazó ${command}: ${refused.reason}` };
     }
     const first = messages[0];
-    return { ok: true, data, summary: `Respuesta: ${(first ? `${first.ecu ?? ''} ${first.bytes}` : flat).trim().slice(0, 60)}` };
+    const cut = messages.some((m) => !m.complete) ? ' (incompleta: faltan tramas)' : '';
+    return { ok: true, data, summary: `Respuesta: ${(first ? `${first.ecu ?? ''} ${first.bytes}` : flat).trim().slice(0, 60)}${cut}` };
   }
 
   // Lab (Modo laboratorio): does this module's link work, and which of these DIDs
@@ -682,9 +696,12 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     const { header, mode } = call;
     const info = s.sessionInfo!;
     const bit29 = /29BIT/.test(info.protocol);
-    const checked = requestHeader(header, bit29);
+    const checked = requestHeader(header, bit29, this.pairs.get(s));
     if (!checked.ok) return fail('invalid_arguments', checked.message);
-    if (!checked.rxHeader) return fail('invalid_arguments', 'Hace falta la dirección de pedido de un módulo concreto (no la funcional).');
+    if (!checked.rxHeader) {
+      if (isFunctional(checked.reqHeader)) return fail('invalid_arguments', 'Hace falta la dirección de pedido de un módulo concreto (no la funcional).');
+      return fail('invalid_arguments', `No se conoce la dirección con la que responde ${checked.reqHeader} (la pareja la define cada marca). Corré scan_modules: encuentra los módulos y sus direcciones de respuesta.`);
+    }
     const verified = this.probed.get(s) ?? new Set<string>();
     const plan =
       mode === 'control'
@@ -698,7 +715,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     }
 
     const run = await s.exclusive((port) =>
-      runDidProbe(port, { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader! }, plan.dids, { bit29, stn: info.identity.stn != null, can: isCan(info.protocol) }),
+      runDidProbe(port, { reqHeader: checked.reqHeader, rxHeader: checked.rxHeader! }, plan.dids, { bit29, stn: info.identity.stn != null, can: isCan(info.protocol) }, call.find),
     );
     if (run.blocked !== null) return fail('not_supported', run.blocked);
     if (mode === 'control' && run.verdict === 'link_ok') {
@@ -729,8 +746,9 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         ...(run.stopped ? { stopped: STOP_TEXT[run.stopped], cursor: run.cursor } : {}),
         batteryVolts: run.volts,
         ...(codes.length ? { newCodes: codes } : {}),
+        ...(call.find != null ? { find: findReport(call.find, run.matches, counts.incomplete) } : {}),
       },
-      summary: `${run.verdict} · ${parts.join(' · ')}${run.stopped ? ` · ${STOP_TEXT[run.stopped]}` : ''}${codes.length ? ` · códigos nuevos: ${codes.join(', ')}` : ''}`,
+      summary: `${run.verdict} · ${parts.join(' · ')}${run.stopped ? ` · ${STOP_TEXT[run.stopped]}` : ''}${codes.length ? ` · códigos nuevos: ${codes.join(', ')}` : ''}${call.find != null ? ` · ${findSummary(call.find, run.matches)}` : ''}`,
     };
   }
 
@@ -1090,6 +1108,32 @@ function noModulesNote(otherWidth: number, bit29: boolean): string {
   if (otherWidth) parts.push(`Se saltaron ${otherWidth} direcciones conocidas de la marca porque usan IDs de ${bit29 ? '11' : '29'} bits y el protocolo del auto es de ${bit29 ? '29' : '11'}.`);
   parts.push('Los módulos pueden estar detrás de un gateway o en otro bus; si el auto usa CAN FD, ni el ELM327 ni el STN lo hablan: hace falta otro hardware.');
   return parts.join(' ');
+}
+
+// A did_probe `find`, for the model: the candidates and what they do not prove yet.
+function findReport(value: number, matches: readonly ValueMatch[], incomplete: number) {
+  const dids = new Set(matches.map((m) => m.did)).size;
+  const parts = [
+    dids
+      ? 'Candidatos, no confirmados: puede ser casualidad. Para confirmar, el usuario maneja unos km y se leen otra vez solo esos DIDs (mode "list" con el mismo find, ajustado a los km nuevos); el bueno sube lo mismo que el tablero.'
+      : `Ningún DID leído contiene ${value}. No prueba que el módulo no lo tenga: puede estar en otro rango, en otro módulo o en otra sesión.`,
+  ];
+  if (incomplete) parts.push(`${incomplete} respuestas llegaron cortadas y no se revisaron.`);
+  return { value, matches, note: parts.join(' ') };
+}
+
+function findSummary(value: number, matches: readonly ValueMatch[]): string {
+  const dids = [...new Set(matches.map((m) => m.did))];
+  return dids.length ? `${value} aparece en ${dids.join(', ')}` : `${value} no aparece en ningún DID leído`;
+}
+
+// A module's identify answer as a person reads it: the part number's text
+// ("04E906032AB"), else the assembled bytes; never the raw frames, which the
+// 2026-10-28 scan showed as "7E8100E62F187…". A cut answer says so.
+function identifyText(raw: string, can: boolean): string {
+  const m = frameMessages(raw, can).find((x) => x.bytes.startsWith('62'));
+  if (!m) return raw;
+  return `${m.text ?? m.bytes}${m.complete ? '' : ' (incompleta)'}`;
 }
 
 // The answers in a reply, assembled: [{ ecu, bytes: "62 F1 90 38 41…", complete, text? }].

@@ -92,9 +92,12 @@ export const FUNCTIONAL_29 = '18DB33F1';
 // "NO DATA" and proved nothing. A request goes to 18DA 11 F1. The same mistake on
 // 11 bits is 7E8 for 7E0. Both are refused with the right one; the width must
 // match the protocol. `rxHeader`: the reply's ID when it is known (to filter on it).
+// Outside 7E0–7E7 the pairing is the maker's (714 → 77E on a VW/Audi): it is
+// known only from `known`, the pairs scan_modules found on this car. Without it
+// the 2026-10-28 Audi dashboard answered its F187 cut after the first frame ("4G8").
 export type RequestHeader = { readonly ok: true; readonly reqHeader: string; readonly rxHeader: string | null } | { readonly ok: false; readonly message: string };
 
-export function requestHeader(header: string, bit29: boolean): RequestHeader {
+export function requestHeader(header: string, bit29: boolean, known: ReadonlyMap<string, string> = new Map()): RequestHeader {
   const h = header.replace(/\s+/g, '').toUpperCase();
   if (!/^[0-9A-F]+$/.test(h)) return { ok: false, message: 'El header es hexadecimal.' };
   if (bit29 && h.length !== 8) return { ok: false, message: 'Este auto usa CAN de 29 bits: el header tiene 8 dígitos, p. ej. 18DA11F1 (pedido al módulo 11).' };
@@ -102,7 +105,7 @@ export function requestHeader(header: string, bit29: boolean): RequestHeader {
   if (bit29) {
     if (h === FUNCTIONAL_29) return { ok: true, reqHeader: h, rxHeader: null };
     const m = /^18DA([0-9A-F]{2})([0-9A-F]{2})$/.exec(h);
-    if (!m) return { ok: true, reqHeader: h, rxHeader: null };
+    if (!m) return { ok: true, reqHeader: h, rxHeader: known.get(h) ?? null };
     const [, target, source] = m;
     if (target === 'F1' && source !== 'F1') {
       return { ok: false, message: `${h} es la dirección con la que RESPONDE el módulo ${source}; para pedirle algo usá 18DA${source}F1.` };
@@ -114,7 +117,11 @@ export function requestHeader(header: string, bit29: boolean): RequestHeader {
     return { ok: false, message: `${h} es la dirección con la que RESPONDE un módulo; para pedirle algo usá ${(n - 8).toString(16).toUpperCase()}.` };
   }
   if (n >= 0x7e0 && n <= 0x7e7) return { ok: true, reqHeader: h, rxHeader: (n + 8).toString(16).toUpperCase() };
-  return { ok: true, reqHeader: h, rxHeader: null };
+  return { ok: true, reqHeader: h, rxHeader: known.get(h) ?? null };
+}
+
+export function isFunctional(header: string): boolean {
+  return header === FUNCTIONAL_11 || header === FUNCTIONAL_29;
 }
 
 // A UDS/OBD refusal (7F, service, reason) in words, for the model and the driver.
@@ -130,10 +137,24 @@ const NRC: Readonly<Record<string, string>> = {
   '7F': 'servicio no disponible en la sesión actual',
 };
 
-export function refusalIn(raw: string): { service: string; code: string; reason: string } | null {
-  const m = /(?:^|\s|[0-9A-F]{3,8}\s?\d?\s?)7F\s?([0-9A-F]{2})\s?([0-9A-F]{2})/i.exec(raw.toUpperCase());
-  if (!m || m[2] === '78') return null; // 78: "response pending", not a refusal
-  return { service: m[1]!, code: m[2]!, reason: NRC[m[2]!] ?? `código ${m[2]}` };
+// A refusal is a whole answer of its own: 7F first (after the ID and the PCI
+// byte, when shown), then the service that was asked. A 7F anywhere else is
+// data: the 2026-10-28 Audi answered 19 02 FF with "59 02 7F …" (7F is the
+// status mask) and it was reported as "refused, code 00".
+export function refusalIn(raw: string, service: string | null = null): { service: string; code: string; reason: string } | null {
+  for (const line of raw.toUpperCase().split(/[\r\n]+/)) {
+    const m = /^(?:[0-9A-F]{8}|[0-9A-F]{3})?(?:0[3-7])?7F([0-9A-F]{2})([0-9A-F]{2})/.exec(line.replace(/\s+/g, ''));
+    if (!m || m[2] === '78') continue; // 78: "response pending", not a refusal
+    if (service && m[1] !== service.toUpperCase()) continue;
+    return { service: m[1]!, code: m[2]!, reason: NRC[m[2]!] ?? `código ${m[2]}` };
+  }
+  return null;
+}
+
+// The service a raw request asks ("22 F1 87" → "22"); null for AT/ST commands.
+export function serviceOf(command: string): string | null {
+  const c = command.replace(/\s+/g, '').toUpperCase();
+  return /^(AT|ST)/.test(c) || !/^[0-9A-F]{2}/.test(c) ? null : c.slice(0, 2);
 }
 
 // The adapter did not get an answer (or the frame failed): nothing was learnt.

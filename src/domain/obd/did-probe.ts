@@ -125,13 +125,26 @@ export function sampleOf(did: string, data: readonly number[]): string | undefin
 
 // `messages` as the frame reader assembled them; `rx` filters by the module's
 // answering ID when it is known (another module's answer is not this one's).
-export function classifyReply(did: string, messages: readonly EcuMessage[], rx: string | null = null): ProbeResult {
-  const mine = rx ? messages.filter((m) => m.ecu == null || m.ecu.toUpperCase() === rx.toUpperCase()) : messages;
-  if (mine.length === 0) return { did, outcome: 'silent' };
+const mineOf = (messages: readonly EcuMessage[], rx: string | null) => (rx ? messages.filter((m) => m.ecu == null || m.ecu.toUpperCase() === rx.toUpperCase()) : messages);
+
+function positiveOf(did: string, mine: readonly EcuMessage[]): EcuMessage | undefined {
   const hi = parseInt(did.slice(0, 2), 16);
   const lo = parseInt(did.slice(2), 16);
+  return mine.find((m) => m.bytes[0] === 0x62 && m.bytes[1] === hi && m.bytes[2] === lo);
+}
 
-  const positive = mine.find((m) => m.bytes[0] === 0x62 && m.bytes[1] === hi && m.bytes[2] === lo);
+// The whole value of a supported DID (after 62 DID DID), or null: what a value
+// search looks through, never handed to the model as such.
+export function didData(did: string, messages: readonly EcuMessage[], rx: string | null = null): readonly number[] | null {
+  const positive = positiveOf(did, mineOf(messages, rx));
+  return positive?.complete ? positive.bytes.slice(3) : null;
+}
+
+export function classifyReply(did: string, messages: readonly EcuMessage[], rx: string | null = null): ProbeResult {
+  const mine = mineOf(messages, rx);
+  if (mine.length === 0) return { did, outcome: 'silent' };
+
+  const positive = positiveOf(did, mine);
   if (positive) {
     if (!positive.complete) return { did, outcome: 'incomplete' };
     const data = positive.bytes.slice(3);

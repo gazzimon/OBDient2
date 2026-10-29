@@ -71,15 +71,17 @@ function absCar(opts: CarOptions = {}) {
 }
 
 const signal = new AbortController().signal;
-const probe = (header: string, mode: 'control' | 'list' | 'scan' = 'control', dids: string[] = [], range: { from?: string; to?: string } = {}) => ({
+const probe = (header: string, mode: 'control' | 'list' | 'scan' = 'control', dids: string[] = [], range: { from?: string; to?: string } = {}, find: number | null = null) => ({
   name: 'did_probe' as const,
   header,
   mode,
   dids,
   from: range.from ?? null,
   to: range.to ?? null,
+  find,
 });
-type Data = { range?: { from: string; to: string }; read?: number; counts?: Record<string, number>; verdict: string; explanation: string; testerPresent: boolean; results: { did: string; outcome: string; nrc?: string; length?: number; sample?: string }[]; stopped?: string; cursor?: string | null; newCodes?: string[]; batteryVolts: number | null };
+type Data = {
+  find?: { value: number; matches: { did: string; encoding: string }[]; note: string }; range?: { from: string; to: string }; read?: number; counts?: Record<string, number>; verdict: string; explanation: string; testerPresent: boolean; results: { did: string; outcome: string; nrc?: string; length?: number; sample?: string }[]; stopped?: string; cursor?: string | null; newCodes?: string[]; batteryVolts: number | null };
 const data = (o: ToolOutcome): Data => {
   if (!o.ok) throw new Error(`${o.error}: ${o.message}`);
   return o.data as Data;
@@ -158,6 +160,24 @@ describe('did_probe: list', () => {
     expect(result(d, '0123')).toEqual({ did: '0123', outcome: 'supported', length: 4, sample: '00 01 E2 40' });
     expect(result(d, 'F189').outcome).toBe('unsupported');
     expect(out.ok && out.summary).toContain('1 supported');
+  });
+
+  it('find: says which DID holds the number the dashboard shows, as a candidate', async () => {
+    const { tools } = absCar();
+    // 0123 answers 00 01 E2 40 = 123456.
+    const out = await tools.execute(probe('18DA28F1', 'list', ['0123', 'F189'], {}, 123456), signal);
+    const d = data(out);
+    expect(d.find!.matches).toContainEqual(expect.objectContaining({ did: '0123', encoding: 'entero de 3 bytes, big-endian, en km' }));
+    expect(d.find!.note).toContain('no confirmados');
+    expect(out.ok && out.summary).toContain('123456 aparece en 0123');
+  });
+
+  it('find: nothing found is said with what it does not prove; identification DIDs are not searched', async () => {
+    const { tools } = absCar();
+    const none = data(await tools.execute(probe('18DA28F1', 'list', ['0123'], {}, 999), signal));
+    expect(none.find).toMatchObject({ matches: [], note: expect.stringContaining('No prueba') });
+    // F187 answers 01 02 03 = 66051: a part number, not searched.
+    expect(data(await tools.execute(probe('18DA28F1', 'list', ['F187'], {}, 66051), signal)).find!.matches).toEqual([]);
   });
 
   it('refuses what is not a DID before touching the car', async () => {
@@ -249,7 +269,11 @@ describe('did_probe: scan', () => {
 
 describe('did_probe: the tool call and its policy', () => {
   it('parses the header, defaults to control and refuses what does not fit', () => {
-    expect(parseToolCall('did_probe', '{"header":"18da28f1"}', [])).toMatchObject({ ok: true, call: { name: 'did_probe', header: '18DA28F1', mode: 'control', dids: [], from: null, to: null } });
+    expect(parseToolCall('did_probe', '{"header":"18da28f1"}', [])).toMatchObject({ ok: true, call: { name: 'did_probe', header: '18DA28F1', mode: 'control', dids: [], from: null, to: null, find: null } });
+    expect(parseToolCall('did_probe', '{"header":"714","mode":"scan","find":87654}', [])).toMatchObject({ ok: true, call: { mode: 'scan', find: 87654 } });
+    expect(parseToolCall('did_probe', '{"header":"714","find":87654}', [])).toMatchObject({ ok: false }); // control reads identification DIDs only
+    expect(parseToolCall('did_probe', '{"header":"714","mode":"scan","find":"87654"}', [])).toMatchObject({ ok: false });
+    expect(parseToolCall('did_probe', '{"header":"714","mode":"scan","find":876.5}', [])).toMatchObject({ ok: false });
     expect(parseToolCall('did_probe', '{"header":"7E0","mode":"list","dids":["F190"]}', [])).toMatchObject({ ok: true, call: { mode: 'list', dids: ['F190'] } });
     expect(parseToolCall('did_probe', '{"header":"7E0","mode":"list"}', [])).toMatchObject({ ok: false });
     expect(parseToolCall('did_probe', '{"header":"7E0","mode":"scan"}', [])).toMatchObject({ ok: true, call: { mode: 'scan', from: null, to: null } });
