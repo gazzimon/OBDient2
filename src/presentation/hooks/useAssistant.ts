@@ -90,7 +90,7 @@ function proposeNext(conv: Conversation, asked: string): void {
   const afterId = conv.items[conv.items.length - 1]?.id;
   if (!afterId) return;
   void container.assistant
-    .nextQuestions(conv.api, asked)
+    .nextQuestions(conv.api, asked, conv.summary ?? null)
     .then((questions) => {
       const store = useChatStore.getState();
       const c = store.conversations.find((x) => x.id === conv.id);

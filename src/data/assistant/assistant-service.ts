@@ -7,7 +7,7 @@
 // (no text, no tool), so a retry never runs a tool twice.
 
 import { runTurn, ToolMemo, type AgentEvent, type TurnResult } from '@/domain/assistant/agent-loop';
-import type { AssistantContext } from '@/domain/assistant/prompt';
+import type { AssistantContext, Persona } from '@/domain/assistant/prompt';
 import { nextQuestionsRequest, parseNextQuestions } from '@/domain/assistant/next-questions';
 import { summaryRequest } from '@/domain/assistant/summary';
 import type { ApiMessage, LlmPort } from '@/domain/ports/llm.port';
@@ -57,6 +57,8 @@ export class AssistantService {
       readonly account: AccountCredentials;
       readonly vehicle: VehicleToolsPort;
       readonly makeLlm: (credentials: LlmCredentials) => LlmPort;
+      // The mechanic's instructions in the socios build; the driver's otherwise.
+      readonly persona?: Persona;
     },
   ) {}
 
@@ -74,6 +76,7 @@ export class AssistantService {
         text: input.text,
         ...(input.images?.length ? { images: input.images } : {}),
         context: input.context,
+        ...(this.deps.persona ? { persona: this.deps.persona } : {}),
         llm,
         vehicle: this.deps.vehicle,
         confirmation: input.confirmation,
@@ -100,11 +103,12 @@ export class AssistantService {
     }
   }
 
-  async nextQuestions(history: readonly ApiMessage[], asked: string | null): Promise<string[]> {
+  async nextQuestions(history: readonly ApiMessage[], asked: string | null, summary: string | null = null): Promise<string[]> {
     const credentials = this.deps.account.llmCredentials();
     if (!credentials || history.length === 0) return [];
     try {
-      const r = await this.deps.makeLlm(credentials).complete(nextQuestionsRequest(history));
+      const request = nextQuestionsRequest(history, { summary, audience: this.deps.persona?.audience ?? 'driver' });
+      const r = await this.deps.makeLlm(credentials).complete(request);
       return parseNextQuestions(r.content, asked);
     } catch {
       return [];

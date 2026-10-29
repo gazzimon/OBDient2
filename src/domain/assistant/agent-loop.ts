@@ -18,7 +18,7 @@ import type { ConfirmationPort, VehicleToolsPort } from '@/domain/ports/vehicle-
 import { estimateChars, estimateTokens, textTokens, trimHistory } from './history';
 import { redactText } from '@/domain/privacy/redact';
 import { evaluatePolicy, TOOL_LEVEL } from './policy';
-import { maxTokensFor, SYSTEM_PROMPT, userMessage, type AssistantContext } from './prompt';
+import { DRIVER, maxTokensFor, userMessage, type AssistantContext, type Persona } from './prompt';
 import { INTERNAL_MARKER, MarkerFilter } from './stream-filter';
 import { summaryMessages } from './summary';
 import { parseToolCall, toolSchemas, type ToolCall, type ToolOutcome } from './tools';
@@ -88,6 +88,8 @@ export interface TurnOptions {
   // Photos attached to this message (data URLs), e.g. a dashboard warning light.
   readonly images?: readonly string[];
   readonly context: AssistantContext;
+  // Who it talks to: the driver (public app) or the mechanic (socios build).
+  readonly persona?: Persona;
   readonly llm: LlmPort;
   readonly vehicle: VehicleToolsPort;
   readonly confirmation: ConfirmationPort;
@@ -131,6 +133,7 @@ export interface TurnResult {
 
 export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
   const now = opts.now ?? Date.now;
+  const persona = opts.persona ?? DRIVER;
   const memo = opts.memo ?? new ToolMemo();
   const emit = opts.onEvent ?? (() => undefined);
   const signal = opts.signal ?? new AbortController().signal;
@@ -152,14 +155,14 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
   // What fits is what is left of the window after the instructions, the tool
   // definitions (they grow with every tool), this question and the answer —
   // not a fixed number, which went stale when the tools did.
-  const baseTokens = estimateChars(SYSTEM_PROMPT.length) + estimateChars(JSON.stringify(tools).length) + summaryTokens;
+  const baseTokens = estimateChars(persona.system.length) + estimateChars(JSON.stringify(tools).length) + summaryTokens;
   const tokensOf = (messages: readonly ApiMessage[]) => messages.reduce((sum, m) => sum + estimateTokens(m), 0);
   // The first call leaves room for everything the turn may add; from the second
   // on the turn's own messages (`added`) are counted for real, so what a long
   // chain of tools adds is trimmed from the history instead of overflowing.
   let reserve = TURN_RESERVE_TOKENS;
   const historyBudget = (squeeze: number) =>
-    Math.max(MIN_HISTORY_TOKENS, Math.floor((CONTEXT_TOKENS - maxTokensFor(opts.context) - baseTokens - tokensOf(added) - reserve) * squeeze));
+    Math.max(MIN_HISTORY_TOKENS, Math.floor((CONTEXT_TOKENS - maxTokensFor(opts.context, persona) - baseTokens - tokensOf(added) - reserve) * squeeze));
   let squeeze = 1;
   let { kept, dropped } = trimHistory(opts.history, historyBudget(squeeze), { keepLast: false });
   const outcomes: ToolOutcome[] = [];
@@ -203,7 +206,7 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
           // The one place everything the model reads passes through: the history
           // keeps what the owner saw (the full VIN), the model never gets its serial.
           messages: ((): ApiMessage[] => [
-            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: persona.system },
             ...summary,
             ...kept,
             ...added,
@@ -213,7 +216,7 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
           ])().map(hidingVin),
           tools,
           toolChoice: noTools ? 'none' : 'auto',
-          maxTokens: maxTokensFor(opts.context),
+          maxTokens: maxTokensFor(opts.context, persona),
           thinking: opts.thinking ?? false,
         },
         {
@@ -291,7 +294,7 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
     // Each result gets its share of what the window has left (the history can
     // still shrink to MIN_HISTORY_TOKENS), never more than MAX_TOOL_RESULT_TOKENS:
     // the latest batch is the one thing compactOldResults cannot cut.
-    const free = CONTEXT_TOKENS - maxTokensFor(opts.context) - baseTokens - Math.min(tokensOf(kept), MIN_HISTORY_TOKENS) - tokensOf(added) - 300;
+    const free = CONTEXT_TOKENS - maxTokensFor(opts.context, persona) - baseTokens - Math.min(tokensOf(kept), MIN_HISTORY_TOKENS) - tokensOf(added) - 300;
     const resultTokens = Math.min(MAX_TOOL_RESULT_TOKENS, Math.max(MIN_RESULT_TOKENS, Math.floor(free / Math.min(calls.length, MAX_TOOLS_PER_ROUND))));
     // Calls that do not touch the car (the adapter has one queue) run at the same
     // time: three web lookups in one round cost the time of the slowest.
@@ -315,7 +318,7 @@ export async function runTurn(opts: TurnOptions): Promise<TurnResult> {
   // The turn's own tool results are the bulk of a long chain: when the window is
   // short, the older ones (not the latest batch) shrink to their first lines.
   function compactOldResults(): void {
-    const room = CONTEXT_TOKENS - maxTokensFor(opts.context) - 200;
+    const room = CONTEXT_TOKENS - maxTokensFor(opts.context, persona) - 200;
     const latestCalls = added.map((m) => m.role === 'assistant' && !!m.tool_calls).lastIndexOf(true);
     for (let i = 0; i < latestCalls && baseTokens + tokensOf(kept) + tokensOf(added) > room; i++) {
       const m = added[i]!;

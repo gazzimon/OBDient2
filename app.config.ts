@@ -25,6 +25,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   if (process.env.APP_VARIANT === 'socios') {
     return {
       ...base,
+      // The assistant talks to a mechanic (WORKSHOP_PROMPT), not to a driver.
+      extra: { ...base.extra, audience: 'workshop' },
       name: 'OBDient FIUI Socios',
       scheme: 'obdient2-socios',
       icon: './assets/socios/icon.png',

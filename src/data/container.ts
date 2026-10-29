@@ -6,6 +6,7 @@ import { AssistantService } from '@/data/assistant/assistant-service';
 import { ChatSearchTools } from '@/data/assistant/chat-search-tools';
 import { useChatStore } from '@/store/chatStore';
 import { OfflineAssistant } from '@/domain/assistant/offline-assistant';
+import { DRIVER, WORKSHOP } from '@/domain/assistant/prompt';
 import { OnlineTools } from '@/data/tools/online-tools';
 import { ToolsClient } from '@/data/tools/tools-client';
 import { ServiceTools } from '@/data/service/service-tools';
@@ -69,7 +70,7 @@ const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
 });
 
 // Accounts (ADR-0008): email code login (Magic), model key from obdient-auth.
-const extra = Constants.expoConfig?.extra as { authUrl: string; toolsUrl: string };
+const extra = Constants.expoConfig?.extra as { authUrl: string; toolsUrl: string; audience?: 'workshop' };
 const account = new AccountService({
   identity: magicIdentity,
   secrets: secureStore,
@@ -130,6 +131,7 @@ const assistantTools: VehicleToolsPort = {
 const assistant = new AssistantService({
   account,
   vehicle: assistantTools,
+  persona: extra.audience === 'workshop' ? WORKSHOP : DRIVER,
   makeLlm: (c) =>
     new OpenAiChatClient({
       baseUrl: c.baseUrl,
