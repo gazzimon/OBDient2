@@ -49,6 +49,23 @@ export const SYMPTOMS: Readonly<Record<string, Symptom>> = {
   temp_light: { label: 'testigo de temperatura', keywords: ['luz de temperatura', 'testigo de temperatura'] },
   oil_light: { label: 'testigo de aceite', keywords: ['luz de aceite', 'testigo de aceite'] },
   battery_light: { label: 'testigo de batería', keywords: ['luz de bateria', 'testigo de bateria'] },
+  // Beyond the engine (2026-10-28): what the OBD cannot measure, so the root
+  // causes of those systems rest on these and on the chassis/body codes.
+  brake_pedal_soft: { label: 'pedal de freno largo o que se hunde', keywords: ['pedal largo', 'pedal esponjoso', 'se hunde el pedal', 'pedal se va al fondo', 'frena poco', 'no frena'] },
+  brake_noise: { label: 'ruido o vibración al frenar', keywords: ['ruido al frenar', 'chilla al frenar', 'chillan los frenos', 'rechina al frenar', 'vibra al frenar'] },
+  wheel_hum: { label: 'zumbido que sube con la velocidad', keywords: ['zumbido', 'ronroneo', 'ruido de ruleman', 'ruido de rodamiento'] },
+  cv_click: { label: 'clic al doblar', keywords: ['clic al doblar', 'hace clic al doblar', 'tac tac al doblar', 'ruido al doblar', 'ruido al girar'] },
+  suspension_noise: { label: 'ruido en la suspensión', keywords: ['ruido en la suspension', 'golpe en los pozos', 'golpea en los pozos', 'ruido en el tren delantero', 'rebota mucho'] },
+  steering_vibration: { label: 'vibra el volante', keywords: ['vibra el volante', 'tiembla el volante', 'vibra la direccion'] },
+  pulls_side: { label: 'tira hacia un lado', keywords: ['tira para un lado', 'tira hacia un lado', 'se va para un lado', 'tira a la derecha', 'tira a la izquierda'] },
+  steering_heavy: { label: 'dirección dura', keywords: ['direccion dura', 'volante duro', 'se endurecio la direccion', 'testigo de direccion'] },
+  clutch_slip: { label: 'patina el embrague', keywords: ['patina el embrague', 'embrague patina', 'patina la placa', 'acelera y no avanza'] },
+  ac_not_cold: { label: 'el aire acondicionado no enfría', keywords: ['aire no enfria', 'aire acondicionado no enfria', 'no enfria el aire', 'el aire tira caliente'] },
+  blower_fault: { label: 'el ventilador del habitáculo no sopla bien', keywords: ['no anda el ventilador', 'ventilador solo en el maximo', 'forzador no anda', 'solo anda en la cuatro', 'calefaccion no sopla'] },
+  abs_light: { label: 'testigo de ABS', keywords: ['luz de abs', 'luz del abs', 'testigo de abs', 'testigo del abs'] },
+  airbag_light: { label: 'testigo de airbag', keywords: ['luz de airbag', 'luz del airbag', 'testigo de airbag', 'testigo del airbag'] },
+  tpms_light: { label: 'testigo de presión de neumáticos', keywords: ['testigo de presion', 'luz de presion de neumaticos', 'testigo de neumaticos', 'luz de las cubiertas', 'tpms'] },
+  dpf_light: { label: 'testigo del filtro de partículas', keywords: ['testigo del filtro de particulas', 'luz del dpf', 'testigo dpf', 'filtro de particulas'] },
 };
 
 // A negator right before the keyword flips it to denied.

@@ -25,6 +25,10 @@ describe('phrase router', () => {
     ['¿cuánto falta?', 'route_status'],
     ['¿a qué hora llego?', 'route_status'],
     ['cancelá la navegación', 'stop_navigation'],
+    ['datos en vivo', 'live_data'],
+    ['mostrame los sensores', 'live_data'],
+    ['diagnosticá el auto', 'diagnose'],
+    ['haceme un diagnóstico, tironea en frío', 'diagnose'],
   ])('%s → %s', (text, intent) => {
     expect(routePhrase(text)).toBe(intent);
   });
@@ -35,6 +39,8 @@ describe('phrase router', () => {
     'me falta plata para el service',
     'no entiendo los códigos de la radio',
     'qué es un freno',
+    '¿qué sensores tiene este auto?',
+    'el diagnóstico del taller salió caro',
     '',
   ])('does not take "%s"', (text) => {
     expect(routePhrase(text)).toBeNull();
@@ -55,6 +61,10 @@ describe('symptoms', () => {
   });
   it('matches whole words only', () => {
     expect(matchSymptoms('estiembla').confirmed).toEqual([]);
+  });
+  it('knows systems beyond the engine', () => {
+    expect(matchSymptoms('se prendió la luz del ABS y hace clic al doblar').confirmed).toEqual(expect.arrayContaining(['abs_light', 'cv_click']));
+    expect(matchSymptoms('el aire no enfría').confirmed).toContain('ac_not_cold');
   });
   it('flashing check light is not also "on"', () => {
     expect(matchSymptoms('el check engine titila').confirmed).toEqual(['check_flashing']);
@@ -106,6 +116,29 @@ describe('offline assistant', () => {
     const a = new OfflineAssistant(tools({ route_status: status }));
     const r = await a.handle(input('¿cuánto falta?'), { ...CTX, connected: false });
     expect(r).toMatchObject({ text: 'Faltan 3,2 km, unos 9 minutos: llegás a las 14:35.' });
+  });
+
+  it('live data asks only for what the car supports and names it in Spanish', async () => {
+    const calls: ToolCall[] = [];
+    const a = new OfflineAssistant(
+      tools({ read_pids: { ok: true, data: { RPM: { value: 812, unit: 'rpm' }, VOLTAGE: { value: 14.06, unit: 'V' } }, summary: '' } }, calls),
+    );
+    const r = await a.handle(input('datos en vivo'), CTX);
+    expect(calls[0]).toEqual({ name: 'read_pids', pids: ['RPM', 'SPEED', 'COOLANT_TEMP', 'VOLTAGE'] });
+    expect(r).toMatchObject({ text: 'Ahora el auto marca:\n- Vueltas del motor: 812 rpm\n- Tensión de batería: 14,1 V' });
+  });
+
+  it('diagnose passes the driver\'s words and works without the adapter', async () => {
+    const calls: ToolCall[] = [];
+    const result: ToolOutcome = {
+      ok: true,
+      data: { hypotheses: [{ cause: 'Frenos: aire en el circuito', system: 'frenos', confidencePct: 82, evidence: ['pedal de freno largo'], checks: ['Revisar el nivel de líquido'], safety: 'No sigas andando.' }] },
+      summary: '',
+    };
+    const a = new OfflineAssistant(tools({ diagnose: result }, calls));
+    const r = await a.handle(input('diagnosticá: el pedal se hunde'), { ...CTX, connected: false });
+    expect(calls).toEqual([{ name: 'diagnose', symptoms: 'diagnosticá: el pedal se hunde' }]);
+    expect(r.kind === 'answer' && r.text).toMatch(/1\. Frenos: aire en el circuito \(frenos, 82%\)\n {3}⚠ No sigas andando\./);
   });
 
   it('anything else becomes a note with the car at that moment', async () => {

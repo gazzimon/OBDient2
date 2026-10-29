@@ -41,6 +41,10 @@ import { CONTROL_DIDS, DEFAULT_RANGE, listPlan, newCodes, rangePlan, STOP_TEXT, 
 import { runDidProbe } from './did-probe-runner';
 import { makeFromVin } from '@/domain/obd/vin-make';
 import { redactText } from '@/domain/privacy/redact';
+import { matchSymptoms, symptomLabel } from '@/domain/assistant/symptoms';
+import { diagnose, pidsUsed, type Readings } from '@/domain/diagnosis/engine';
+import { ROOT_CAUSES } from '@/domain/diagnosis/root-causes';
+import type { BaselineMetric, Deviation } from '@/domain/vehicle/baseline';
 import { BUS_PRESET, FUNCTIONAL_11, FUNCTIONAL_29, FUNCTIONAL_PROBE, mergeTargets, identifyReply, moduleAnswered, needsFlowPair, noAnswer, protocolToPreset, refusalIn, requestHeader, respondersFrom, scanTargets, SCAN_IDENTIFY, SCAN_PROBE, udsReply, urhCommand, type Bus, type ScanPath, type ScanTarget } from '@/domain/obd/module-scan';
 
 // What a trouble code means (data/knowledge/dtc-base.ts). Carmaker codes and
@@ -80,6 +84,8 @@ export interface VehicleToolDeps {
   readonly moving?: () => boolean;
   // scan_modules: the addresses the lab knows for a make (obdient-tools).
   readonly knownTargets?: (make: string, model: string | null, signal: AbortSignal) => Promise<ScanTarget[]>;
+  // diagnose: what is unusual for this car now, from its baseline (VehicleBaselines).
+  readonly baseline?: (vin: string | null) => { readonly deviations: readonly Deviation[]; readonly comparable: readonly BaselineMetric[] };
   readonly sleep?: (ms: number) => Promise<void>;
   readonly now?: () => number;
 }
@@ -89,6 +95,8 @@ const CLEAR_TIMEOUT_MS = 10_000;
 const SAMPLE_INTERVAL_MS = 250;
 const FREEZE_FRAME_PIDS_MAX = 12;
 const HISTORY_MAX_EVENTS = 20;
+// diagnose: long enough for a few rounds of every PID the causes read.
+const DIAGNOSE_SECONDS = 6;
 // A telemetry value younger than this is as good as a new reading.
 const LIVE_MAX_AGE_MS = 2000;
 // Reads are retried once after the adapter rebooted; clearing and the bench are not.
@@ -165,6 +173,8 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     // These two do not need the car.
     if (call.name === 'calculate') return this.calculate(call.expression);
     if (call.name === 'read_fault_history') return this.readFaultHistory();
+    // Works without the car too, on the symptoms alone.
+    if (call.name === 'diagnose') return this.diagnose(call.symptoms, signal);
     const s = this.session();
     if (!s?.sessionInfo) return fail('not_connected', 'No hay un adaptador OBD conectado.');
     try {
@@ -212,6 +222,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
         return this.clearDtcs(s);
       case 'read_fault_history':
       case 'calculate':
+      case 'diagnose':
         throw new Error('handled before the session'); // see execute()
       case 'search_place':
       case 'set_destination':
@@ -285,6 +296,73 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     };
   }
 
+  // Root causes (domain/diagnosis): stored and pending codes plus a few seconds
+  // of the PIDs the causes read, when the adapter is there; this car's baseline;
+  // the symptoms in the driver's words. A failed read leaves the car out
+  // (symptoms only) instead of failing the call.
+  private async diagnose(text: string | null, signal: AbortSignal): Promise<ToolOutcome> {
+    const said = text ? matchSymptoms(text) : { confirmed: [], denied: [] };
+    const s = this.session();
+    const codes: string[] = [];
+    let readings: Readings = {};
+    let carRead = false;
+    let vin: string | null = null;
+    if (s?.sessionInfo) {
+      try {
+        for (const kind of ['stored', 'pending'] as const) {
+          const out = await this.readDtcs(s, kind);
+          if (!out.ok) continue;
+          carRead = true;
+          for (const c of (out.data as { codes: { code: string }[] }).codes) if (!codes.includes(c.code)) codes.push(c.code);
+        }
+        const supported = new Set<PidId>([...this.supportedPids(), 'VOLTAGE']);
+        const pids = pidsUsed(ROOT_CAUSES).filter((p) => supported.has(p));
+        const values = await this.collect(s, pids, DIAGNOSE_SECONDS, signal);
+        readings = Object.fromEntries(
+          [...values].filter(([, l]) => l.length > 0).map(([p, l]) => [p, { mean: l.reduce((a, b) => a + b, 0) / l.length, min: Math.min(...l), max: Math.max(...l), n: l.length }]),
+        );
+        carRead ||= Object.keys(readings).length > 0;
+      } catch (err) {
+        if (err instanceof Cancelled || signal.aborted) return failure(new Cancelled());
+        // The car did not answer: go on with what the driver said.
+      }
+      vin = this.vins.get(s) ?? null;
+    }
+    const base = this.deps.baseline?.(vin) ?? { deviations: [], comparable: [] };
+    const list = diagnose(ROOT_CAUSES, {
+      codes,
+      readings,
+      symptoms: said.confirmed,
+      denied: said.denied,
+      deviations: base.deviations,
+      comparable: base.comparable,
+      carRead,
+    });
+    const measured = Object.fromEntries(Object.entries(readings).map(([p, r]) => [p, { mean: round(r.mean), min: round(r.min), max: round(r.max) }]));
+    return {
+      ok: true,
+      data: {
+        hypotheses: list.map((h) => ({
+          cause: h.title,
+          system: h.system,
+          confidencePct: h.confidence,
+          evidence: h.evidence,
+          against: h.against,
+          toCheck: h.toCheck.slice(0, 4),
+          checks: h.checks,
+          ...(h.safety ? { safety: h.safety } : {}),
+        })),
+        carRead,
+        codes,
+        measured,
+        unusualForThisCar: base.deviations.map((d) => `${d.label}: ${fmt(d.value)} ${d.unit} (lo habitual es ${fmt(d.usual)})`),
+        symptoms: said.confirmed.map(symptomLabel),
+        denied: said.denied.map(symptomLabel),
+      },
+      summary: list.length ? `Más probable: ${list[0]!.title} (${list[0]!.confidence}%)` : 'Sin una causa clara',
+    };
+  }
+
   // ── Live values ────────────────────────────────────────────────────────────
 
   private async readValue(s: ObdSession, pid: PidId, useLive = false): Promise<number | null> {
@@ -317,16 +395,7 @@ export class VehicleToolAdapter implements VehicleToolsPort {
     seconds: number,
     signal: AbortSignal,
   ): Promise<ToolOutcome> {
-    const values = new Map<PidId, number[]>(pids.map((p) => [p, []]));
-    const end = this.now() + seconds * 1000;
-    while (this.now() < end) {
-      if (signal.aborted) throw new Cancelled();
-      for (const pid of pids) {
-        const v = await this.readValue(s, pid);
-        if (v != null) values.get(pid)!.push(v);
-      }
-      await this.sleep(SAMPLE_INTERVAL_MS);
-    }
+    const values = await this.collect(s, pids, seconds, signal);
     const data: Record<string, unknown> = {};
     for (const [pid, list] of values) {
       data[pid] = list.length
@@ -354,6 +423,21 @@ export class VehicleToolAdapter implements VehicleToolsPort {
       })
       .join(', ');
     return { ok: true, data, summary };
+  }
+
+  // Every value of each PID read in rounds for `seconds`.
+  private async collect(s: ObdSession, pids: readonly PidId[], seconds: number, signal: AbortSignal): Promise<Map<PidId, number[]>> {
+    const values = new Map<PidId, number[]>(pids.map((p) => [p, []]));
+    const end = this.now() + seconds * 1000;
+    while (this.now() < end) {
+      if (signal.aborted) throw new Cancelled();
+      for (const pid of pids) {
+        const v = await this.readValue(s, pid);
+        if (v != null) values.get(pid)!.push(v);
+      }
+      await this.sleep(SAMPLE_INTERVAL_MS);
+    }
+    return values;
   }
 
   // ── Diagnostic reads ───────────────────────────────────────────────────────

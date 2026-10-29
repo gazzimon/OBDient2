@@ -44,6 +44,7 @@ export const TOOL_NAMES = [
   'car_price',
   'log_service',
   'read_service_log',
+  'diagnose',
 ] as const;
 
 export type ToolName = (typeof TOOL_NAMES)[number];
@@ -102,7 +103,10 @@ export type ToolCall =
   | { readonly name: 'car_price'; readonly query: string; readonly year: number | null }
   // The service log on the phone; the car is always confirmed with the user first.
   | { readonly name: 'log_service'; readonly car: string; readonly item: string; readonly km: number | null; readonly note: string | null }
-  | { readonly name: 'read_service_log'; readonly car: string | null };
+  | { readonly name: 'read_service_log'; readonly car: string | null }
+  // Root causes with weighted evidence (domain/diagnosis): codes, a few seconds of
+  // live values, this car's baseline and the symptoms in the driver's words.
+  | { readonly name: 'diagnose'; readonly symptoms: string | null };
 
 export const FUEL_PRODUCTS = ['nafta', 'nafta_premium', 'gasoil', 'gasoil_premium', 'gnc'] as const;
 export type FuelProduct = (typeof FUEL_PRODUCTS)[number];
@@ -474,6 +478,20 @@ export function toolSchemas(supported: readonly PidId[]): ToolSchema[] {
       properties: { car: { type: 'string', maxLength: 60, description: 'Solo los de este auto.' } },
       additionalProperties: false,
     }),
+    fn(
+      'diagnose',
+      'Diagnóstico por causas raíz: lee los códigos, mide unos segundos los sensores que importan y los compara con lo ' +
+        'habitual de este auto, y pesa los síntomas que contó el usuario. Devuelve las causas más probables con su ' +
+        'porcentaje, la evidencia a favor y en contra, qué falta medir y qué revisar. Funciona también sin el adaptador ' +
+        '(solo con los síntomas). Usalo cuando el usuario describe un problema o pide un diagnóstico.',
+      {
+        type: 'object',
+        properties: {
+          symptoms: { type: 'string', maxLength: 400, description: 'Lo que contó el usuario, con sus palabras: ruidos, olores, testigos, cuándo pasa.' },
+        },
+        additionalProperties: false,
+      },
+    ),
   ];
 }
 
@@ -671,6 +689,13 @@ export function parseToolCall(name: string, rawArgs: string, supported: readonly
         ok: true,
         call: { name, car: car.trim(), item: item.trim(), km: (km as number | undefined) ?? null, note: typeof note === 'string' && note.trim() ? note.trim() : null },
       };
+    }
+    case 'diagnose': {
+      const extra = only('symptoms');
+      if (extra) return bad(extra);
+      const t = a.symptoms;
+      if (t !== undefined && t !== null && (typeof t !== 'string' || t.length > 400)) return bad('"symptoms" es texto de hasta 400 caracteres.');
+      return { ok: true, call: { name, symptoms: typeof t === 'string' && t.trim() ? t.trim() : null } };
     }
     case 'read_service_log': {
       const extra = only('car');

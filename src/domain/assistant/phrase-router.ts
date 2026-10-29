@@ -10,7 +10,16 @@
 
 import type { ToolCall } from './tools';
 
-export type PhraseIntent = 'codes' | 'battery' | 'readiness' | 'freeze_frame' | 'vehicle_info' | 'route_status' | 'stop_navigation';
+export type PhraseIntent =
+  | 'codes'
+  | 'battery'
+  | 'readiness'
+  | 'freeze_frame'
+  | 'vehicle_info'
+  | 'live_data'
+  | 'diagnose'
+  | 'route_status'
+  | 'stop_navigation';
 
 const PHRASES: readonly { readonly intent: PhraseIntent; readonly pattern: RegExp }[] = [
   {
@@ -26,6 +35,17 @@ const PHRASES: readonly { readonly intent: PhraseIntent; readonly pattern: RegEx
   { intent: 'readiness', pattern: /\b(?:vtv|monitores?|readiness)\b/ },
   { intent: 'freeze_frame', pattern: /\bfreeze ?frame\b|\bcuadro congelado\b/ },
   { intent: 'vehicle_info', pattern: /\b(?:vin|numero de chasis)\b/ },
+  // "Datos en vivo", "mostrame los sensores": a verb plus what is shown, so "los
+  // datos del seguro" or "¿qué sensores tiene?" stay questions.
+  {
+    intent: 'live_data',
+    pattern: /\bdatos en vivo\b|\b(?:mostrame|mostra|mira|mirame|lee|leeme|dame|pasame)\b.{0,12}\b(?:los )?(?:valores|sensores|parametros)\b/,
+  },
+  // "Diagnosticá el auto", "hacé un diagnóstico": the whole word, never "diagnóstico" alone in a question.
+  {
+    intent: 'diagnose',
+    pattern: /\b(?:diagnostica|diagnosticame|diagnosticalo|diagnosticar)\b|\b(?:hace|haceme|hacer|corre|correr)\b.{0,8}\bun diagnostico\b/,
+  },
   {
     intent: 'route_status',
     pattern: /\bcuanto (?:me |nos )?(?:falta|queda)\b|\ba que hora (?:llego|llegamos)\b|\bhora de llegada\b/,
@@ -43,6 +63,10 @@ export const INTENT_CALL: Readonly<Record<PhraseIntent, ToolCall>> = {
   readiness: { name: 'read_readiness' },
   freeze_frame: { name: 'read_freeze_frame' },
   vehicle_info: { name: 'read_vehicle_info' },
+  // The offline assistant narrows these to what the car supports.
+  live_data: { name: 'read_pids', pids: ['RPM', 'SPEED', 'COOLANT_TEMP', 'ENGINE_LOAD', 'VOLTAGE', 'FUEL_TRIM_SHORT', 'FUEL_TRIM_LONG', 'INTAKE_MAP'] },
+  // The offline assistant passes the driver's words as the symptoms.
+  diagnose: { name: 'diagnose', symptoms: null },
   route_status: { name: 'route_status' },
   stop_navigation: { name: 'stop_navigation' },
 };

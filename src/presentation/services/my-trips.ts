@@ -161,6 +161,8 @@ class MyTripsRecorder {
   // Saved at once; place names and codes are added when they arrive.
   private async keep(trip: Trip): Promise<void> {
     trips.save(trip);
+    // The trip's consumption is part of what is normal for this car.
+    container.baselines.addTrip(trip.vin, trip.distanceM, trip.fuelL);
     const codes = container.faults
       .list(trip.vin ?? undefined)
       .flatMap((e) => (e.type === 'codes' && e.lastSeenAt >= trip.startedAt && e.at <= trip.endedAt + 60_000 ? e.codes.map((c) => c.code) : []));

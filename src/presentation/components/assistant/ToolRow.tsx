@@ -35,6 +35,7 @@ const TOOLS: Record<string, { label: string; icon: IconName }> = {
   car_price: { label: 'Buscando precios de autos', icon: 'car-info' },
   log_service: { label: 'Anotando en el registro de service', icon: 'wrench-clock' },
   read_service_log: { label: 'Leyendo el registro de service', icon: 'clipboard-text-clock-outline' },
+  diagnose: { label: 'Buscando la causa más probable', icon: 'stethoscope' },
 };
 
 // What the assistant is doing, in words (the drive screen's subtitle too).

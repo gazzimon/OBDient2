@@ -44,6 +44,8 @@ export const TOOL_LEVEL: Readonly<Record<ToolCall['name'], ToolLevel>> = {
   // Writes only the phone's own log, after the user confirmed the car.
   log_service: 'read',
   read_service_log: 'read',
+  // Reads codes and samples a few seconds on the shared link, like sample_pids.
+  diagnose: 'read',
 };
 
 // While moving, a sample keeps polling secondary PIDs instead of the dashboard's:

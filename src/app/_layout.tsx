@@ -23,6 +23,7 @@ import { NAVIGATION_TOOL_NAMES, navigationTools } from '@/presentation/services/
 import { container } from '@/data/container';
 import { MagicRelayer } from '@/data/auth/magic-identity';
 import { myTrips } from '@/presentation/services/my-trips';
+import { baselineRecorder } from '@/presentation/services/baseline-recorder';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -44,6 +45,9 @@ export default function RootLayout() {
     container.setNavigationTools(NAVIGATION_TOOL_NAMES, navigationTools);
     // "Mis viajes": records by itself while the adapter is connected.
     myTrips.start();
+    // What is normal for each car: learnt by itself, compared by the diagnosis.
+    baselineRecorder.start();
+    container.setBaselineSource((vin) => baselineRecorder.compare(vin));
   }, []);
 
   if (!fontsLoaded) {

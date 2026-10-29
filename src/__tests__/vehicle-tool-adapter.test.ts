@@ -326,6 +326,20 @@ describe('VehicleToolAdapter', () => {
     expect(elm.sent).toEqual(expect.arrayContaining(['ATH1', '0100', 'ATH0', 'ATAMC', 'ATCTM1']));
   });
 
+  it('diagnose works without the car, on the symptoms and the baseline', async () => {
+    const dev = { metric: 'resting_v' as const, label: 'tensión de batería con el motor apagado', unit: 'V', value: 11.9, usual: 12.6, diff: -0.7, direction: 'low' as const, sessions: 5 };
+    const tools = new VehicleToolAdapter(() => null, { baseline: () => ({ deviations: [dev], comparable: ['resting_v'] }) });
+    const out = await tools.execute({ name: 'diagnose', symptoms: 'se descarga la batería y tarda en arrancar' }, signal);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    const data = out.data as { carRead: boolean; hypotheses: { cause: string; evidence: string[] }[]; symptoms: string[]; unusualForThisCar: string[] };
+    expect(data.carRead).toBe(false);
+    expect(data.hypotheses[0]?.cause).toBe('Batería débil o descargada');
+    expect(data.hypotheses[0]?.evidence).toContain('tensión en reposo más baja que lo habitual en este auto');
+    expect(data.symptoms).toEqual(['tarda en arrancar', 'se descarga la batería']);
+    expect(data.unusualForThisCar).toEqual(['tensión de batería con el motor apagado: 11.9 V (lo habitual es 12.6)']);
+  });
+
   it('maps failures to tool errors', async () => {
     const none = new VehicleToolAdapter(() => null);
     expect(await none.execute({ name: 'read_readiness' }, signal)).toMatchObject({ ok: false, error: 'not_connected' });

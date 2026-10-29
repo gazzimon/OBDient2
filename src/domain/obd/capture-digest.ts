@@ -26,7 +26,8 @@ export interface ParsedCapture {
   readonly entries: readonly Entry[];
 }
 
-const MONITOR: Readonly<Record<MonitorId, string>> = {
+// Also the report's names for the monitors (domain/report).
+export const MONITOR_LABEL: Readonly<Record<MonitorId, string>> = {
   misfire: 'fallos de encendido',
   fuel_system: 'sistema de combustible',
   components: 'componentes',
@@ -112,7 +113,7 @@ function describe(e: Entry): string | null {
     if (c === '0101') {
       const s = mergeMonitorStatus(parseMonitorStatus(msgs));
       if (!s) return `${c}: respuesta no reconocida`;
-      const incomplete = s.monitors.filter((m) => !m.complete).map((m) => MONITOR[m.id] ?? m.id);
+      const incomplete = s.monitors.filter((m) => !m.complete).map((m) => MONITOR_LABEL[m.id] ?? m.id);
       return `0101 (estado de monitores): luz de falla ${s.milOn ? 'ENCENDIDA' : 'apagada'}, ${s.dtcCount} código(s) confirmados; monitores incompletos: ${incomplete.length ? incomplete.join(', ') : 'ninguno'}`;
     }
     if (c === '03' || c === '07' || c === '0A') {

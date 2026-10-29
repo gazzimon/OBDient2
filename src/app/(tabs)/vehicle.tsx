@@ -268,8 +268,12 @@ export default function VehicleScreen() {
             </View>
           </>
         )}
-        <View className="mt-6">
+        <View className="mt-6 gap-2">
+          <SectionHeader title="Herramientas del taller" />
+          <PillButton label="Informe PDF" onPress={() => router.push('/report')} />
           <PillButton label="Historial de fallas" variant="secondary" onPress={() => router.push('/faults')} />
+          <PillButton label="Sonido del motor" variant="secondary" onPress={() => router.push('/engine-sound')} />
+          <PillButton label="Prueba 0–100" variant="secondary" onPress={() => router.push('/performance')} />
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -23,6 +23,8 @@ import { DtcBaseDescriber } from '@/data/knowledge/dtc-base';
 import { loadDtcBaseAsset } from '@/data/knowledge/dtc-base-asset';
 import { createMmkvFaultStorage } from '@/data/faults/mmkv-fault-storage';
 import { FaultHistory } from '@/domain/faults/fault-history';
+import { createMmkvBaselineStorage } from '@/data/vehicle/mmkv-baseline-storage';
+import { VehicleBaselines } from '@/domain/vehicle/baseline';
 import { OsrmRouting } from '@/data/routing/osrm-routing';
 import { PhotonGeocoder } from '@/data/routing/photon-geocoder';
 import { TripRecorder } from '@/data/recording/trip-recorder';
@@ -33,15 +35,24 @@ import { useSettingsStore } from '@/store/settingsStore';
 const sensors = new SensorHub();
 const trips = new TripRecorder();
 sensors.setRecordSink((rec) => trips.record(rec));
+// Every OBD speed sample, for screens that need them all (the 0–100 test).
+type SpeedListener = (kmh: number, tMs: number) => void;
+const speedListeners = new Set<SpeedListener>();
 const obd = new ObdManager((kmh, t) => {
   sensors.onObdSpeed(kmh, t);
   trips.record({ k: 'obd', t, kmh });
+  for (const l of speedListeners) l(kmh, t);
 });
 
 // The assistant's tools on the live session. "Moving" here is the last OBD
 // speed; the chat screen (M3) refines it with GPS and hysteresis (ADR-0007 §6).
 const MOVING_KMH = 5;
 const faults = new FaultHistory(createMmkvFaultStorage());
+// What is normal for each car (by VIN). The session in progress lives in the
+// presentation's recorder, registered at start to avoid an import cycle.
+const baselines = new VehicleBaselines(createMmkvBaselineStorage());
+type BaselineSource = NonNullable<ConstructorParameters<typeof VehicleToolAdapter>[1]>['baseline'];
+let baselineSource: BaselineSource | null = null;
 const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
   history: faults,
   describer: new DtcBaseDescriber(loadDtcBaseAsset),
@@ -52,6 +63,7 @@ const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
   moving: () => (useOBDStore.getState().parameters.SPEED?.value ?? 0) > MOVING_KMH,
   // The make's addresses from the lab knowledge (onlineTools is set below).
   knownTargets: (make, model, signal) => onlineTools.scanTargets(make, model, signal),
+  baseline: (vin) => baselineSource?.(vin) ?? { deviations: [], comparable: [] },
 });
 
 // Accounts (ADR-0008): email code login (Magic), model key from obdient-auth.
@@ -74,7 +86,8 @@ let navigationTools: { names: ReadonlySet<string>; runner: ToolRunner } | null =
 const toolsClient = new ToolsClient({ url: extra.toolsUrl, credentials: () => account.llmCredentials() });
 const onlineTools = new OnlineTools(toolsClient);
 // The service log on the phone.
-const serviceTools = new ServiceTools({ log: new ServiceLog(createMmkvServiceStorage()), vin: () => vehicleTools.knownVin() });
+const serviceLog = new ServiceLog(createMmkvServiceStorage());
+const serviceTools = new ServiceTools({ log: serviceLog, vin: () => vehicleTools.knownVin() });
 // What was said in earlier conversations, read from the chat store.
 const chatSearchTools = new ChatSearchTools({
   conversations: () => useChatStore.getState().conversations,
@@ -129,6 +142,15 @@ export const container = {
   setNavigationTools(names: ReadonlySet<string>, runner: ToolRunner): void {
     navigationTools = { names, runner };
   },
+  // Returns the unsubscribe.
+  onObdSpeed(listener: SpeedListener): () => void {
+    speedListeners.add(listener);
+    return () => void speedListeners.delete(listener);
+  },
+  setBaselineSource(source: NonNullable<BaselineSource>): void {
+    baselineSource = source;
+  },
+  baselines,
   account,
   assistant,
   offlineAssistant,
@@ -140,6 +162,7 @@ export const container = {
   trips,
   vehicleTools,
   faults,
+  serviceLog,
   // Built per call so an endpoint changed in Settings applies immediately.
   routing(): RoutingPort {
     return new OsrmRouting(useSettingsStore.getState().routingUrl);

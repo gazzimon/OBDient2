@@ -8,6 +8,7 @@
 //   notes on, and only with the driver's yes.
 
 import { PID_DEFINITIONS, type PidId } from '@/core/constants/pids';
+import { hypothesesText, type Hypothesis } from '@/domain/diagnosis/engine';
 import type { PhraseIntent } from './phrase-router';
 import { matchSymptoms, symptomLabel } from './symptoms';
 import type { ToolOutcome } from './tools';
@@ -112,6 +113,15 @@ export function intentAnswer(intent: PhraseIntent, outcome: ToolOutcome): string
       const v = (data.VOLTAGE as { value: number } | undefined)?.value;
       return v == null ? 'No pude leer la tensión.' : `La tensión es ${number(v)} V.`;
     }
+    case 'live_data': {
+      const parts = (Object.keys(PID_DEFINITIONS) as PidId[]).flatMap((p) => {
+        const v = (data as Partial<Record<PidId, { value: number | null; unit: string }>>)[p];
+        return v?.value != null ? [`- ${PID_LABEL[p] ?? PID_DEFINITIONS[p].name}: ${number(v.value)} ${v.unit}`] : [];
+      });
+      return parts.length ? ['Ahora el auto marca:', ...parts].join('\n') : 'El auto no respondió a esos valores.';
+    }
+    case 'diagnose':
+      return hypothesesText(diagnoseFrom(data));
     case 'route_status': {
       if (!data.navigating && !data.arrived) return 'No hay una navegación en curso.';
       if (data.arrived) return 'Llegaste al destino.';
@@ -124,6 +134,35 @@ export function intentAnswer(intent: PhraseIntent, outcome: ToolOutcome): string
     case 'vehicle_info':
       return `${outcome.summary}.`;
   }
+}
+
+// Spanish names for the live values the phrase reads (and the report).
+export const PID_LABEL: Partial<Record<PidId, string>> = {
+  RPM: 'Vueltas del motor',
+  SPEED: 'Velocidad',
+  COOLANT_TEMP: 'Temperatura del motor',
+  ENGINE_LOAD: 'Carga del motor',
+  VOLTAGE: 'Tensión de batería',
+  FUEL_TRIM_SHORT: 'Corrección corta de mezcla',
+  FUEL_TRIM_LONG: 'Corrección larga de mezcla',
+  INTAKE_MAP: 'Presión de admisión',
+};
+
+// The diagnose tool's data back into the shape hypothesesText reads.
+function diagnoseFrom(data: Record<string, unknown>): Hypothesis[] {
+  const list = (data.hypotheses ?? []) as { cause: string; system: Hypothesis['system']; confidencePct: number; evidence: string[]; checks: string[]; safety?: string }[];
+  return list.map((h) => ({
+    id: h.cause,
+    title: h.cause,
+    system: h.system,
+    confidence: h.confidencePct,
+    score: 0,
+    evidence: h.evidence,
+    against: [],
+    toCheck: [],
+    checks: h.checks,
+    safety: h.safety ?? null,
+  }));
 }
 
 function firstSentence(text: string): string {

@@ -13,9 +13,10 @@ import type { ToolCall, ToolOutcome } from './tools';
 export const OFFLINE_READ_MS = 8_000;
 
 export const SMALL_TALK_REPLY =
-  'Ahora no me puedo comunicar con el asistente. Puedo leerte los códigos, la batería o los monitores; lo demás lo anoto para cuando vuelva.';
+  'Ahora no me puedo comunicar con el asistente. Puedo leerte los códigos, la batería, los monitores o los datos en vivo, y hacer un diagnóstico con lo que me cuentes; lo demás lo anoto para cuando vuelva.';
 
-const CAR_INTENTS: ReadonlySet<PhraseIntent> = new Set(['codes', 'battery', 'readiness', 'freeze_frame', 'vehicle_info']);
+// diagnose is not here: without the adapter it still weighs the symptoms.
+const CAR_INTENTS: ReadonlySet<PhraseIntent> = new Set(['codes', 'battery', 'readiness', 'freeze_frame', 'vehicle_info', 'live_data']);
 
 export type OfflineReply =
   | { readonly kind: 'answer'; readonly intent: PhraseIntent | 'small_talk'; readonly text: string }
@@ -36,10 +37,21 @@ export class OfflineAssistant {
       if (CAR_INTENTS.has(intent) && !ctx.connected) {
         return { kind: 'answer', intent, text: 'El adaptador no está conectado: conectalo desde la pestaña Vehículo.' };
       }
-      return { kind: 'answer', intent, text: intentAnswer(intent, await this.run(INTENT_CALL[intent])) };
+      return { kind: 'answer', intent, text: intentAnswer(intent, await this.run(this.callFor(intent, input.text))) };
     }
     const text = input.photos ? `${input.text.trim()} (${input.photos === 1 ? 'adjuntó una foto' : `adjuntó ${input.photos} fotos`}, sin conexión no se pudo ver)`.trim() : input.text;
     return { kind: 'note', note: makeNote(input.id, input.at, text, ctx.moving, ctx.connected ? await this.snapshot() : null) };
+  }
+
+  // The fixed call, fitted to this message and this car.
+  private callFor(intent: PhraseIntent, text: string): ToolCall {
+    const call = INTENT_CALL[intent];
+    if (call.name === 'diagnose') return { name: 'diagnose', symptoms: text.trim() || null };
+    if (call.name === 'read_pids' && intent === 'live_data') {
+      const supported = new Set<PidId>([...this.tools.supportedPids(), 'VOLTAGE']);
+      return { name: 'read_pids', pids: call.pids.filter((p) => supported.has(p)) };
+    }
+    return call;
   }
 
   // Codes and a few live values, what the car was saying when the driver wrote.
