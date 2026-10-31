@@ -33,7 +33,6 @@ import { createMmkvParkingStorage } from '@/data/parking/mmkv-parking-storage';
 import { ParkingLog } from '@/domain/parking/parking';
 import { createMmkvModuleScanStorage } from '@/data/obd/mmkv-module-scan-storage';
 import { ModuleScanLog } from '@/domain/obd/module-scan-report';
-import type { Audience } from '@/domain/assistant/next-questions';
 import type { GeocodingPort, RoutingPort } from '@/domain/navigation/route';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -119,15 +118,16 @@ const assistantTools: VehicleToolsPort = {
         return onlineTools.execute(call, signal);
       case 'scan_modules': {
         const out = await vehicleTools.execute(call, signal, onProgress);
-        // A scan's findings go to the lab's shared knowledge (best effort).
-        if (out.ok && out.knowledge) void onlineTools.reportKnowledge(out.knowledge, signal);
+        // A scan's findings go to the lab's shared knowledge (best effort), unless
+        // the user turned it off (Ajustes › Privacidad).
+        if (out.ok && out.knowledge && useSettingsStore.getState().shareScans) void onlineTools.reportKnowledge(out.knowledge, signal);
         return out;
       }
       case 'did_probe': {
         const out = await vehicleTools.execute(call, signal, onProgress);
         // What each module answered goes to the lab, also after a stop: a signal of
         // its own, since the user's cancel would drop the report with the run.
-        if (out.ok && out.knowledge) void onlineTools.reportKnowledge(out.knowledge, new AbortController().signal);
+        if (out.ok && out.knowledge && useSettingsStore.getState().shareScans) void onlineTools.reportKnowledge(out.knowledge, new AbortController().signal);
         return out;
       }
       case 'log_service':
@@ -145,7 +145,8 @@ const assistantTools: VehicleToolsPort = {
 const assistant = new AssistantService({
   account,
   vehicle: assistantTools,
-  persona: extra.audience === 'workshop' ? WORKSHOP : DRIVER,
+  // Ajustes › Perfil, read on each turn.
+  persona: () => (useSettingsStore.getState().audience === 'workshop' ? WORKSHOP : DRIVER),
   makeLlm: (c) =>
     new OpenAiChatClient({
       baseUrl: c.baseUrl,
@@ -159,8 +160,6 @@ const assistant = new AssistantService({
 const offlineAssistant = new OfflineAssistant(assistantTools);
 
 export const container = {
-  // Who the build is for: orders the assistant's start screen.
-  audience: (extra.audience === 'workshop' ? 'workshop' : 'driver') as Audience,
   setNavigationTools(names: ReadonlySet<string>, runner: ToolRunner): void {
     navigationTools = { names, runner };
   },
@@ -179,6 +178,8 @@ export const container = {
   toolsClient,
   // obdient-tools' base URL (the speech WebSocket lives under it).
   toolsUrl: extra.toolsUrl,
+  // The accounts server (Ajustes › Dev › Estado del servidor).
+  authUrl: extra.authUrl,
   sensors,
   obd,
   trips,

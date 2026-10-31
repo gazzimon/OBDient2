@@ -4,6 +4,8 @@ import { create } from 'zustand';
 import type { AlertVoiceLevel } from '@/domain/voice/voice-arbiter';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { createMMKV } from 'react-native-mmkv';
+import Constants from 'expo-constants';
+import type { Audience } from '@/domain/assistant/next-questions';
 
 const mmkv = createMMKV({ id: 'obdient2-settings' });
 
@@ -45,6 +47,13 @@ export const DEFAULT_ENDPOINTS = {
   geocoderUrl: 'https://obdient.duckdns.org/photon',
   mapStyleUrl: 'https://tiles.openfreemap.org/styles/liberty',
 };
+
+// The workshop build (socios) starts as the mechanic, with Dev on.
+const WORKSHOP_BUILD = (Constants.expoConfig?.extra as { audience?: 'workshop' } | undefined)?.audience === 'workshop';
+
+// Everything Dev turns off when it is switched off: nobody keeps a development
+// tool on without knowing it.
+const DEV_OFF = { labMode: false, debugOverlay: false, recordTrips: false, ...DEFAULT_ENDPOINTS };
 
 // Old defaults saved by earlier installs: moved to the new defaults on load.
 // A URL the person typed is not touched.
@@ -93,6 +102,13 @@ interface SettingsState {
   dashboardCamera: boolean;
   // Modo laboratorio: free read commands to the bus (obd_command), for M9.
   labMode: boolean;
+  // What module scans and DID probes found goes to the lab's shared base (no VIN,
+  // ADR-0011). On by default, as it always was; the user can turn it off.
+  shareScans: boolean;
+  // Ajustes › Dev (2026-10-31): shows the development tools; off turns them off.
+  devMode: boolean;
+  // Conductor or Mecánico: the assistant's instructions and the start screen's order.
+  audience: Audience;
 
   setLastDevice: (id: string, name: string | null) => void;
   setCalibration: (patch: Partial<ArCalibration>) => void;
@@ -112,7 +128,13 @@ interface SettingsState {
   setDriveMap3d: (on: boolean) => void;
   setDashboardCamera: (on: boolean) => void;
   setLabMode: (on: boolean) => void;
+  setDevMode: (on: boolean) => void;
+  setShareScans: (on: boolean) => void;
+  setAudience: (audience: Audience) => void;
 }
+
+const customEndpoints = (p: Partial<SettingsState>) =>
+  (['routingUrl', 'geocoderUrl', 'mapStyleUrl'] as const).some((k) => p[k] != null && (SUPERSEDED[p[k]] ?? p[k]) !== DEFAULT_ENDPOINTS[k]);
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -123,7 +145,7 @@ export const useSettingsStore = create<SettingsState>()(
       ...DEFAULT_ENDPOINTS,
       voiceEnabled: true,
       alertVoice: 'all',
-      recordTrips: true,
+      recordTrips: WORKSHOP_BUILD,
       recordMyTrips: true,
       liveTracking: false,
       trackingDevice: '',
@@ -136,6 +158,9 @@ export const useSettingsStore = create<SettingsState>()(
       driveMap3d: true,
       dashboardCamera: false,
       labMode: false,
+      devMode: WORKSHOP_BUILD,
+      shareScans: true,
+      audience: WORKSHOP_BUILD ? 'workshop' : 'driver',
 
       setLastDevice: (id, name) => set({ lastDeviceId: id, lastDeviceName: name }),
       setCalibration: (patch) => set((s) => ({ calibration: { ...s.calibration, ...patch } })),
@@ -155,6 +180,9 @@ export const useSettingsStore = create<SettingsState>()(
       setDriveMap3d: (on) => set({ driveMap3d: on }),
       setDashboardCamera: (on) => set({ dashboardCamera: on }),
       setLabMode: (on) => set({ labMode: on }),
+      setDevMode: (on) => set(on ? { devMode: true } : { devMode: false, ...DEV_OFF }),
+      setAudience: (audience) => set({ audience }),
+      setShareScans: (on) => set({ shareScans: on }),
     }),
     {
       name: 'obdient2-settings',
@@ -181,6 +209,9 @@ export const useSettingsStore = create<SettingsState>()(
         driveMap3d: s.driveMap3d,
         dashboardCamera: s.dashboardCamera,
         labMode: s.labMode,
+        devMode: s.devMode,
+        shareScans: s.shareScans,
+        audience: s.audience,
       }),
       // New calibration fields get their defaults instead of `undefined`.
       merge: (persisted, current) => {
@@ -194,6 +225,8 @@ export const useSettingsStore = create<SettingsState>()(
           onboardingDone: p.onboardingDone ?? p.disclaimerAccepted === true,
           routingUrl: upgrade(p.routingUrl) ?? current.routingUrl,
           geocoderUrl: upgrade(p.geocoderUrl) ?? current.geocoderUrl,
+          // Installs from before Dev keep their development tools: Dev is on if any was.
+          devMode: p.devMode ?? (current.devMode || p.labMode === true || p.debugOverlay === true || p.recordTrips === true || customEndpoints(p)),
         };
       },
     },

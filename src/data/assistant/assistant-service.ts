@@ -57,8 +57,9 @@ export class AssistantService {
       readonly account: AccountCredentials;
       readonly vehicle: VehicleToolsPort;
       readonly makeLlm: (credentials: LlmCredentials) => LlmPort;
-      // The mechanic's instructions in the socios build; the driver's otherwise.
-      readonly persona?: Persona;
+      // The mechanic's instructions or the driver's: read on each turn, since the
+      // profile can change in Ajustes.
+      readonly persona?: () => Persona;
     },
   ) {}
 
@@ -76,7 +77,7 @@ export class AssistantService {
         text: input.text,
         ...(input.images?.length ? { images: input.images } : {}),
         context: input.context,
-        ...(this.deps.persona ? { persona: this.deps.persona } : {}),
+        ...(this.deps.persona ? { persona: this.deps.persona() } : {}),
         llm,
         vehicle: this.deps.vehicle,
         confirmation: input.confirmation,
@@ -107,7 +108,7 @@ export class AssistantService {
     const credentials = this.deps.account.llmCredentials();
     if (!credentials || history.length === 0) return [];
     try {
-      const request = nextQuestionsRequest(history, { summary, audience: this.deps.persona?.audience ?? 'driver' });
+      const request = nextQuestionsRequest(history, { summary, audience: this.deps.persona?.().audience ?? 'driver' });
       const r = await this.deps.makeLlm(credentials).complete(request);
       return parseNextQuestions(r.content, asked);
     } catch {

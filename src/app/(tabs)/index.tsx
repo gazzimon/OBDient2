@@ -32,6 +32,7 @@ import { COLORS } from '@/presentation/theme';
 import { useChatStore } from '@/store/chatStore';
 import { useNavStore } from '@/store/navStore';
 import { useOBDStore } from '@/store/obdStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { ensurePermission } from '@/presentation/services/permissions';
 import { shareConversation } from '@/presentation/services/share-conversation';
 
@@ -104,6 +105,7 @@ export default function AssistantScreen() {
 
   // The start screen: what is going on with the car, and what can be asked now.
   const signedIn = status === 'signed-in';
+  const audience = useSettingsStore((s) => s.audience);
   const startCtx = useMemo(() => {
     const vin = container.vehicleTools.knownVin();
     const lastRead = container.faults.list(vin ?? undefined).find((e) => e.type === 'codes' && e.kind === 'stored');
@@ -182,7 +184,7 @@ export default function AssistantScreen() {
         {items.length === 0 ? (
           <StartScreen
             start={startHere(startCtx)}
-            capabilities={capabilities(container.audience, startCtx)}
+            capabilities={capabilities(audience, startCtx)}
             signedIn={signedIn}
             onAsk={ask}
             onDrive={() => router.push('/drive')}
