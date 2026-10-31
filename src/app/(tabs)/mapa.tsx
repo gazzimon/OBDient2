@@ -1,5 +1,7 @@
-// Route planning: pick a destination (search or long-press), preview the
-// route, start AR guidance. The origin is always "where I am now".
+// Mapa (2026-10-31): one map with three views. Ir: pick a destination (search or
+// long-press), preview the route, start driving; the origin is always "where I am
+// now". Mis viajes: the trips, drawn on this same map. Estacioné: where the car
+// was left (only once a spot was saved).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
@@ -11,7 +13,11 @@ import { Camera, GeoJSONSource, Layer, Map, NativeUserLocation, type CameraRef }
 import { container } from '@/data/container';
 import type { Place } from '@/domain/navigation/route';
 import type { ParkingSpot } from '@/domain/parking/parking';
+import type { Trip } from '@/domain/trips/trip-builder';
 import { ParkedCard } from '@/presentation/components/map/ParkedCard';
+import { TripLayers, tripBounds } from '@/presentation/components/map/TripLayers';
+import { TripsPanel } from '@/presentation/components/map/TripsPanel';
+import { useTrips } from '@/presentation/services/my-trips';
 import { parkingRecorder } from '@/presentation/services/parking-recorder';
 import { PinsLayer, pinsBounds } from '@/presentation/components/map/PinsLayer';
 import { PillButton } from '@/presentation/components/layout/PillButton';
@@ -27,7 +33,11 @@ const SEARCH_DEBOUNCE_MS = 400;
 // The parked card's "hace … min" moves on by itself.
 const PARKED_TICK_MS = 30_000;
 
-export default function RouteScreen() {
+type MapView = 'ir' | 'viajes' | 'estacione';
+
+const VIEW_LABEL: Record<MapView, string> = { ir: 'Ir', viajes: 'Mis viajes', estacione: 'Estacioné' };
+
+export default function MapScreen() {
   useSensorsWhileFocused();
   const router = useRouter();
   const mapStyleUrl = useSettingsStore((s) => s.mapStyleUrl);
@@ -40,11 +50,27 @@ export default function RouteScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Place[]>([]);
   const [searching, setSearching] = useState(false);
+  const [view, setView] = useState<MapView>('ir');
+  const tripList = useTrips();
+  const [picked, setPicked] = useState<Trip | null>(null);
+  const pickTrip = (trip: Trip | null) => {
+    setPicked(trip);
+    const b = trip ? tripBounds(trip) : null;
+    if (!b) return;
+    centered.current = true;
+    cameraRef.current?.fitBounds(b, { padding: { top: 140, bottom: 340, left: 40, right: 40 }, duration: 600 });
+  };
+  const choose = (v: MapView) => {
+    setView(v);
+    if (v !== 'viajes') setPicked(null);
+    if (v === 'estacione') showParked();
+  };
 
   // "Dónde estacioné": the last spot saved when the adapter link went.
   const [parked, setParked] = useState<ParkingSpot | null>(null);
   const [parkedNow, setParkedNow] = useState<number | null>(null);
   const reloadParked = useCallback(() => setParked(container.parking.latest()), []);
+  // A spot found ("Ya lo encontré") or gone: back to Ir.
   useFocusEffect(reloadParked);
   useEffect(() => parkingRecorder.onSaved(reloadParked), [reloadParked]);
   useEffect(() => {
@@ -175,9 +201,10 @@ export default function RouteScreen() {
         <Camera
           ref={cameraRef}
           initialViewState={{ zoom: 15 }}
-          {...(route || !locationOk ? {} : { trackUserLocation: 'default' as const })}
+          {...(route || !locationOk || picked ? {} : { trackUserLocation: 'default' as const })}
         />
         {locationOk && <NativeUserLocation mode="course" />}
+        {view === 'viajes' && picked && <TripLayers trip={picked} />}
         {routeShape && (
           <GeoJSONSource id="route" data={routeShape}>
             <Layer
@@ -243,7 +270,10 @@ export default function RouteScreen() {
             <MaterialCommunityIcons name="magnify" size={18} color={COLORS.muted} />
             <TextInput
               value={query}
-              onChangeText={setQuery}
+              onChangeText={(q) => {
+                setQuery(q);
+                if (view !== 'ir') choose('ir');
+              }}
               placeholder="¿A dónde vamos?"
               placeholderTextColor={COLORS.muted}
               className="flex-1 text-brand-text font-mono text-sm py-3 ml-2"
@@ -251,25 +281,26 @@ export default function RouteScreen() {
             />
             {searching && <ActivityIndicator size="small" color={COLORS.mint} />}
           </View>
-          {/* Mis viajes: the trips recorded by themselves. */}
-          <Pressable
-            onPress={() => router.push('/trips')}
-            accessibilityLabel="Mis viajes"
-            className="w-12 h-12 rounded-2xl bg-brand-surface border border-brand-border items-center justify-center active:opacity-60"
-          >
-            <MaterialCommunityIcons name="map-marker-path" size={22} color={COLORS.mint} />
-          </Pressable>
-          {/* Dónde estacioné: only once a spot was saved. */}
-          {parked && (
-            <Pressable
-              onPress={showParked}
-              accessibilityLabel="Dónde estacioné"
-              className="w-12 h-12 rounded-2xl bg-brand-surface border border-brand-border items-center justify-center active:opacity-60"
-            >
-              <MaterialCommunityIcons name="parking" size={22} color={COLORS.amber} />
-            </Pressable>
-          )}
         </View>
+        {/* The three views; Estacioné only once a spot was saved. */}
+        {!destination && candidates.length === 0 && (
+          <View className="flex-row self-center gap-1 bg-brand-surface border border-brand-border rounded-full p-1 mt-2">
+            {(['ir', 'viajes', ...(parked ? ['estacione' as const] : [])] as MapView[]).map((v) => (
+              <Pressable
+                key={v}
+                onPress={() => choose(v)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: view === v }}
+                className="px-4 py-1.5 rounded-full active:opacity-60"
+                style={{ backgroundColor: view === v ? COLORS.border : 'transparent' }}
+              >
+                <Text className="font-mono text-xs" style={{ color: view === v ? COLORS.text : COLORS.muted }}>
+                  {VIEW_LABEL[v]}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
         {visible.length > 0 && (
           <FlatList
             className="mt-2 bg-brand-surface border border-brand-border rounded-2xl max-h-72"
@@ -290,7 +321,7 @@ export default function RouteScreen() {
             )}
           />
         )}
-        {!destination && visible.length === 0 && (
+        {view === 'ir' && !destination && visible.length === 0 && (
           <Text className="text-brand-muted font-mono text-[11px] mt-2 text-center">
             Busca un lugar o mantén presionado el mapa para fijar el destino
           </Text>
@@ -303,7 +334,7 @@ export default function RouteScreen() {
           onPress={() => centerOn(ego.position.lat, ego.position.lng)}
           hitSlop={8}
           className="absolute right-4 w-11 h-11 rounded-full bg-brand-surface border border-brand-border items-center justify-center active:opacity-60"
-          style={{ bottom: destination ? 236 : 24 }}
+          style={{ bottom: destination ? 236 : view === 'viajes' ? 340 : 24 }}
         >
           <MaterialCommunityIcons name="crosshairs-gps" size={20} color={COLORS.mint} />
         </Pressable>
@@ -339,22 +370,33 @@ export default function RouteScreen() {
       )}
 
       {/* Where the car was left. */}
-      {parked && parkedNow != null && !destination && candidates.length === 0 && (
+      {view === 'estacione' && parked && parkedNow != null && !destination && candidates.length === 0 && (
         <ParkedCard
           spot={parked}
           here={ego?.position ?? null}
           now={parkedNow}
-          onClose={() => setParkedNow(null)}
+          onClose={() => {
+            setParkedNow(null);
+            setView('ir');
+          }}
           onFound={() => {
             container.parking.remove(parked.at);
             setParkedNow(null);
+            setView('ir');
             reloadParked();
           }}
         />
       )}
 
+      {/* Mis viajes: the list, or the trip drawn on the map. */}
+      {view === 'viajes' && !destination && candidates.length === 0 && (
+        <View className="absolute bottom-4 left-4 right-4 bg-brand-surface border border-brand-border rounded-2xl px-4 pt-3 pb-3" style={{ maxHeight: '45%' }}>
+          <TripsPanel list={tripList} picked={picked} onPick={pickTrip} />
+        </View>
+      )}
+
       {/* Free driving: the driving view without a destination. */}
-      {!destination && candidates.length === 0 && parkedNow == null && (
+      {view === 'ir' && !destination && candidates.length === 0 && (
         <Pressable
           onPress={() => router.push('/drive')}
           className="absolute bottom-6 self-center flex-row items-center gap-2 bg-brand-surface border border-brand-teal rounded-full px-5 py-3 active:opacity-60"

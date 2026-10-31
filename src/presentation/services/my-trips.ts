@@ -1,8 +1,8 @@
-// Records "Mis viajes" by itself: while the adapter is connected (and the
-// setting is on), one sample per second of the fused position and speed, and
-// the fuel flow from the MAF when the dashboard reads it. The trip ends when
-// the adapter goes or after 15 min stopped. Then it gets its place names and
-// the trouble codes read during it.
+// Records "Mis viajes" by itself: while the adapter is connected or Manejo is
+// open with the GPS alone (every drive, 2026-10-31), and the setting is on, one
+// sample per second of the fused position and speed, and the fuel flow from the
+// MAF when the dashboard reads it. The trip ends when both go, or after 15 min
+// stopped. Then it gets its place names and the trouble codes read during it.
 //
 // The app must be open (decision 2026-10-19): no background location.
 //
@@ -35,6 +35,14 @@ function secureRandom(): number {
 
 export const trips = new TripStore();
 
+// Manejo open: a drive without the adapter is a trip too.
+let drivingScreen = false;
+const drivingListeners = new Set<() => void>();
+export function setDrivingScreen(on: boolean): void {
+  drivingScreen = on;
+  for (const l of drivingListeners) l();
+}
+
 class MyTripsRecorder {
   private builder = new TripBuilder(
     () => `trip-${Date.now().toString(36)}`,
@@ -60,12 +68,13 @@ class MyTripsRecorder {
       }
     }
     const sync = () => {
-      const on = useSettingsStore.getState().recordMyTrips && useOBDStore.getState().connectionState === 'connected';
+      const on = useSettingsStore.getState().recordMyTrips && (useOBDStore.getState().connectionState === 'connected' || drivingScreen);
       if (on && !this.timer) this.begin();
       else if (!on && this.timer) this.end();
     };
     useOBDStore.subscribe(sync);
     useSettingsStore.subscribe(sync);
+    drivingListeners.add(sync);
     sync();
   }
 
@@ -111,7 +120,8 @@ class MyTripsRecorder {
     // replaces the always-on of 2026-10-20). What is sent identifies the adapter and
     // the car by pseudonyms of this install, not by their addresses.
     const settings = useSettingsStore.getState();
-    if (!settings.trackingConsent) return;
+    // What the driver agreed to is "with the adapter connected": not a GPS-only drive.
+    if (!settings.trackingConsent || useOBDStore.getState().connectionState !== 'connected') return;
     if (!settings.privacySalt) settings.setPrivacySalt(newSalt(secureRandom));
     const trackingDevice = trackDeviceFor(useSettingsStore.getState().privacySalt, settings.lastDeviceId);
     if (trackingDevice !== settings.trackingDevice) settings.setLiveTracking(true, trackingDevice);

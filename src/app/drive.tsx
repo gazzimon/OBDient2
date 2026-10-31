@@ -6,8 +6,9 @@
 // in the Tablero, as a plain camera view with the gauges. The AR guidance is
 // kept on the etapa-camara branch.
 
+import { useCallback } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { StatusBar } from 'expo-status-bar';
 import { DriveHud } from '@/presentation/components/drive/DriveHud';
@@ -15,12 +16,20 @@ import { DriveMap } from '@/presentation/components/drive/DriveMap';
 import { useFreeOrientationWhileFocused } from '@/presentation/hooks/useLandscape';
 import { useSensorsWhileFocused } from '@/presentation/hooks/useSensors';
 import { navigation } from '@/presentation/services/navigation-controller';
+import { setDrivingScreen } from '@/presentation/services/my-trips';
 import { useNavStore } from '@/store/navStore';
 
 export default function DriveScreen() {
   useKeepAwake();
   useSensorsWhileFocused();
   useFreeOrientationWhileFocused();
+  // Every drive is a trip, with the adapter or with the GPS alone (Mis viajes).
+  useFocusEffect(
+    useCallback(() => {
+      setDrivingScreen(true);
+      return () => setDrivingScreen(false);
+    }, []),
+  );
   const router = useRouter();
   const route = useNavStore((s) => s.route);
 
