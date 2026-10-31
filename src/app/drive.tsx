@@ -28,7 +28,7 @@ export default function DriveScreen() {
     if (route) navigation.stop();
     // After a reload the drive screen may be the only one: back to the map.
     if (router.canGoBack()) router.back();
-    else router.replace('/');
+    else router.replace('/mapa');
   };
 
   return (

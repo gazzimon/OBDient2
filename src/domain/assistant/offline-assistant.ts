@@ -35,7 +35,7 @@ export class OfflineAssistant {
     const intent = input.photos === 0 ? routePhrase(input.text) : null;
     if (intent) {
       if (CAR_INTENTS.has(intent) && !ctx.connected) {
-        return { kind: 'answer', intent, text: 'El adaptador no está conectado: conectalo desde la pestaña Vehículo.' };
+        return { kind: 'answer', intent, text: 'El adaptador no está conectado: conectalo desde la pestaña Diagnóstico.' };
       }
       return { kind: 'answer', intent, text: intentAnswer(intent, await this.run(this.callFor(intent, input.text))) };
     }

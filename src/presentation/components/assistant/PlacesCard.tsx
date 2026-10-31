@@ -24,11 +24,11 @@ export function PlacesCard({ id, pins, live }: { id: string; pins: readonly MapP
 
   const showAll = () => {
     useNavStore.getState().setCandidates(pins);
-    router.navigate('/');
+    router.navigate('/mapa');
   };
   const go = (p: MapPin) => {
     void navigation.planTo({ name: p.name, detail: p.detail, location: { lat: p.lat, lng: p.lng } });
-    router.navigate('/');
+    router.navigate('/mapa');
   };
 
   return (

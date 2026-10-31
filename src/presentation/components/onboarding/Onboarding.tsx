@@ -257,8 +257,8 @@ function Ready() {
       </View>
       <Text className="text-brand-muted font-mono text-[10px] mb-2">EMPEZAR POR</Text>
       <View className="gap-2">
-        <PillButton label="Tablero en vivo" variant="secondary" onPress={() => close('/dashboard')} />
-        <PillButton label="Preguntarle al asistente" variant="secondary" onPress={() => close('/assistant')} />
+        <PillButton label="Diagnóstico del auto" variant="secondary" onPress={() => close('/diagnostico')} />
+        <PillButton label="Preguntarle al asistente" variant="secondary" onPress={() => close('/')} />
         <PillButton label="Informe PDF del auto" variant="secondary" onPress={() => close('/report')} />
       </View>
     </Page>

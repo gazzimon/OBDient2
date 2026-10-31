@@ -86,7 +86,7 @@ describe('parking: the assistant', () => {
       data: { car: 'Chevrolet 2024', left: 'hace 2 h 10 min', where: 'a 350 m al noreste', distanceM: 350, address: 'Av. Mitre 1200, Posadas' },
       summary: 'a 350 m al noreste, hace 2 h 10 min',
     });
-    expect(intentAnswer('parked', out)).toBe('Tu Chevrolet 2024 quedó a 350 m al noreste (Av. Mitre 1200, Posadas), hace 2 h 10 min. Lo ves en la pestaña Ruta, con la P.');
+    expect(intentAnswer('parked', out)).toBe('Tu Chevrolet 2024 quedó a 350 m al noreste (Av. Mitre 1200, Posadas), hace 2 h 10 min. Lo ves en la pestaña Mapa, con la P.');
     await tools.execute({ name: 'set_destination', result: 1 }, signal);
     expect(planned).toEqual([expect.objectContaining({ name: 'Tu Chevrolet 2024', location: CAR })]);
   });

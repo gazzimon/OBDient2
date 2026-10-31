@@ -53,7 +53,7 @@ export default function DashboardScreen() {
       {!isConnected && (
         <View className="flex-row items-center justify-end px-4 pt-3">
           <Pressable
-            onPress={() => router.push('/vehicle')}
+            onPress={() => router.push('/diagnostico')}
             className="px-2 py-0.5 rounded-md border border-brand-muted active:opacity-60"
           >
             <Text className="text-brand-muted font-mono text-xs">DEMO · conectar</Text>

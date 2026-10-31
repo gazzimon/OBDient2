@@ -78,8 +78,7 @@ export default function VehicleScreen() {
         {connectionState === 'connected' && session ? (
           <>
             <SectionHeader title="Adaptador" />
-            <Text className="text-brand-muted font-mono text-[10px] mb-2">Los relojes en vivo están en la pestaña Tablero.</Text>
-            <Info label="Adaptador" value={deviceName ?? '—'} />
+                        <Info label="Adaptador" value={deviceName ?? '—'} />
             <Info label="Velocidad" value={`${speedRateHz.toFixed(1)} Hz`} />
             <Info label="Chip" value={session.identity.stn ?? `${session.identity.elm || 'ELM327'} (sin comandos STN)`} />
             <Info label="Protocolo" value={session.protocol} />
@@ -205,7 +204,8 @@ export default function VehicleScreen() {
         )}
         <View className="mt-6 gap-2">
           <SectionHeader title="Herramientas del taller" />
-          <PillButton label="Informe PDF" onPress={() => router.push('/report')} />
+          <PillButton label="En vivo" onPress={() => router.push('/dashboard')} />
+          <PillButton label="Informe PDF" variant="secondary" onPress={() => router.push('/report')} />
           <PillButton label="Historial de fallas" variant="secondary" onPress={() => router.push('/faults')} />
           <PillButton label="Sonido del motor" variant="secondary" onPress={() => router.push('/engine-sound')} />
           <PillButton label="Prueba 0–100" variant="secondary" onPress={() => router.push('/performance')} />

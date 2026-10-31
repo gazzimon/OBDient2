@@ -32,6 +32,7 @@ import { asksForNotes } from '@/domain/assistant/phrase-router';
 import { captureDigest } from '@/domain/obd/capture-digest';
 import { turnsToSummarize } from '@/domain/assistant/history';
 import { navigationTools } from '@/presentation/services/navigation-tools';
+import { useAccountStore } from '@/store/accountStore';
 import { useChatStore } from '@/store/chatStore';
 import { screenConfirmation } from '@/store/confirmStore';
 import { assistantContext } from './assistantContext';
@@ -139,7 +140,9 @@ async function run({ text, images, forModel, noteIds = undefined }: Message): Pr
   // request), not as hex for it to read by hand; the screen keeps what was pasted.
   let modelText = captureDigest((forModel ?? text).trim()) ?? (forModel ?? text).trim();
   try {
-    if (canGoOffline && (await knownOffline())) {
+    // No account: the app answers by itself what it can (the start screen only
+    // offers those phrases without one), the rest is kept as a note.
+    if (canGoOffline && (useAccountStore.getState().status !== 'signed-in' || (await knownOffline()))) {
       conv = await offlineTurn(conv, text, images.length, startedAt);
       return;
     }

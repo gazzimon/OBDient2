@@ -21,6 +21,8 @@ export const CHAT_STORE_VERSION = 1;
 
 interface ChatState {
   conversations: Conversation[];
+  // Not persisted: the app opens on the start screen (decision 2026-10-31), and
+  // an earlier conversation is one tap away in the list.
   activeId: string | null;
   // Not persisted: the conversation with a turn in flight.
   runningId: string | null;
@@ -59,10 +61,12 @@ export const useChatStore = create<ChatState>()(
       name: 'obdient2-chat',
       version: CHAT_STORE_VERSION,
       storage: createJSONStorage(() => storage),
-      partialize: (s) => ({ conversations: s.conversations, activeId: s.activeId }),
+      partialize: (s) => ({ conversations: s.conversations }),
+      // Phones saved the open one before: only the conversations are read back.
+      merge: (persisted, current) => ({ ...current, conversations: (persisted as Partial<ChatState> | undefined)?.conversations ?? [] }),
       // Unknown older shapes are dropped rather than half-read.
       migrate: (persisted, version) =>
-        version === CHAT_STORE_VERSION ? (persisted as Pick<ChatState, 'conversations' | 'activeId'>) : { conversations: [], activeId: null },
+        version === CHAT_STORE_VERSION ? { conversations: (persisted as Pick<ChatState, 'conversations'>).conversations, activeId: null } : { conversations: [], activeId: null },
     },
   ),
 );

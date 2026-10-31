@@ -134,9 +134,9 @@ function AdapterSheet({ onClose }: { onClose: () => void }) {
   const { obd, status, rememberedId } = useLink();
   const router = useRouter();
   const connected = obd.connectionState === 'connected';
-  const goVehicle = () => {
+  const goDiagnosis = () => {
     onClose();
-    router.navigate('/vehicle');
+    router.navigate('/diagnostico');
   };
   return (
     <View className="gap-3">
@@ -150,7 +150,7 @@ function AdapterSheet({ onClose }: { onClose: () => void }) {
           <Text className="text-brand-muted font-mono text-xs">
             {obd.session?.protocol ?? ''} · velocidad {obd.speedRateHz.toFixed(1)} Hz
           </Text>
-          <PillButton label="Ver el adaptador" variant="secondary" onPress={goVehicle} />
+          <PillButton label="Ver el adaptador" variant="secondary" onPress={goDiagnosis} />
           <PillButton
             label="Desconectar"
             variant="destructive"
@@ -176,7 +176,7 @@ function AdapterSheet({ onClose }: { onClose: () => void }) {
               }}
             />
           )}
-          <PillButton label={rememberedId ? 'Elegir otro adaptador' : 'Buscar adaptador'} variant={rememberedId ? 'secondary' : 'primary'} onPress={goVehicle} />
+          <PillButton label={rememberedId ? 'Elegir otro adaptador' : 'Buscar adaptador'} variant={rememberedId ? 'secondary' : 'primary'} onPress={goDiagnosis} />
         </>
       )}
     </View>

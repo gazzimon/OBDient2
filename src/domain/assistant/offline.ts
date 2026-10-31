@@ -131,7 +131,7 @@ export function intentAnswer(intent: PhraseIntent, outcome: ToolOutcome): string
       const car = data.car ? `Tu ${data.car as string}` : 'El auto';
       const where = (data.where as string | null) ?? 'en el lugar guardado';
       const address = data.address ? ` (${data.address as string})` : '';
-      return `${car} quedó ${where}${address}, ${data.left as string}. Lo ves en la pestaña Ruta, con la P.`;
+      return `${car} quedó ${where}${address}, ${data.left as string}. Lo ves en la pestaña Mapa, con la P.`;
     }
     case 'stop_navigation':
       return data.stopped ? 'Listo, terminé la navegación.' : 'No había una navegación en curso.';

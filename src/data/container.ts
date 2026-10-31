@@ -33,6 +33,7 @@ import { createMmkvParkingStorage } from '@/data/parking/mmkv-parking-storage';
 import { ParkingLog } from '@/domain/parking/parking';
 import { createMmkvModuleScanStorage } from '@/data/obd/mmkv-module-scan-storage';
 import { ModuleScanLog } from '@/domain/obd/module-scan-report';
+import type { Audience } from '@/domain/assistant/next-questions';
 import type { GeocodingPort, RoutingPort } from '@/domain/navigation/route';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -158,6 +159,8 @@ const assistant = new AssistantService({
 const offlineAssistant = new OfflineAssistant(assistantTools);
 
 export const container = {
+  // Who the build is for: orders the assistant's start screen.
+  audience: (extra.audience === 'workshop' ? 'workshop' : 'driver') as Audience,
   setNavigationTools(names: ReadonlySet<string>, runner: ToolRunner): void {
     navigationTools = { names, runner };
   },

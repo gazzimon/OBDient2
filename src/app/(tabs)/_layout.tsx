@@ -36,11 +36,13 @@ export default function TabsLayout() {
           sceneStyle: { backgroundColor: COLORS.bg },
         }}
       >
-        <Tabs.Screen name="index" options={{ title: 'Ruta', tabBarIcon: tabIcon('map-marker-path') }} />
-        <Tabs.Screen name="dashboard" options={{ title: 'Tablero', tabBarIcon: tabIcon('gauge') }} />
-        <Tabs.Screen name="vehicle" options={{ title: 'Vehículo', tabBarIcon: tabIcon('car-connected') }} />
-        <Tabs.Screen name="assistant" options={{ title: 'Asistente', tabBarIcon: tabIcon('chat-processing-outline') }} />
+        {/* The app opens on Inicio (the assistant's start screen, decision 2026-10-31). */}
+        <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: tabIcon('chat-processing-outline') }} />
+        <Tabs.Screen name="diagnostico" options={{ title: 'Diagnóstico', tabBarIcon: tabIcon('car-wrench') }} />
+        <Tabs.Screen name="mapa" options={{ title: 'Mapa', tabBarIcon: tabIcon('map-marker-path') }} />
         <Tabs.Screen name="settings" options={{ title: 'Ajustes', tabBarIcon: tabIcon('cog-outline') }} />
+        {/* Not a tab any more: "En vivo" inside Diagnóstico opens it. */}
+        <Tabs.Screen name="dashboard" options={{ href: null, title: 'En vivo' }} />
       </Tabs>
     </View>
   );
