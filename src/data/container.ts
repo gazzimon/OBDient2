@@ -31,6 +31,8 @@ import { PhotonGeocoder } from '@/data/routing/photon-geocoder';
 import { TripRecorder } from '@/data/recording/trip-recorder';
 import { createMmkvParkingStorage } from '@/data/parking/mmkv-parking-storage';
 import { ParkingLog } from '@/domain/parking/parking';
+import { createMmkvModuleScanStorage } from '@/data/obd/mmkv-module-scan-storage';
+import { ModuleScanLog } from '@/domain/obd/module-scan-report';
 import type { GeocodingPort, RoutingPort } from '@/domain/navigation/route';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -54,6 +56,8 @@ const faults = new FaultHistory(createMmkvFaultStorage());
 // What is normal for each car (by VIN). The session in progress lives in the
 // presentation's recorder, registered at start to avoid an import cycle.
 const baselines = new VehicleBaselines(createMmkvBaselineStorage());
+// Each module scan's report, kept on the phone to read offline and compare.
+const moduleScanLog = new ModuleScanLog(createMmkvModuleScanStorage());
 type BaselineSource = NonNullable<ConstructorParameters<typeof VehicleToolAdapter>[1]>['baseline'];
 let baselineSource: BaselineSource | null = null;
 const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
@@ -66,6 +70,7 @@ const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
   moving: () => (useOBDStore.getState().parameters.SPEED?.value ?? 0) > MOVING_KMH,
   // The make's addresses from the lab knowledge (onlineTools is set below).
   knownTargets: (make, model, signal) => onlineTools.scanTargets(make, model, signal),
+  scanLog: moduleScanLog,
   didCandidates: (make, signal) => onlineTools.didCandidates(make, signal),
   baseline: (vin) => baselineSource?.(vin) ?? { deviations: [], comparable: [] },
 });
@@ -175,6 +180,9 @@ export const container = {
   obd,
   trips,
   vehicleTools,
+  // The module scan for the app's own screen (the same one scan_modules runs).
+  moduleScans: vehicleTools.moduleScans,
+  moduleScanLog,
   faults,
   serviceLog,
   parking,

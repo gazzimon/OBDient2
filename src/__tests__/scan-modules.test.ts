@@ -6,6 +6,7 @@ import { redactText } from '@/domain/privacy/redact';
 import { parseToolCall, type ToolOutcome } from '@/domain/assistant/tools';
 import { mergeTargets, needsFlowPair, noAnswer, refusalIn, requestHeader, type ScanTarget } from '@/domain/obd/module-scan';
 import { makeFromVin } from '@/domain/obd/vin-make';
+import { ModuleScanLog, type ModuleScanReport } from '@/domain/obd/module-scan-report';
 
 // A VW on 11-bit CAN: the engine answers on 7E8 and the brakes (713) on 77D.
 // Like the real adapter, a module's answer is only seen when the receive
@@ -358,5 +359,56 @@ describe('scan_modules after the fix', () => {
     const wide = { id: '29:28', reqHeader: '18DA28F1', rxHeader: '18DAF128', label: 'ABS' };
     const r = mergeTargets(base, [wide, { id: '11:713', reqHeader: '713', rxHeader: '77D', label: 'frenos' }], false);
     expect(r).toMatchObject({ otherWidth: 1, overLimit: 0, skipped: 1 });
+  });
+});
+
+describe('the module scan as a report (the app’s screen and scan_modules share it)', () => {
+  const memoryLog = () => {
+    let saved: ModuleScanReport[] = [];
+    return new ModuleScanLog({ load: () => saved, save: (r) => void (saved = [...r]) });
+  };
+
+  it('saves what was found and how far it looked, part numbers included', async () => {
+    const { session } = vwCar({ elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' });
+    const scanLog = memoryLog();
+    const tools = new VehicleToolAdapter(() => session, { knownTargets: async () => VW_TARGETS, scanLog, now: () => 42 });
+    const report = await tools.moduleScans.scan({ make: 'Volkswagen', model: 'Gol Trend' }, signal);
+    expect(report).toMatchObject({ at: 42, make: 'volkswagen', model: 'Gol Trend', path: 'stn', makeAddresses: { status: 'loaded', count: 2 }, skipped: { otherWidth: 1 } });
+    expect(report.buses.map((b) => [b.bus, b.status])).toEqual([
+      ['HS', 'scanned'],
+      ['MS', 'unavailable'],
+      ['SW', 'unavailable'],
+    ]);
+    const hs = report.buses[0]!;
+    expect(hs.probed).toBe(hs.silent.length + 2);
+    expect(hs.silent).not.toContain('11:713');
+    expect(report.modules.find((m) => m.id === '11:713')).toMatchObject({ partNumber: '5Q0614517AB', identitySource: 'F187', identified: true });
+    expect(scanLog.latest()).toEqual(report);
+  });
+
+  it('says when the make’s addresses were missing, and why', async () => {
+    const { session } = vwCar({ elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' });
+    const failing = new VehicleToolAdapter(() => session, {
+      knownTargets: async () => {
+        throw new Error('offline');
+      },
+    });
+    expect((await failing.moduleScans.scan({ make: 'vw' }, signal)).makeAddresses).toEqual({ status: 'failed', count: 0 });
+    const none = new VehicleToolAdapter(() => session, { knownTargets: async () => [] });
+    expect((await none.moduleScans.scan({ make: 'vw' }, signal)).makeAddresses.status).toBe('none');
+    expect((await none.moduleScans.scan({}, signal)).makeAddresses.status).toBe('no-make');
+  });
+
+  it('cancelled: nothing saved, the adapter left as the telemetry needs it, "cancelled" for the chat', async () => {
+    const { session, sent } = vwCar({ elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' });
+    const scanLog = memoryLog();
+    const tools = new VehicleToolAdapter(() => session, { knownTargets: async () => VW_TARGETS, scanLog });
+    const stop = new AbortController();
+    const out = await tools.execute({ name: 'scan_modules', make: 'Volkswagen', model: null }, stop.signal, (e) => {
+      if (e.type === 'module-identified') stop.abort();
+    });
+    expect(out).toMatchObject({ ok: false, error: 'cancelled' });
+    expect(scanLog.latest()).toBeNull();
+    expect(sent.slice(-2)).toEqual(['ATSH 7DF', 'ATH0']);
   });
 });

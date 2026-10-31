@@ -1,6 +1,6 @@
 // Account deleted: everything the phone keeps about the person goes too (chats,
 // trips, fault history, service log, the cars' baselines, engine-sound
-// references, acceleration runs and where each car was left). Settings and permission flags stay: they
+// references, acceleration runs, where each car was left and the module scans). Settings and permission flags stay: they
 // say nothing about the person. The Keystore entry is removed by AccountService.
 
 import { createMMKV } from 'react-native-mmkv';
@@ -8,7 +8,7 @@ import { container } from '@/data/container';
 import { useChatStore } from '@/store/chatStore';
 import { trips } from '@/presentation/services/my-trips';
 
-const PERSONAL_STORES = ['obdient2-chat', 'obdient2-faults', 'obdient2-service', 'obdient2-baseline', 'obdient2-engine-sound', 'obdient2-performance', 'obdient2-parking'] as const;
+const PERSONAL_STORES = ['obdient2-chat', 'obdient2-faults', 'obdient2-service', 'obdient2-baseline', 'obdient2-engine-sound', 'obdient2-performance', 'obdient2-parking', 'obdient2-module-scans'] as const;
 
 export async function wipeLocalData(): Promise<void> {
   trips.clear();
