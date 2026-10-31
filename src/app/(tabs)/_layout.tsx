@@ -41,8 +41,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="diagnostico" options={{ title: 'Diagnóstico', tabBarIcon: tabIcon('car-wrench') }} />
         <Tabs.Screen name="mapa" options={{ title: 'Mapa', tabBarIcon: tabIcon('map-marker-path') }} />
         <Tabs.Screen name="settings" options={{ title: 'Ajustes', tabBarIcon: tabIcon('cog-outline') }} />
-        {/* Not a tab any more: "En vivo" inside Diagnóstico opens it. */}
-        <Tabs.Screen name="dashboard" options={{ href: null, title: 'En vivo' }} />
       </Tabs>
     </View>
   );

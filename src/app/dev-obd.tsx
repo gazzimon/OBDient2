@@ -11,7 +11,7 @@ import { formatCapture } from '@/data/obd/diagnostic-capture';
 import { formatM7Bench } from '@/data/obd/m7-bench';
 import { redactText } from '@/domain/privacy/redact';
 import { PillButton } from '@/presentation/components/layout/PillButton';
-import { ScreenHeader } from '@/presentation/components/layout/ScreenHeader';
+import { BackHeader } from '@/presentation/components/layout/BackHeader';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
 import { useOBDStore } from '@/store/obdStore';
 
@@ -68,7 +68,7 @@ export default function DevObdScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-brand-bg" edges={['top', 'bottom']}>
-      <ScreenHeader title="Laboratorio OBD" />
+      <BackHeader title="Laboratorio OBD" />
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 24 }}>
         {!connected && <Text className="text-brand-amber font-mono text-xs mt-4">Conectá el adaptador en Diagnóstico para correr estas pruebas.</Text>}
         {TESTS.map((t) => {

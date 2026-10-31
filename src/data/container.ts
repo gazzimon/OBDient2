@@ -33,6 +33,8 @@ import { createMmkvParkingStorage } from '@/data/parking/mmkv-parking-storage';
 import { ParkingLog } from '@/domain/parking/parking';
 import { createMmkvModuleScanStorage } from '@/data/obd/mmkv-module-scan-storage';
 import { ModuleScanLog } from '@/domain/obd/module-scan-report';
+import { createMmkvSavedReports } from '@/data/report/mmkv-saved-reports';
+import { SavedReports } from '@/domain/report/saved-reports';
 import type { GeocodingPort, RoutingPort } from '@/domain/navigation/route';
 import { useOBDStore } from '@/store/obdStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -60,9 +62,11 @@ const baselines = new VehicleBaselines(createMmkvBaselineStorage());
 const moduleScanLog = new ModuleScanLog(createMmkvModuleScanStorage());
 type BaselineSource = NonNullable<ConstructorParameters<typeof VehicleToolAdapter>[1]>['baseline'];
 let baselineSource: BaselineSource | null = null;
+// What each trouble code means (the base on the phone): the assistant and Diagnóstico.
+const dtcDescriber = new DtcBaseDescriber(loadDtcBaseAsset);
 const vehicleTools = new VehicleToolAdapter(() => obd.currentSession(), {
   history: faults,
-  describer: new DtcBaseDescriber(loadDtcBaseAsset),
+  describer: dtcDescriber,
   live: (pid) => {
     const p = useOBDStore.getState().parameters[pid];
     return p ? { value: p.value, at: p.timestamp.getTime() } : null;
@@ -184,9 +188,16 @@ export const container = {
   obd,
   trips,
   vehicleTools,
+  dtcDescriber,
+  // What Diagnóstico's scans found, to the lab like the chat's (if the user allows it).
+  reportKnowledge(rec: Record<string, unknown>): void {
+    if (useSettingsStore.getState().shareScans) void onlineTools.reportKnowledge(rec, new AbortController().signal);
+  },
   // The module scan for the app's own screen (the same one scan_modules runs).
   moduleScans: vehicleTools.moduleScans,
   moduleScanLog,
+  // The last PDF reports made on this phone (Diagnóstico › Informes).
+  savedReports: new SavedReports(createMmkvSavedReports()),
   faults,
   serviceLog,
   parking,

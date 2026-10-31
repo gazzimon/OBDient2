@@ -1,7 +1,8 @@
 // A tool the assistant ran (or wanted to): what it did, and how it went.
 // Shown between the messages so the user sees the car being read.
 
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { router, type Href } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { ToolStatus } from '@/domain/assistant/conversation';
 import { COLORS } from '@/presentation/theme';
@@ -41,6 +42,18 @@ const TOOLS: Record<string, { label: string; icon: IconName }> = {
 };
 
 // What the assistant is doing, in words (the drive screen's subtitle too).
+// Where the result also lives on screen: the chat and Diagnóstico share it
+// (fault history, the module scan's report).
+const ON_SCREEN: Partial<Record<string, Href>> = {
+  read_dtcs: '/diagnostico/codigos',
+  read_freeze_frame: '/diagnostico/codigos',
+  scan_modules: '/diagnostico/modulos',
+  read_readiness: '/diagnostico/monitores',
+  read_fault_history: '/diagnostico/historial',
+  log_service: '/diagnostico/service',
+  read_service_log: '/diagnostico/service',
+};
+
 export function toolLabel(name: string): string {
   return TOOLS[name]?.label ?? 'Consultando';
 }
@@ -62,6 +75,13 @@ export function ToolRow({ name, status, detail }: { name: string; status: ToolSt
           <Text className="text-brand-muted font-mono text-[10px] leading-4" numberOfLines={3}>
             {detail}
           </Text>
+        ) : null}
+        {status === 'ok' && ON_SCREEN[name] ? (
+          <Pressable onPress={() => router.navigate(ON_SCREEN[name]!)} hitSlop={6} className="self-start active:opacity-60">
+            <Text className="font-mono text-[10px] mt-0.5" style={{ color: COLORS.mint }}>
+              Ver en Diagnóstico ›
+            </Text>
+          </Pressable>
         ) : null}
       </View>
       {status === 'running' ? (

@@ -259,7 +259,7 @@ function Ready() {
       <View className="gap-2">
         <PillButton label="Diagnóstico del auto" variant="secondary" onPress={() => close('/diagnostico')} />
         <PillButton label="Preguntarle al asistente" variant="secondary" onPress={() => close('/')} />
-        <PillButton label="Informe PDF del auto" variant="secondary" onPress={() => close('/report')} />
+        <PillButton label="Informe PDF del auto" variant="secondary" onPress={() => close('/diagnostico/informes')} />
       </View>
     </Page>
   );

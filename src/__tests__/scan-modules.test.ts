@@ -412,3 +412,15 @@ describe('the module scan as a report (the app’s screen and scan_modules share
     expect(sent.slice(-2)).toEqual(['ATSH 7DF', 'ATH0']);
   });
 });
+
+describe('a saved report in a new session', () => {
+  it('adopt() gives obd_command and did_probe the module’s reply ID without scanning again', async () => {
+    const first = vwCar({ elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' });
+    const report = await new VehicleToolAdapter(() => first.session, { knownTargets: async () => VW_TARGETS }).moduleScans.scan({ make: 'vw' }, signal);
+    const second = vwCar({ elm: 'ELM327 v1.5', stn: 'STN1040 v1.3.6' });
+    const tools = new VehicleToolAdapter(() => second.session);
+    expect(tools.moduleScans.pairs(second.session)).toBeUndefined();
+    tools.moduleScans.adopt(report);
+    expect(tools.moduleScans.pairs(second.session)?.get('713')).toBe('77D');
+  });
+});

@@ -223,6 +223,14 @@ function linkNote(link: NonNullable<Awaited<ReturnType<typeof navigationTools.lo
 const SPOKEN_HINT =
   '[Por voz, mientras maneja: respondé para escuchar, en menos de 60 palabras, sin listas, viñetas ni markdown. Si hay opciones, como mucho tres y cortas.]';
 
+// "Preguntar" from Diagnóstico (2026-10-31): a new conversation on Inicio with
+// the question, and what the screen read, for the model only.
+export function askInNewConversation(text: string, context: string | null = null): void {
+  if (useChatStore.getState().runningId) return;
+  useChatStore.getState().open('');
+  void run({ text, images: [], ...(context ? { forModel: `${text}\n\nLo que muestra la pantalla de Diagnóstico:\n${context}` } : {}) });
+}
+
 export function useAssistant() {
   const running = useChatStore((s) => s.runningId != null);
 

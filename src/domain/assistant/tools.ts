@@ -135,7 +135,9 @@ export type ToolErrorCode =
   | 'unknown_tool'
   | 'too_many_calls'
   // The car answered with a refusal (7F); the message carries the reason.
-  | 'rejected_by_car';
+  | 'rejected_by_car'
+  // Another exclusive operation (a scan, a clear) holds the link (Diagnóstico).
+  | 'busy';
 
 // A page the assistant read, as a button under its tool row. For the screen
 // only, like MapPin: the model gets `data`, never this.

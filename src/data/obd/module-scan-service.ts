@@ -61,6 +61,16 @@ export class ModuleScanService {
     return this.pairsBySession.get(s);
   }
 
+  // A saved report's pairs for this session: a module found in an earlier one
+  // can be asked (did_probe) without scanning again.
+  adopt(report: ModuleScanReport): void {
+    const s = this.session();
+    if (!s) return;
+    const pairs = this.pairsBySession.get(s) ?? new Map<string, string>();
+    for (const m of report.modules) if (!pairs.has(m.reqHeader)) pairs.set(m.reqHeader, m.rxHeader);
+    this.pairsBySession.set(s, pairs);
+  }
+
   async scan(request: { make?: string | null; model?: string | null }, signal: AbortSignal, onProgress?: ScanProgressListener): Promise<ModuleScanReport> {
     const s = this.session();
     if (!s?.sessionInfo) throw new Error('Session not open');

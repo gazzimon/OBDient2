@@ -1,4 +1,5 @@
-// Tablero: live gauges + metric grid, ported from OBDient.
+// Diagnóstico › En vivo (the Tablero tab until 2026-10-31): live gauges + metric
+// grid, ported from OBDient, or the camera with the numbers on top.
 // Real OBD data when connected; otherwise simulated values with a DEMO badge,
 // so the screen can be checked without a car.
 
@@ -13,6 +14,7 @@ import { TempGauge } from '@/presentation/components/gauges/TempGauge';
 import { VoltageGauge } from '@/presentation/components/gauges/VoltageGauge';
 import { MetricCard } from '@/presentation/components/dashboard/MetricCard';
 import { SectionHeader } from '@/presentation/components/layout/SectionHeader';
+import { BackHeader } from '@/presentation/components/layout/BackHeader';
 import { AlertBanner } from '@/presentation/components/feedback/AlertBanner';
 import type { ObdParameterSnapshot } from '@/domain/entities/obd-parameter';
 import { useOBDStore } from '@/store/obdStore';
@@ -49,17 +51,17 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-brand-bg" edges={['top']}>
-      {/* The adapter is in the top bar; here only that the numbers are not the car's. */}
-      {!isConnected && (
-        <View className="flex-row items-center justify-end px-4 pt-3">
-          <Pressable
-            onPress={() => router.push('/diagnostico')}
-            className="px-2 py-0.5 rounded-md border border-brand-muted active:opacity-60"
-          >
-            <Text className="text-brand-muted font-mono text-xs">DEMO · conectar</Text>
-          </Pressable>
-        </View>
-      )}
+      {/* Without the adapter the numbers are a demo: back to Diagnóstico to connect. */}
+      <BackHeader
+        title="En vivo"
+        right={
+          !isConnected && (
+            <Pressable onPress={() => router.back()} className="px-2 py-0.5 rounded-md border border-brand-muted active:opacity-60">
+              <Text className="text-brand-muted font-mono text-xs">DEMO · conectar</Text>
+            </Pressable>
+          )
+        }
+      />
 
       <ViewSwitch camera={camera} />
 

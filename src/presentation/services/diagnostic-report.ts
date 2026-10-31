@@ -1,9 +1,11 @@
 // "Informe PDF" (2026-10-28): reads the car with the assistant's own tools,
 // builds the page (domain/report) and hands the PDF to the share sheet. The
-// file stays in the app's cache; nothing is uploaded.
+// last ten stay in the app's documents (Diagnóstico › Informes, 2026-10-31);
+// nothing is uploaded.
 
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { Directory, File, Paths } from 'expo-file-system';
 import { PID_DEFINITIONS, type PidId } from '@/core/constants/pids';
 import { container } from '@/data/container';
 import { PID_LABEL } from '@/domain/assistant/offline';
@@ -34,7 +36,49 @@ export async function shareDiagnosticReport(
   const data = await gather(opts, onStep);
   onStep('printing');
   const { uri } = await Print.printToFileAsync({ html: buildReportHtml(data), ...PAGE });
+  await shareReportFile(keep(uri, data));
+}
+
+// Into documents/informes, listed with the last ten; older files are deleted.
+function keep(printed: string, data: ReportData): string {
+  try {
+    const dir = new Directory(Paths.document, 'informes');
+    if (!dir.exists) dir.create({ intermediates: true });
+    const file = new File(dir, `informe-${data.generatedAt}.pdf`);
+    new File(printed).moveSync(file);
+    const dropped = container.savedReports.add({
+      id: `r-${data.generatedAt.toString(36)}`,
+      at: data.generatedAt,
+      uri: file.uri,
+      vin: data.vin,
+      make: data.make,
+      codes: data.storedCodes?.map((c) => c.code) ?? null,
+      workshop: data.workshop,
+    });
+    for (const r of dropped) deleteFile(r.uri);
+    return file.uri;
+  } catch {
+    // Not kept, still shared.
+    return printed;
+  }
+}
+
+export async function shareReportFile(uri: string): Promise<void> {
   await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: 'Compartir informe' });
+}
+
+export function deleteSavedReport(id: string): void {
+  const gone = container.savedReports.remove(id);
+  if (gone) deleteFile(gone.uri);
+}
+
+function deleteFile(uri: string): void {
+  try {
+    const f = new File(uri);
+    if (f.exists) f.delete();
+  } catch {
+    // Already gone.
+  }
 }
 
 async function gather(
